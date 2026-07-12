@@ -1,0 +1,241 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: #e2e8f0;
+  background-color: #0b0f19;
+
+  /* Premium Theme Palette */
+  --bg-primary: #0b0f19;
+  --bg-secondary: #161f30;
+  --bg-glass: rgba(22, 31, 48, 0.7);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-hover: rgba(255, 255, 255, 0.15);
+  
+  --accent-primary: #6366f1; /* Indigo */
+  --accent-primary-glow: rgba(99, 102, 241, 0.3);
+  --accent-secondary: #0ea5e9; /* Sky blue */
+  --accent-secondary-glow: rgba(14, 165, 233, 0.3);
+  
+  --status-pending: #f59e0b; /* Amber */
+  --status-preparing: #3b82f6; /* Blue */
+  --status-ready: #10b981; /* Emerald */
+  --status-served: #8b5cf6; /* Purple */
+  --status-cancelled: #ef4444; /* Red */
+  
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f19 80%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism styling helper */
+.glass-panel {
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-glass-hover);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.1);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.5; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Quick Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.glass-panel:hover .menu-item-image {
+  transform: scale(1.06);
+}
+
+/* Responsive utilities for KDS and Waiter Board */
+.kitchen-container {
+  padding: 1.5rem;
+  max-width: 100%;
+  margin: 0 auto;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.kds-grid {
+  display: grid; 
+  grid-template-columns: repeat(3, 1fr); 
+  grid-template-rows: 1fr 1fr;
+  gap: 0.75rem;
+  flex: 1;
+  min-height: 0;
+}
+
+.waiter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  margin-bottom: 2rem;
+  border-color: rgba(255,255,255,0.05);
+}
+
+.waiter-right-panel {
+  flex: 1 1 420px;
+  padding: 1.5rem;
+  min-width: 420px;
+}
+
+.waiter-left-panel {
+  flex: 1 1 650px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.owner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+  border-left: 4px solid var(--accent-primary);
+  border-color: rgba(255,255,255,0.05);
+}
+
+.customer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 2rem;
+  margin-bottom: 1rem;
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.occupancy-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 2rem;
+  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.03);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 1024px) {
+  .kitchen-container {
+    height: auto;
+    overflow: auto;
+  }
+  .kds-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .kds-grid {
+    grid-template-columns: 1fr;
+  }
+  .waiter-header {
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem 1rem;
+  }
+  .waiter-header > div {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .owner-header {
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: center;
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+  .owner-header > div {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .customer-header {
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .occupancy-panel {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .waiter-right-panel {
+    min-width: 100%;
+    padding: 1rem;
+  }
+  .waiter-left-panel {
+    flex: 1 1 100%;
+  }
+}

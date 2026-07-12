@@ -1,0 +1,56 @@
+{
+  "orders": [
+    {
+      "id": "ord_x2wgtx929",
+      "tableId": "1",
+      "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Served"
+        },
+        {
+          "menuItemId": "c2",
+          "quantity": 1,
+          "notes": "",
+          "name": "Double Espresso",
+          "price": 3.75,
+          "status": "Served"
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1783792583462,
+      "totalAmount": 6.75,
+      "customerName": "Rahul",
+      "servedBy": "Rahul"
+    }
+  ],
+  "requests": [
+    {
+      "id": "req_mt201j4f1",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783792663405
+    },
+    {
+      "id": "req_bzvp9omde",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783792732128
+    }
+  ],
+  "tablesOccupancy": {
+    "1": {
+      "occupied": true,
+      "customerName": "Rahul",
+      "guestsCount": 1,
+      "checkInTime": 1783792574658,
+      "openedBy": "Customer"
+    }
+  }
+}
