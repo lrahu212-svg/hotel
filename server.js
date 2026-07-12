@@ -11,7 +11,8 @@ let clients = [];
 let state = {
   orders: [],
   requests: [],
-  tablesOccupancy: {}
+  tablesOccupancy: {},
+  settings: {}
 };
 
 // Load state from file if exists
@@ -105,6 +106,8 @@ app.post('/event', (req, res) => {
       };
     } else if (event.type === 'TABLE_CHECK_OUT') {
       state.tablesOccupancy[event.tableId] = { occupied: false };
+    } else if (event.type === 'UPDATE_SETTINGS') {
+      state.settings = { ...state.settings, ...event.settings };
     }
 
     saveState();

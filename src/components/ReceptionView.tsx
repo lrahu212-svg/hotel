@@ -105,7 +105,11 @@ const MenuManagement: React.FC = () => {
   );
 };
 
-export const ReceptionView: React.FC = () => {
+interface ReceptionViewProps {
+  onUpdateSettings?: (settings: any) => void;
+}
+
+export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings }) => {
   const [activeTab, setActiveTab] = useState<'waiters' | 'menu'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
@@ -164,10 +168,9 @@ export const ReceptionView: React.FC = () => {
     localStorage.setItem('hotel_kitchen_mode', kitchenMode);
     showToast('🎉 Kitchen station settings updated and saved!');
     
-    // Broadcast changes
-    const bc = new BroadcastChannel('hotel_ordering_system');
-    bc.postMessage({ type: 'REQUEST_SYNC' });
-    bc.close();
+    if (onUpdateSettings) {
+      onUpdateSettings({ kitchenMode, kitchenConfigs });
+    }
   };
 
   useEffect(() => {

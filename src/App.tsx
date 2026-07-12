@@ -92,6 +92,11 @@ export const App: React.FC = () => {
             localStorage.setItem('hotel_orders', JSON.stringify(msg.orders));
             localStorage.setItem('hotel_requests', JSON.stringify(msg.requests));
             localStorage.setItem('hotel_tables_occupancy', JSON.stringify(parsed));
+            
+            if (msg.settings) {
+              if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
+              if (msg.settings.kitchenConfigs) localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
+            }
             break;
           }
           case 'NEW_ORDER': {
@@ -138,6 +143,16 @@ export const App: React.FC = () => {
               localStorage.setItem('hotel_orders', JSON.stringify(updated));
               return updated;
             });
+            break;
+          }
+          case 'UPDATE_SETTINGS': {
+            if (msg.settings.kitchenMode) {
+              localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
+              window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
+            }
+            if (msg.settings.kitchenConfigs) {
+              localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
+            }
             break;
           }
           case 'NEW_SERVICE_REQUEST': {
@@ -449,7 +464,11 @@ export const App: React.FC = () => {
     }
 
     if (path === '/reception') {
-      return <ReceptionView />;
+      return (
+        <ReceptionView 
+          onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
+        />
+      );
     }
 
     // Default or portal view
