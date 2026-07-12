@@ -869,15 +869,26 @@ export const TableView: React.FC<TableViewProps> = ({
                 <p style={{ color: '#cbd5e1', marginBottom: '1rem' }}>UPI Payment Selected</p>
                 
                 {(() => {
-                  const razorpayLink = localStorage.getItem('owner_razorpay_link');
-                  if (razorpayLink && razorpayLink.trim() !== '') {
+                  const paymentConfig = localStorage.getItem('owner_razorpay_link');
+                  if (paymentConfig && paymentConfig.trim() !== '') {
                     const totalAmount = tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0);
-                    // razorpay.me links typically expect the amount in Rupees.
                     const formattedAmount = totalAmount % 1 === 0 ? totalAmount.toString() : totalAmount.toFixed(2);
                     
-                    let formattedLink = razorpayLink.startsWith('http') ? razorpayLink : `https://${razorpayLink}`;
-                    const separator = formattedLink.includes('?') ? '&' : '?';
-                    formattedLink = `${formattedLink}${separator}amount=${formattedAmount}`;
+                    const isUpiId = paymentConfig.includes('@') && !paymentConfig.startsWith('http');
+                    let formattedLink = '';
+                    let buttonText = '';
+                    
+                    if (isUpiId) {
+                      // Direct UPI deep link strictly locks the amount!
+                      formattedLink = `upi://pay?pa=${paymentConfig.trim()}&pn=Restaurant&am=${formattedAmount}&cu=INR`;
+                      buttonText = `Pay ₹${formattedAmount} via UPI App`;
+                    } else {
+                      // Razorpay Pages (cannot strictly lock amount via URL)
+                      formattedLink = paymentConfig.startsWith('http') ? paymentConfig : `https://${paymentConfig}`;
+                      const separator = formattedLink.includes('?') ? '&' : '?';
+                      formattedLink = `${formattedLink}${separator}amount=${formattedAmount}`;
+                      buttonText = `Pay ₹${formattedAmount} via Razorpay`;
+                    }
                     
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', marginTop: '1rem' }}>
@@ -901,9 +912,11 @@ export const TableView: React.FC<TableViewProps> = ({
                             display: 'inline-block'
                           }}
                         >
-                          Pay Now via Razorpay
+                          {buttonText}
                         </a>
-                        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Click the button above to pay securely. This window will automatically update once you click.</p>
+                        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                          {isUpiId ? 'This will securely open Google Pay, PhonePe, or Paytm with the exact bill amount locked.' : 'Click the button above to pay securely. This window will automatically update once you click.'}
+                        </p>
                       </div>
                     );
                   }
