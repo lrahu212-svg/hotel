@@ -70,8 +70,7 @@ export const App: React.FC = () => {
     }
 
     // Connect to Node.js SSE Sync Server
-    const syncHost = window.location.hostname;
-    const eventSource = new EventSource(`http://${syncHost}:3000/events`);
+    const eventSource = new EventSource(`/events`);
 
     eventSource.onmessage = (event) => {
       try {
@@ -208,8 +207,7 @@ export const App: React.FC = () => {
 
   const postSyncEvent = async (event: any) => {
     try {
-      const syncHost = window.location.hostname;
-      await fetch(`http://${syncHost}:3000/event`, {
+        await fetch(`/event`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
