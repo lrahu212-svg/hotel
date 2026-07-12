@@ -84,6 +84,13 @@
       "type": "UPI Payment Completed",
       "status": "Pending",
       "timestamp": 1783870748269
+    },
+    {
+      "id": "req_8pcjp3t4m",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783871044383
     }
   ],
   "tablesOccupancy": {
@@ -95,5 +102,8 @@
       "openedBy": "Customer"
     }
   },
-  "serverSecrets": {}
+  "serverSecrets": {
+    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",
+    "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
+  }
 }

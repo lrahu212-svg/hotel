@@ -44,6 +44,32 @@ export const TableView: React.FC<TableViewProps> = ({
   const [showCheckOutSuccess, setShowCheckOutSuccess] = useState(false);
   const [sessionActive, setSessionActive] = useState<boolean>(() => !!sessionStorage.getItem(`table_session_active_${tableId}`));
 
+  // Auto-verify payment when user returns to the tab
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && razorpayLinkId && !paymentSuccess) {
+        setIsGeneratingLink(true);
+        try {
+          const res = await fetch(`/api/check-payment-status?id=${razorpayLinkId}`);
+          const data = await res.json();
+          if (res.ok && data.status === 'paid') {
+            setPaymentSuccess(true);
+            setPaymentLinkError(null);
+            onCallWaiter('UPI Payment Completed');
+          } else if (res.ok) {
+            setPaymentLinkError('Payment Failed or Not Completed.');
+          }
+        } catch (err) {
+          // ignore
+        } finally {
+          setIsGeneratingLink(false);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [razorpayLinkId, paymentSuccess, onCallWaiter]);
+
   // Login inputs
   const [custName, setCustName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -899,47 +925,14 @@ export const TableView: React.FC<TableViewProps> = ({
                             textAlign: 'center'
                           }}
                         >
-                          1. Pay ₹{formattedAmount} via Razorpay
+                          Click here to Pay ₹{formattedAmount} via Razorpay
                         </a>
                         <p style={{ color: '#94a3b8', fontSize: '0.85rem', maxWidth: '300px', margin: '0 auto', textAlign: 'center' }}>
-                          After you finish the payment in the new tab, come back here and click verify.
+                          After you finish the payment, come back to this page. We will automatically verify it for you!
                         </p>
-                        
-                        <button
-                          onClick={async () => {
-                            if (!razorpayLinkId) return;
-                            setIsGeneratingLink(true);
-                            setPaymentLinkError(null);
-                            try {
-                              const res = await fetch(`/api/check-payment-status?id=${razorpayLinkId}`);
-                              const data = await res.json();
-                              if (res.ok && data.status === 'paid') {
-                                setPaymentSuccess(true);
-                                onCallWaiter('UPI Payment Completed');
-                              } else if (res.ok) {
-                                setPaymentLinkError(`Status: ${data.status}. Please complete the payment first.`);
-                              } else {
-                                setPaymentLinkError(data.error || 'Verification failed');
-                              }
-                            } catch (err) {
-                              setPaymentLinkError('Network error checking payment status');
-                            } finally {
-                              setIsGeneratingLink(false);
-                            }
-                          }}
-                          disabled={isGeneratingLink}
-                          style={{
-                            background: isGeneratingLink ? '#475569' : '#10b981',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '0.75rem 1.5rem',
-                            borderRadius: '8px',
-                            fontWeight: 600,
-                            cursor: isGeneratingLink ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          {isGeneratingLink ? 'Verifying...' : '2. I have paid, Verify Now'}
-                        </button>
+                        {isGeneratingLink && (
+                          <p style={{ color: '#0ea5e9', fontSize: '0.9rem', margin: '0' }}>Verifying payment status...</p>
+                        )}
                       </div>
                     );
                   }
