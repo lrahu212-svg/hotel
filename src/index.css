@@ -241,16 +241,15 @@ body {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  /* Hide EVERYTHING in the body by default */
+  body > :not(#print-section) {
+    display: none !important;
   }
-  #print-section, #print-section * {
-    visibility: visible;
-  }
+  
+  /* Only show the print section */
   #print-section {
-    position: absolute;
-    left: 0;
-    top: 0;
+    display: block !important;
+    position: static;
     width: 300px;
     margin: 0;
     padding: 0;
