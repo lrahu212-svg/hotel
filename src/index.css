@@ -241,6 +241,15 @@ body {
 }
 
 @media print {
+  /* Reset html/body to prevent thermal printer spooling */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    background: none !important;
+  }
+
   /* Hide EVERYTHING in the body by default */
   body > :not(#print-section) {
     display: none !important;
@@ -249,9 +258,9 @@ body {
   /* Only show the print section */
   #print-section {
     display: block !important;
-    position: static;
-    width: 300px;
-    margin: 0;
-    padding: 0;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
