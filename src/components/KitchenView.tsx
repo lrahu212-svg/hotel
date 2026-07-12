@@ -25,6 +25,8 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   const [openedViaNumber, setOpenedViaNumber] = useState<boolean>(false);
 
   const isInitialLoad = useRef(true);
+  const printQueue = useRef<typeof stationOrders>([]);
+  const isPrinting = useRef(false);
 
   // Load Kitchen Display settings from Reception Configs
   const savedConfigs = localStorage.getItem('hotel_kitchen_configs');
@@ -103,10 +105,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       const kitchenMode = localStorage.getItem('hotel_kitchen_mode');
       if (kitchenMode === 'printer') {
         const ordersToPrint = newPendingOrders.sort((a, b) => b.timestamp - a.timestamp);
-        // Force it to the end of the event loop to ensure DOM is ready
-        setTimeout(() => {
-          printTickets(ordersToPrint);
-        }, 500);
+        enqueuePrint(ordersToPrint);
       }
     }
   }, [orders, soundEnabled, stationOrders]);
@@ -229,75 +228,72 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     }
   };
 
-  const printTickets = (ordersToPrint: typeof stationOrders) => {
-    if (ordersToPrint.length === 0) return;
+  const enqueuePrint = (ordersToPrint: typeof stationOrders) => {
+    printQueue.current.push(...ordersToPrint);
+    processPrintQueue();
+  };
 
-    let currentIndex = 0;
+  const processPrintQueue = () => {
+    if (isPrinting.current || printQueue.current.length === 0) return;
 
-    const printNext = () => {
-      if (currentIndex >= ordersToPrint.length) return;
+    isPrinting.current = true;
+    const order = printQueue.current.shift()!; // Take the first order
 
-      const order = ordersToPrint[currentIndex];
+    // Ensure ALL old print sections are completely removed so they don't pile up!
+    const oldPrints = document.querySelectorAll('#print-section');
+    oldPrints.forEach(p => p.remove());
 
-      // Ensure ALL old print sections are completely removed so they don't pile up!
-      const oldPrints = document.querySelectorAll('#print-section');
-      oldPrints.forEach(p => p.remove());
+    const printDiv = document.createElement('div');
+    printDiv.id = 'print-section';
+    printDiv.style.fontFamily = 'monospace';
+    printDiv.style.color = '#000';
+    printDiv.style.padding = '0';
+    printDiv.style.background = '#fff';
 
-      const printDiv = document.createElement('div');
-      printDiv.id = 'print-section';
-      printDiv.style.fontFamily = 'monospace';
-      printDiv.style.color = '#000';
-      printDiv.style.padding = '0';
-      printDiv.style.background = '#fff';
-
-      printDiv.innerHTML = `
-        <div style="padding: 15px 0;">
-          <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
-          <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
-          <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
-            ${new Date(order.timestamp).toLocaleString()}
-          </div>
-          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
-            <span style="width: 30px;">Qty</span>
-            <span style="flex: 1;">Item</span>
-          </div>
-          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-          ${order.filteredItems.map(item => `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
-              <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
-              <span style="flex: 1;">${item.name}</span>
-            </div>
-            ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
-          `).join('')}
-          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-          <div style="text-align: center; margin-top: 20px; color: #000;">
-            -- End of Ticket --
-          </div>
+    printDiv.innerHTML = `
+      <div style="padding: 15px 0;">
+        <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
+        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
+        <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
+          ${new Date(order.timestamp).toLocaleString()}
         </div>
-      `;
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
+          <span style="width: 30px;">Qty</span>
+          <span style="flex: 1;">Item</span>
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        ${order.filteredItems.map(item => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
+            <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
+            <span style="flex: 1;">${item.name}</span>
+          </div>
+          ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
+        `).join('')}
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="text-align: center; margin-top: 20px; color: #000;">
+          -- End of Ticket --
+        </div>
+      </div>
+    `;
 
-      document.body.appendChild(printDiv);
-      
-      // Slight delay to ensure DOM is updated before printing
+    document.body.appendChild(printDiv);
+    
+    // Slight delay to ensure DOM is updated before printing
+    setTimeout(() => {
+      window.print();
+      // Remove it after the print dialog closes
       setTimeout(() => {
-        window.print();
-        // Remove it after the print dialog closes
+        const prints = document.querySelectorAll('#print-section');
+        prints.forEach(p => p.remove());
+
+        // Queue next print job after 3 second delay
         setTimeout(() => {
-          const prints = document.querySelectorAll('#print-section');
-          prints.forEach(p => p.remove());
-
-          // Queue next print job after 3 second delay
-          currentIndex++;
-          if (currentIndex < ordersToPrint.length) {
-            setTimeout(printNext, 3000);
-          }
-        }, 1000);
-      }, 100);
-    };
-
-    // Start the print queue
-    printNext();
+          isPrinting.current = false;
+          processPrintQueue(); // Process any remaining or newly arrived items
+        }, 3000);
+      }, 1000);
+    }, 100);
   };
 
 
@@ -444,6 +440,24 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
 
               {/* Card Footer action button */}
               <div style={{ marginTop: 'auto', paddingTop: '0.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    enqueuePrint([order]);
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Print KOT
+                </button>
 
                 <button
                   onClick={(e) => {
