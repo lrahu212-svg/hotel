@@ -70,6 +70,18 @@ export const TableView: React.FC<TableViewProps> = ({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [razorpayLinkId, paymentSuccess, onCallWaiter]);
 
+  // Auto-checkout and logout after successful payment
+  useEffect(() => {
+    if (paymentSuccess) {
+      const timer = setTimeout(() => {
+        onCheckOut();
+        sessionStorage.removeItem(`table_session_active_${tableId}`);
+        setSessionActive(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentSuccess, onCheckOut, tableId]);
+
   // Login inputs
   const [custName, setCustName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -891,23 +903,16 @@ export const TableView: React.FC<TableViewProps> = ({
                   const totalAmount = tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0);
                   const formattedAmount = totalAmount % 1 === 0 ? totalAmount.toString() : totalAmount.toFixed(2);
                   
-                  if (paymentLinkError) {
-                    return (
-                      <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
-                        <p style={{ margin: 0 }}>{paymentLinkError}</p>
-                        <button 
-                          onClick={() => setPaymentMethod(null)} 
-                          style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px' }}
-                        >
-                          Go Back
-                        </button>
-                      </div>
-                    );
-                  }
+                  const errorDisplay = paymentLinkError ? (
+                    <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
+                      <p style={{ margin: 0 }}>{paymentLinkError}</p>
+                    </div>
+                  ) : null;
 
                   if (razorpayLink) {
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', marginTop: '1rem' }}>
+                        {errorDisplay}
                         <a 
                           href={razorpayLink} 
                           target="_blank" 
@@ -939,6 +944,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   
                   return (
                     <div style={{ marginTop: '1rem' }}>
+                      {errorDisplay}
                       <button
                         onClick={async () => {
                           setIsGeneratingLink(true);
@@ -974,7 +980,7 @@ export const TableView: React.FC<TableViewProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '0.5rem',
-                          margin: '0 auto'
+                          margin: '1rem auto 0'
                         }}
                       >
                         {isGeneratingLink ? 'Securing Link...' : 'Generate Secure Link'}
