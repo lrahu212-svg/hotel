@@ -81,9 +81,12 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
         playChime();
       }
       
-      const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
-      if (pendingOrders.length > 0) {
-        printTicket(pendingOrders[0]);
+      const kitchenMode = localStorage.getItem('hotel_kitchen_mode');
+      if (kitchenMode === 'printer') {
+        const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
+        if (pendingOrders.length > 0) {
+          printTicket(pendingOrders[0]);
+        }
       }
     }
     setLastOrderCount(pendingCount);
