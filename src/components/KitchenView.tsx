@@ -208,8 +208,10 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   };
 
   const printTicket = (order: typeof stationOrders[0]) => {
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) return;
+    // Use an iframe instead of window.open to bypass popup blockers
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
     
     const html = `
       <html>
@@ -255,15 +257,27 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       </html>
     `;
     
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
+    const iframeDoc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(html);
+      iframeDoc.close();
+    }
     
     // Slight delay to ensure content loads before printing
     setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+      if (iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      }
+      
+      // Cleanup the iframe after printing is initiated
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      }, 5000); // Give browser enough time to spool to printer before destroying
+    }, 500);
   };
 
 
