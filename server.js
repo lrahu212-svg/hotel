@@ -165,8 +165,7 @@ app.post('/api/create-payment-link', (req, res) => {
       description: `Payment for Order ${receipt}`,
       customer: {
         name: 'Restaurant Customer',
-        email: 'customer@restaurant.local',
-        contact: '+919999999999'
+        email: 'customer@restaurant.local'
       },
       reminder_enable: false
     });
