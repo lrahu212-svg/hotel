@@ -211,62 +211,53 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   };
 
   const printTicket = (order: typeof stationOrders[0]) => {
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    if (!printWindow) return;
-    
-    const html = `
-      <html>
-        <head>
-          <title>KOT - Table ${order.tableId}</title>
-          <style>
-            body { font-family: monospace; width: 300px; margin: 0 auto; padding: 20px; color: #000; }
-            h2, h3 { text-align: center; margin: 5px 0; }
-            .divider { border-bottom: 1px dashed #000; margin: 10px 0; }
-            .item { display: flex; justify-content: space-between; margin-bottom: 5px; }
-            .qty { width: 30px; font-weight: bold; }
-            .name { flex: 1; }
-            .notes { font-style: italic; font-size: 0.9em; margin-left: 30px; }
-            @media print {
-              body { width: 100%; margin: 0; padding: 0; }
-            }
-          </style>
-        </head>
-        <body>
-          <h2>KITCHEN ORDER TICKET</h2>
-          <h3>Table ${order.tableId}</h3>
-          <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px;">
-            ${new Date(order.timestamp).toLocaleString()}
-          </div>
-          <div class="divider"></div>
-          <div class="item" style="font-weight: bold;">
-            <span class="qty">Qty</span>
-            <span class="name">Item</span>
-          </div>
-          <div class="divider"></div>
-          ${order.filteredItems.map(item => `
-            <div class="item">
-              <span class="qty">${item.quantity}x</span>
-              <span class="name">${item.name}</span>
-            </div>
-            ${item.notes ? `<div class="notes">* ${item.notes}</div>` : ''}
-          `).join('')}
-          <div class="divider"></div>
-          <div style="text-align: center; margin-top: 20px;">
-            -- End of Ticket --
-          </div>
-        </body>
-      </html>
+    // Ensure any old print section is removed
+    const oldPrint = document.getElementById('print-section');
+    if (oldPrint) oldPrint.remove();
+
+    const printDiv = document.createElement('div');
+    printDiv.id = 'print-section';
+    printDiv.style.fontFamily = 'monospace';
+    printDiv.style.color = '#000';
+    printDiv.style.padding = '20px';
+    printDiv.style.background = '#fff';
+
+    printDiv.innerHTML = `
+      <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
+      <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
+      <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
+        ${new Date(order.timestamp).toLocaleString()}
+      </div>
+      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
+        <span style="width: 30px;">Qty</span>
+        <span style="flex: 1;">Item</span>
+      </div>
+      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+      ${order.filteredItems.map(item => `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
+          <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
+          <span style="flex: 1;">${item.name}</span>
+        </div>
+        ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
+      `).join('')}
+      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+      <div style="text-align: center; margin-top: 20px; color: #000;">
+        -- End of Ticket --
+      </div>
     `;
     
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
+    document.body.appendChild(printDiv);
     
-    // Slight delay to ensure content loads before printing
+    // Slight delay to ensure DOM is updated before printing
     setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+      window.print();
+      // Remove it after the print dialog closes
+      setTimeout(() => {
+        const p = document.getElementById('print-section');
+        if (p) p.remove();
+      }, 1000);
+    }, 100);
   };
 
 
