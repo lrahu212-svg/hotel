@@ -25,7 +25,6 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   const [openedViaNumber, setOpenedViaNumber] = useState<boolean>(false);
 
   const isInitialLoad = useRef(true);
-  const knownPendingIds = useRef<Set<string>>(new Set());
 
   // Load Kitchen Display settings from Reception Configs
   const savedConfigs = localStorage.getItem('hotel_kitchen_configs');
@@ -79,16 +78,23 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   useEffect(() => {
     const pendingOrders = stationOrders.filter(o => o.status === 'Pending');
     
+    // Get globally known printed IDs from localStorage to prevent multi-tab printing
+    const savedIds = localStorage.getItem('hotel_printed_order_ids');
+    const printedIds = savedIds ? JSON.parse(savedIds) : [];
+    const printedSet = new Set<string>(printedIds);
+
     if (isInitialLoad.current) {
-      pendingOrders.forEach(o => knownPendingIds.current.add(o.id));
+      pendingOrders.forEach(o => printedSet.add(o.id));
+      localStorage.setItem('hotel_printed_order_ids', JSON.stringify(Array.from(printedSet)));
       isInitialLoad.current = false;
       return;
     }
 
-    const newPendingOrders = pendingOrders.filter(o => !knownPendingIds.current.has(o.id));
+    const newPendingOrders = pendingOrders.filter(o => !printedSet.has(o.id));
 
     if (newPendingOrders.length > 0) {
-      newPendingOrders.forEach(o => knownPendingIds.current.add(o.id));
+      newPendingOrders.forEach(o => printedSet.add(o.id));
+      localStorage.setItem('hotel_printed_order_ids', JSON.stringify(Array.from(printedSet)));
 
       if (soundEnabled) {
         playChime();
@@ -224,9 +230,9 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   };
 
   const printTicket = (order: typeof stationOrders[0]) => {
-    // Ensure any old print section is removed
-    const oldPrint = document.getElementById('print-section');
-    if (oldPrint) oldPrint.remove();
+    // Ensure ALL old print sections are completely removed so they don't pile up!
+    const oldPrints = document.querySelectorAll('#print-section');
+    oldPrints.forEach(p => p.remove());
 
     const printDiv = document.createElement('div');
     printDiv.id = 'print-section';
@@ -267,8 +273,8 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       window.print();
       // Remove it after the print dialog closes
       setTimeout(() => {
-        const p = document.getElementById('print-section');
-        if (p) p.remove();
+        const prints = document.querySelectorAll('#print-section');
+        prints.forEach(p => p.remove());
       }, 1000);
     }, 100);
   };
