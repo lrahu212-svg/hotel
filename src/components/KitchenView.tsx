@@ -81,12 +81,9 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
         playChime();
       }
       
-      const kitchenMode = localStorage.getItem('hotel_kitchen_mode');
-      if (kitchenMode === 'printer') {
-        const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
-        if (pendingOrders.length > 0) {
-          printTicket(pendingOrders[0]);
-        }
+      const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
+      if (pendingOrders.length > 0) {
+        printTicket(pendingOrders[0]);
       }
     }
     setLastOrderCount(pendingCount);
@@ -413,28 +410,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
 
               {/* Card Footer action button */}
               <div style={{ marginTop: 'auto', paddingTop: '0.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    printTicket(order);
-                  }}
-                  title="Print Ticket (USB/WiFi/Bluetooth Printer)"
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    color: '#fff',
-                    padding: '0.35rem 0.75rem',
-                    borderRadius: '6px',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.25rem'
-                  }}
-                >
-                  <Printer size={14} /> Print
-                </button>
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
