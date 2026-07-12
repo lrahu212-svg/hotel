@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import https from 'https';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,8 +48,9 @@ app.get('/events', (req, res) => {
     'Connection': 'keep-alive'
   });
 
-  // Send initial sync state to client
-  res.write(`data: ${JSON.stringify({ type: 'SYNC_STATE', ...state })}\n\n`);
+  // Send initial sync state to client (but strip secrets!)
+  const { serverSecrets, ...safeState } = state;
+  res.write(`data: ${JSON.stringify({ type: 'SYNC_STATE', ...safeState })}\n\n`);
 
   clients.push(res);
 
@@ -119,6 +121,91 @@ app.post('/event', (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Secure endpoint to save Razorpay keys in server memory (not broadcasted via SSE)
+app.post('/api/save-razorpay-keys', (req, res) => {
+  try {
+    const { keyId, keySecret } = req.body;
+    
+    // Store securely in server settings only (not in broadcasted state.settings)
+    // We keep it in state.serverSecrets so it saves to disk but is never broadcasted to frontend!
+    state.serverSecrets = {
+      ...state.serverSecrets,
+      razorpayKeyId: keyId,
+      razorpayKeySecret: keySecret
+    };
+    saveState();
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Secure endpoint to create a dynamic locked Razorpay Payment Link
+app.post('/api/create-payment-link', (req, res) => {
+  try {
+    const { amount, receipt } = req.body;
+    const keyId = state.serverSecrets?.razorpayKeyId;
+    const keySecret = state.serverSecrets?.razorpayKeySecret;
+
+    if (!keyId || !keySecret) {
+      return res.status(400).json({ error: 'Razorpay API keys are not configured by the owner.' });
+    }
+
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    
+    const requestData = JSON.stringify({
+      amount: Math.round(amount * 100), // Razorpay expects paise
+      currency: 'INR',
+      accept_partial: false,
+      reference_id: receipt,
+      description: `Payment for Order ${receipt}`,
+      reminder_enable: false
+    });
+
+    const options = {
+      hostname: 'api.razorpay.com',
+      port: 443,
+      path: '/v1/payment_links',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${auth}`,
+        'Content-Length': requestData.length
+      }
+    };
+
+    const razorpayReq = https.request(options, (razorpayRes) => {
+      let data = '';
+      razorpayRes.on('data', (chunk) => { data += chunk; });
+      razorpayRes.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (razorpayRes.statusCode === 200 && parsed.short_url) {
+            res.json({ link: parsed.short_url });
+          } else {
+            console.error('Razorpay Error:', parsed);
+            res.status(400).json({ error: parsed.error?.description || 'Failed to generate link' });
+          }
+        } catch (e) {
+          res.status(500).json({ error: 'Invalid response from Razorpay' });
+        }
+      });
+    });
+
+    razorpayReq.on('error', (e) => {
+      console.error('Razorpay Request Error:', e);
+      res.status(500).json({ error: 'Network error communicating with Razorpay' });
+    });
+
+    razorpayReq.write(requestData);
+    razorpayReq.end();
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

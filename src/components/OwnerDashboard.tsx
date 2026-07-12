@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Order, TableOccupancy } from '../types';
 import { useMenu } from '../data/menu';
 import { TrendingUp, DollarSign, Layers, FileText, Search, Filter } from 'lucide-react';
@@ -13,12 +13,39 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const MENU_ITEMS = useMenu();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [razorpayLink, setRazorpayLink] = useState<string>(() => localStorage.getItem('owner_razorpay_link') || '');
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
+  const [saveStatus, setSaveStatus] = useState('');
 
-  const handleRazorpayChange = (val: string) => {
-    setRazorpayLink(val);
-    localStorage.setItem('owner_razorpay_link', val);
+  // Load existing values (Key ID is safe in localStorage, Secret should be write-only but we won't load it for security)
+  useEffect(() => {
+    const savedKeyId = localStorage.getItem('owner_razorpay_key_id');
+    if (savedKeyId) {
+      setRazorpayKeyId(savedKeyId);
+    }
+  }, []);
+
+  const handleSaveKeys = async () => {
+    try {
+      setSaveStatus('Saving...');
+      const response = await fetch('/api/save-razorpay-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyId: razorpayKeyId, keySecret: razorpayKeySecret })
+      });
+      if (response.ok) {
+        localStorage.setItem('owner_razorpay_key_id', razorpayKeyId);
+        setSaveStatus('Keys saved securely!');
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        setSaveStatus('Failed to save.');
+      }
+    } catch (err) {
+      setSaveStatus('Error saving keys.');
+    }
   };
+
+  // Legacy function removed
 
   // WhatsApp state values
   const [waInstance, setWaInstance] = useState<string>(localStorage.getItem('whatsapp_instance') || 'instance_demo');
@@ -166,22 +193,43 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
       </header>
 
       {/* System Settings */}
-      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '250px' }}>
-          <h3 style={{ fontSize: '0.9rem', color: '#cbd5e1', marginBottom: '0.5rem', fontWeight: 700, textTransform: 'uppercase' }}>Razorpay Payment Link (UPI)</h3>
-          <input 
-            type="text" 
-            placeholder="e.g. https://rzp.io/i/your-payment-link" 
-            value={razorpayLink} 
-            onChange={e => handleRazorpayChange(e.target.value)} 
-            style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
-          />
+      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <h3 style={{ fontSize: '1rem', color: '#cbd5e1', margin: 0, fontWeight: 700, textTransform: 'uppercase' }}>Secure Razorpay Integration</h3>
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
+          Enter your Live API Keys below. These will be securely saved on the backend server to dynamically generate fixed-price payment links. Customers will NOT be able to change the bill amount.
+        </p>
+        
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Key ID</label>
+            <input 
+              type="text" 
+              placeholder="rzp_live_xxxxxxxxxxxxxx" 
+              value={razorpayKeyId} 
+              onChange={e => setRazorpayKeyId(e.target.value)} 
+              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+            />
+          </div>
+          <div style={{ flex: 1, minWidth: '200px' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Key Secret (Hidden)</label>
+            <input 
+              type="password" 
+              placeholder="Enter new Key Secret to update" 
+              value={razorpayKeySecret} 
+              onChange={e => setRazorpayKeySecret(e.target.value)} 
+              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+            />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button
+              onClick={handleSaveKeys}
+              style={{ padding: '0.75rem 1.5rem', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              Save Securely
+            </button>
+          </div>
         </div>
-        <div style={{ flex: 2, minWidth: '300px' }}>
-          <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0, marginTop: '1.2rem' }}>
-            This link will be displayed to customers when they choose to <strong>Pay with UPI</strong> on their Digital Table Menu.
-          </p>
-        </div>
+        {saveStatus && <p style={{ margin: 0, fontSize: '0.85rem', color: saveStatus.includes('Error') || saveStatus.includes('Failed') ? 'var(--status-cancelled)' : 'var(--status-ready)' }}>{saveStatus}</p>}
       </div>
 
       {/* Financial Overview Cards */}

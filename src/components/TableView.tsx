@@ -36,6 +36,9 @@ export const TableView: React.FC<TableViewProps> = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [billEmail, setBillEmail] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Cash' | null>(null);
+  const [razorpayLink, setRazorpayLink] = useState<string | null>(null);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showCheckOutSuccess, setShowCheckOutSuccess] = useState(false);
   const [sessionActive, setSessionActive] = useState<boolean>(() => !!sessionStorage.getItem(`table_session_active_${tableId}`));
@@ -152,16 +155,7 @@ export const TableView: React.FC<TableViewProps> = ({
       onCallWaiter('Cash Payment Collection');
       showToast('💵 Waiter notified to collect cash');
     } else {
-      // Simulate UPI success after a delay
-      setTimeout(() => {
-        setPaymentSuccess(true);
-        onCallWaiter('UPI Payment Completed');
-        if (billEmail) {
-          showToast(`📧 Bill PDF sent to ${billEmail}`);
-        } else {
-          showToast('✅ Payment Successful');
-        }
-      }, 2000);
+      // Logic handled dynamically inside JSX below
     }
   };
 
@@ -866,34 +860,29 @@ export const TableView: React.FC<TableViewProps> = ({
               </div>
             ) : paymentMethod === 'UPI' ? (
               <div style={{ textAlign: 'center', padding: '1rem' }}>
-                <p style={{ color: '#cbd5e1', marginBottom: '1rem' }}>UPI Payment Selected</p>
-                
                 {(() => {
-                  const paymentConfig = localStorage.getItem('owner_razorpay_link');
-                  if (paymentConfig && paymentConfig.trim() !== '') {
-                    const totalAmount = tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0);
-                    const formattedAmount = totalAmount % 1 === 0 ? totalAmount.toString() : totalAmount.toFixed(2);
-                    
-                    const isUpiId = paymentConfig.includes('@') && !paymentConfig.startsWith('http');
-                    let formattedLink = '';
-                    let buttonText = '';
-                    
-                    if (isUpiId) {
-                      // Direct UPI deep link strictly locks the amount!
-                      formattedLink = `upi://pay?pa=${paymentConfig.trim()}&pn=Restaurant&am=${formattedAmount}&cu=INR`;
-                      buttonText = `Pay ₹${formattedAmount} via UPI App`;
-                    } else {
-                      // Razorpay Pages (cannot strictly lock amount via URL)
-                      formattedLink = paymentConfig.startsWith('http') ? paymentConfig : `https://${paymentConfig}`;
-                      const separator = formattedLink.includes('?') ? '&' : '?';
-                      formattedLink = `${formattedLink}${separator}amount=${formattedAmount}`;
-                      buttonText = `Pay ₹${formattedAmount} via Razorpay`;
-                    }
-                    
+                  const totalAmount = tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0);
+                  const formattedAmount = totalAmount % 1 === 0 ? totalAmount.toString() : totalAmount.toFixed(2);
+                  
+                  if (paymentLinkError) {
+                    return (
+                      <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
+                        <p style={{ margin: 0 }}>{paymentLinkError}</p>
+                        <button 
+                          onClick={() => setPaymentMethod(null)} 
+                          style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px' }}
+                        >
+                          Go Back
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  if (razorpayLink) {
                     return (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', marginTop: '1rem' }}>
                         <a 
-                          href={formattedLink} 
+                          href={razorpayLink} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           onClick={() => {
@@ -912,17 +901,57 @@ export const TableView: React.FC<TableViewProps> = ({
                             display: 'inline-block'
                           }}
                         >
-                          {buttonText}
+                          Pay ₹{formattedAmount} via Razorpay
                         </a>
-                        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-                          {isUpiId ? 'This will securely open Google Pay, PhonePe, or Paytm with the exact bill amount locked.' : 'Click the button above to pay securely. This window will automatically update once you click.'}
+                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', maxWidth: '300px', margin: '0 auto' }}>
+                          This secure payment link has locked the exact bill amount. This window will automatically update once you click.
                         </p>
                       </div>
                     );
                   }
                   
                   return (
-                    <div style={{ width: '40px', height: '40px', border: '3px solid rgba(14, 165, 233, 0.2)', borderTopColor: '#0ea5e9', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div>
+                    <div style={{ marginTop: '1rem' }}>
+                      <button
+                        onClick={async () => {
+                          setIsGeneratingLink(true);
+                          setPaymentLinkError(null);
+                          try {
+                            const res = await fetch('/api/create-payment-link', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ amount: totalAmount, receipt: `TBL-${tableId}-${Date.now()}` })
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.link) {
+                              setRazorpayLink(data.link);
+                            } else {
+                              setPaymentLinkError(data.error || 'Failed to generate link');
+                            }
+                          } catch (err) {
+                            setPaymentLinkError('Network error connecting to payment server');
+                          } finally {
+                            setIsGeneratingLink(false);
+                          }
+                        }}
+                        disabled={isGeneratingLink}
+                        style={{
+                          background: isGeneratingLink ? '#475569' : '#0ea5e9',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '0.75rem 1.5rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          cursor: isGeneratingLink ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          margin: '0 auto'
+                        }}
+                      >
+                        {isGeneratingLink ? 'Securing Link...' : 'Generate Secure Link'}
+                      </button>
+                    </div>
                   );
                 })()}
               </div>
