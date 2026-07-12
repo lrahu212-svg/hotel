@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import type { Order, OrderItem, OrderStatus, ServiceRequest, BroadcastEvent, TableOccupancy } from './types';
+import React, { useEffect, useState } from 'react';
+import type { Order, OrderItem, OrderStatus, ServiceRequest, TableOccupancy } from './types';
 import { Portal } from './components/Portal';
 import { TableView } from './components/TableView';
 import { KitchenView } from './components/KitchenView';
@@ -37,7 +37,7 @@ export const App: React.FC = () => {
     }
     return getInitialOccupancy();
   });
-  const channelRef = useRef<BroadcastChannel | null>(null);
+
 
   // Parse path client-side
   const [path, setPath] = useState<string>(window.location.pathname);

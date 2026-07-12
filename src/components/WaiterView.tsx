@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { Order, ServiceRequest, TableOccupancy, OrderItem } from '../types';
+import type { Order, ServiceRequest, TableOccupancy, OrderItem, OrderStatus } from '../types';
 import { ConciergeBell, Check, Award, Layers, Users, Volume2, VolumeX, LogOut, Info, User } from 'lucide-react';
 import { TableView } from './TableView';
 
