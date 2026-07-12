@@ -266,7 +266,7 @@ app.get('/api/check-payment-status', (req, res) => {
 });
 
 // Fallback to index.html for React router
-app.get('/*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
