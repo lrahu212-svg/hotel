@@ -915,7 +915,7 @@ export const TableView: React.FC<TableViewProps> = ({
                               const data = await res.json();
                               if (res.ok && data.status === 'paid') {
                                 setPaymentSuccess(true);
-                                onCallWaiter('UPI Payment Verified and Completed');
+                                onCallWaiter('UPI Payment Completed');
                               } else if (res.ok) {
                                 setPaymentLinkError(`Status: ${data.status}. Please complete the payment first.`);
                               } else {
