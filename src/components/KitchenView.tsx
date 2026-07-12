@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Order, OrderStatus } from '../types';
-import { Clock, Printer } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { useMenu } from '../data/menu';
 
 interface KitchenConfig {
