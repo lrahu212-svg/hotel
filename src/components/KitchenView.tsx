@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { Order, OrderStatus } from '../types';
 import { Clock } from 'lucide-react';
 import { useMenu } from '../data/menu';
@@ -19,11 +19,13 @@ interface KitchenViewProps {
 export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onUpdateStatus, onUpdateItemStatus }) => {
   const MENU_ITEMS = useMenu();
   const [soundEnabled] = useState<boolean>(true);
-  const [lastOrderCount, setLastOrderCount] = useState<number>(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState<number>(0);
   const [focusedOrderIndex, setFocusedOrderIndex] = useState<number>(0);
   const [isNavigatingItems, setIsNavigatingItems] = useState<boolean>(false);
   const [openedViaNumber, setOpenedViaNumber] = useState<boolean>(false);
+
+  const isInitialLoad = useRef(true);
+  const knownPendingIds = useRef<Set<string>>(new Set());
 
   // Load Kitchen Display settings from Reception Configs
   const savedConfigs = localStorage.getItem('hotel_kitchen_configs');
@@ -75,25 +77,33 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
 
   // Play synthetic chime when a new order arrives and auto-print if configured
   useEffect(() => {
-    const pendingCount = stationOrders.filter(o => o.status === 'Pending').length;
-    if (pendingCount > lastOrderCount) {
+    const pendingOrders = stationOrders.filter(o => o.status === 'Pending');
+    
+    if (isInitialLoad.current) {
+      pendingOrders.forEach(o => knownPendingIds.current.add(o.id));
+      isInitialLoad.current = false;
+      return;
+    }
+
+    const newPendingOrders = pendingOrders.filter(o => !knownPendingIds.current.has(o.id));
+
+    if (newPendingOrders.length > 0) {
+      newPendingOrders.forEach(o => knownPendingIds.current.add(o.id));
+
       if (soundEnabled) {
         playChime();
       }
       
       const kitchenMode = localStorage.getItem('hotel_kitchen_mode');
       if (kitchenMode === 'printer') {
-        const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
-        if (pendingOrders.length > 0) {
-          // Force it to the end of the event loop to ensure DOM is ready
-          setTimeout(() => {
-            printTicket(pendingOrders[0]);
-          }, 500);
-        }
+        const orderToPrint = newPendingOrders.sort((a, b) => b.timestamp - a.timestamp)[0];
+        // Force it to the end of the event loop to ensure DOM is ready
+        setTimeout(() => {
+          printTicket(orderToPrint);
+        }, 500);
       }
     }
-    setLastOrderCount(pendingCount);
-  }, [orders, soundEnabled, kitchenId, stationOrders, lastOrderCount]);
+  }, [orders, soundEnabled, stationOrders]);
 
   // Keyboard shortcut to select orders / navigate main display
   useEffect(() => {
