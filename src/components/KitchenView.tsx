@@ -85,7 +85,10 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       if (kitchenMode === 'printer') {
         const pendingOrders = stationOrders.filter(o => o.status === 'Pending').sort((a, b) => b.timestamp - a.timestamp);
         if (pendingOrders.length > 0) {
-          printTicket(pendingOrders[0]);
+          // Force it to the end of the event loop to ensure DOM is ready
+          setTimeout(() => {
+            printTicket(pendingOrders[0]);
+          }, 500);
         }
       }
     }
