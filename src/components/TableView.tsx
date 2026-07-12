@@ -8,7 +8,7 @@ interface TableViewProps {
   occupancy: TableOccupancy;
   orders: Order[];
   requests: ServiceRequest[];
-  onCheckIn: (name: string, guests: number, openedBy?: 'Customer' | 'Waiter') => void;
+  onCheckIn: (name: string, guests: number, openedBy?: 'Customer' | 'Waiter', phone?: string) => void;
   onCheckOut: () => void;
   onPlaceOrder: (items: OrderItem[]) => void;
   onCallWaiter: (type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed') => void;
@@ -245,15 +245,30 @@ export const TableView: React.FC<TableViewProps> = ({
     if (!custName.trim()) return;
 
     if (occupancy.occupied) {
-      // If the Waiter already opened the table (or they just refreshed), let them in!
-      // Re-joining existing session
-      sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
-      setSessionActive(true);
-      showToast('👋 Welcome to your table!');
+      if (occupancy.openedBy === 'Waiter') {
+        // Customer is claiming a table that was opened by a waiter
+        onCheckIn(custName, occupancy.guestsCount || 1, 'Customer', phone.trim());
+        sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
+        setSessionActive(true);
+        showToast('👋 Welcome! Your table is ready.');
+        return;
+      }
+
+      const isNameMatch = occupancy.customerName?.toLowerCase() === custName.trim().toLowerCase();
+      const isPhoneMatch = (!occupancy.phone && !phone.trim()) || (occupancy.phone === phone.trim());
+
+      if (isNameMatch && isPhoneMatch) {
+        // Re-joining existing session
+        sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
+        setSessionActive(true);
+        showToast('👋 Welcome back to your table!');
+      } else {
+        showToast('⚠️ Table is already occupied. Please use the exact Name and Phone you registered with, or ask a waiter.');
+      }
       return;
     }
 
-    onCheckIn(custName, 1, 'Customer');
+    onCheckIn(custName, 1, 'Customer', phone.trim());
     
     // Track session in tab-specific storage
     sessionStorage.setItem(`table_session_active_${tableId}`, 'true');

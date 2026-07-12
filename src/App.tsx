@@ -180,7 +180,8 @@ export const App: React.FC = () => {
                   customerName: msg.customerName,
                   guestsCount: msg.guestsCount,
                   checkInTime: Date.now(),
-                  openedBy: msg.openedBy || 'Customer'
+                  openedBy: msg.openedBy || 'Customer',
+                  phone: msg.phone
                 }
               };
               localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
@@ -331,7 +332,7 @@ export const App: React.FC = () => {
     handleUpdateOrderStatus(orderId, 'Served', servedBy);
   };
 
-  const handleTableCheckIn = (tableId: string, customerName: string, guestsCount: number, openedBy: 'Customer' | 'Waiter' = 'Customer') => {
+  const handleTableCheckIn = (tableId: string, customerName: string, guestsCount: number, openedBy: 'Customer' | 'Waiter' = 'Customer', phone?: string) => {
     setTablesOccupancy(prev => {
       const updated = {
         ...prev,
@@ -340,13 +341,14 @@ export const App: React.FC = () => {
           customerName,
           guestsCount,
           checkInTime: Date.now(),
-          openedBy
+          openedBy,
+          phone
         }
       };
       localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
       return updated;
     });
-    postSyncEvent({ type: 'TABLE_CHECK_IN', tableId, customerName, guestsCount, openedBy });
+    postSyncEvent({ type: 'TABLE_CHECK_IN', tableId, customerName, guestsCount, openedBy, phone });
   };
 
   const handleTableCheckOut = (tableId: string, paymentMethod?: 'Cash' | 'UPI') => {
@@ -409,7 +411,7 @@ export const App: React.FC = () => {
             occupancy={tablesOccupancy[tableId] || { occupied: false }}
             orders={orders}
             requests={requests}
-            onCheckIn={(name, guests) => handleTableCheckIn(tableId, name, guests)}
+            onCheckIn={(name, guests, openedBy, phone) => handleTableCheckIn(tableId, name, guests, openedBy, phone)}
             onCheckOut={() => handleTableCheckOut(tableId)}
             onPlaceOrder={(items) => handlePlaceOrder(tableId, items)}
             onCallWaiter={(type) => handleCallWaiter(tableId, type)}

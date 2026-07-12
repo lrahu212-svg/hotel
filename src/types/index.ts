@@ -35,6 +35,7 @@ export interface TableOccupancy {
   guestsCount?: number;
   checkInTime?: number;
   openedBy?: 'Customer' | 'Waiter';
+  phone?: string;
 }
 
 // BroadcastChannel event message definitions
@@ -44,7 +45,7 @@ export type BroadcastEvent =
   | { type: 'UPDATE_ORDER_ITEM_STATUS'; orderId: string; itemIndex: number; status: OrderStatus }
   | { type: 'NEW_SERVICE_REQUEST'; request: ServiceRequest }
   | { type: 'RESOLVE_SERVICE_REQUEST'; requestId: string; resolvedBy?: string }
-  | { type: 'TABLE_CHECK_IN'; tableId: string; customerName: string; guestsCount: number; openedBy?: 'Customer' | 'Waiter' }
+  | { type: 'TABLE_CHECK_IN'; tableId: string; customerName: string; guestsCount: number; openedBy?: 'Customer' | 'Waiter'; phone?: string }
   | { type: 'TABLE_CHECK_OUT'; tableId: string; paymentMethod?: 'Cash' | 'UPI' }
   | { type: 'SYNC_STATE'; orders: Order[]; requests: ServiceRequest[]; tablesOccupancy: { [tableId: string]: TableOccupancy } }
   | { type: 'REQUEST_SYNC' };

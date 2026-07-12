@@ -61,6 +61,32 @@
       "totalAmount": 10.25,
       "customerName": "Rahul",
       "servedBy": "rahul"
+    },
+    {
+      "id": "ord_2c5wt9yyq",
+      "tableId": "1",
+      "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Ready"
+        },
+        {
+          "menuItemId": "c2",
+          "quantity": 1,
+          "notes": "",
+          "name": "Double Espresso",
+          "price": 3.75,
+          "status": "Ready"
+        }
+      ],
+      "status": "Ready",
+      "timestamp": 1783872472717,
+      "totalAmount": 6.75,
+      "customerName": "fgtyt"
     }
   ],
   "requests": [
@@ -91,15 +117,39 @@
       "type": "UPI Payment Completed",
       "status": "Pending",
       "timestamp": 1783871044383
+    },
+    {
+      "id": "req_fopn6g7mc",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783871806784
+    },
+    {
+      "id": "req_k38950ra6",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783871874056
+    },
+    {
+      "id": "req_6dkha6600",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783872476915
+    },
+    {
+      "id": "req_88mp1q3k3",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783872485033
     }
   ],
   "tablesOccupancy": {
     "1": {
-      "occupied": true,
-      "customerName": "Rahul",
-      "guestsCount": 1,
-      "checkInTime": 1783792574658,
-      "openedBy": "Customer"
+      "occupied": false
     }
   },
   "serverSecrets": {
