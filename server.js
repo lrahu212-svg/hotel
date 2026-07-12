@@ -163,6 +163,11 @@ app.post('/api/create-payment-link', (req, res) => {
       accept_partial: false,
       reference_id: receipt,
       description: `Payment for Order ${receipt}`,
+      customer: {
+        name: 'Restaurant Customer',
+        email: 'customer@restaurant.local',
+        contact: '+919999999999'
+      },
       reminder_enable: false
     });
 
