@@ -230,22 +230,28 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   };
 
   const printTickets = (ordersToPrint: typeof stationOrders) => {
-    // Ensure ALL old print sections are completely removed so they don't pile up!
-    const oldPrints = document.querySelectorAll('#print-section');
-    oldPrints.forEach(p => p.remove());
+    if (ordersToPrint.length === 0) return;
 
-    const printDiv = document.createElement('div');
-    printDiv.id = 'print-section';
-    printDiv.style.fontFamily = 'monospace';
-    printDiv.style.color = '#000';
-    printDiv.style.padding = '0';
-    printDiv.style.background = '#fff';
+    let currentIndex = 0;
 
-    let html = '';
+    const printNext = () => {
+      if (currentIndex >= ordersToPrint.length) return;
 
-    ordersToPrint.forEach((order, index) => {
-      html += `
-        <div style="padding: 15px 0; ${index > 0 ? 'border-top: 3px dashed #000; margin-top: 20px;' : ''}">
+      const order = ordersToPrint[currentIndex];
+
+      // Ensure ALL old print sections are completely removed so they don't pile up!
+      const oldPrints = document.querySelectorAll('#print-section');
+      oldPrints.forEach(p => p.remove());
+
+      const printDiv = document.createElement('div');
+      printDiv.id = 'print-section';
+      printDiv.style.fontFamily = 'monospace';
+      printDiv.style.color = '#000';
+      printDiv.style.padding = '0';
+      printDiv.style.background = '#fff';
+
+      printDiv.innerHTML = `
+        <div style="padding: 15px 0;">
           <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
           <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
           <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
@@ -270,21 +276,28 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
           </div>
         </div>
       `;
-    });
 
-    printDiv.innerHTML = html;
-    
-    document.body.appendChild(printDiv);
-    
-    // Slight delay to ensure DOM is updated before printing
-    setTimeout(() => {
-      window.print();
-      // Remove it after the print dialog closes
+      document.body.appendChild(printDiv);
+      
+      // Slight delay to ensure DOM is updated before printing
       setTimeout(() => {
-        const prints = document.querySelectorAll('#print-section');
-        prints.forEach(p => p.remove());
-      }, 1000);
-    }, 100);
+        window.print();
+        // Remove it after the print dialog closes
+        setTimeout(() => {
+          const prints = document.querySelectorAll('#print-section');
+          prints.forEach(p => p.remove());
+
+          // Queue next print job after 3 second delay
+          currentIndex++;
+          if (currentIndex < ordersToPrint.length) {
+            setTimeout(printNext, 3000);
+          }
+        }, 1000);
+      }, 100);
+    };
+
+    // Start the print queue
+    printNext();
   };
 
 
