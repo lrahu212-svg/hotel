@@ -102,10 +102,10 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       
       const kitchenMode = localStorage.getItem('hotel_kitchen_mode');
       if (kitchenMode === 'printer') {
-        const orderToPrint = newPendingOrders.sort((a, b) => b.timestamp - a.timestamp)[0];
+        const ordersToPrint = newPendingOrders.sort((a, b) => b.timestamp - a.timestamp);
         // Force it to the end of the event loop to ensure DOM is ready
         setTimeout(() => {
-          printTicket(orderToPrint);
+          printTickets(ordersToPrint);
         }, 500);
       }
     }
@@ -229,7 +229,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     }
   };
 
-  const printTicket = (order: typeof stationOrders[0]) => {
+  const printTickets = (ordersToPrint: typeof stationOrders) => {
     // Ensure ALL old print sections are completely removed so they don't pile up!
     const oldPrints = document.querySelectorAll('#print-section');
     oldPrints.forEach(p => p.remove());
@@ -238,33 +238,41 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     printDiv.id = 'print-section';
     printDiv.style.fontFamily = 'monospace';
     printDiv.style.color = '#000';
-    printDiv.style.padding = '20px';
+    printDiv.style.padding = '0';
     printDiv.style.background = '#fff';
 
-    printDiv.innerHTML = `
-      <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
-      <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
-      <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
-        ${new Date(order.timestamp).toLocaleString()}
-      </div>
-      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
-        <span style="width: 30px;">Qty</span>
-        <span style="flex: 1;">Item</span>
-      </div>
-      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-      ${order.filteredItems.map(item => `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
-          <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
-          <span style="flex: 1;">${item.name}</span>
+    let html = '';
+
+    ordersToPrint.forEach((order, index) => {
+      html += `
+        <div style="padding: 15px 0; ${index > 0 ? 'border-top: 3px dashed #000; margin-top: 20px;' : ''}">
+          <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
+          <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
+          <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
+            ${new Date(order.timestamp).toLocaleString()}
+          </div>
+          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
+            <span style="width: 30px;">Qty</span>
+            <span style="flex: 1;">Item</span>
+          </div>
+          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+          ${order.filteredItems.map(item => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
+              <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
+              <span style="flex: 1;">${item.name}</span>
+            </div>
+            ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
+          `).join('')}
+          <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+          <div style="text-align: center; margin-top: 20px; color: #000;">
+            -- End of Ticket --
+          </div>
         </div>
-        ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
-      `).join('')}
-      <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-      <div style="text-align: center; margin-top: 20px; color: #000;">
-        -- End of Ticket --
-      </div>
-    `;
+      `;
+    });
+
+    printDiv.innerHTML = html;
     
     document.body.appendChild(printDiv);
     
