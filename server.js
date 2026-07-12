@@ -148,8 +148,8 @@ app.post('/api/save-razorpay-keys', (req, res) => {
 app.post('/api/create-payment-link', (req, res) => {
   try {
     const { amount, receipt } = req.body;
-    const keyId = state.serverSecrets?.razorpayKeyId;
-    const keySecret = state.serverSecrets?.razorpayKeySecret;
+    const keyId = process.env.RAZORPAY_KEY_ID || state.serverSecrets?.razorpayKeyId;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || state.serverSecrets?.razorpayKeySecret;
 
     if (!keyId || !keySecret) {
       return res.status(400).json({ error: 'Razorpay API keys are not configured by the owner.' });
