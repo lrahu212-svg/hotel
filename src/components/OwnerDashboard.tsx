@@ -7,9 +7,10 @@ interface OwnerDashboardProps {
   orders: Order[];
   tablesOccupancy: { [tableId: string]: TableOccupancy };
   onCheckOutTable: (tableId: string) => void;
+  onResetAllData?: () => void;
 }
 
-export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOccupancy, onCheckOutTable }) => {
+export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOccupancy, onCheckOutTable, onResetAllData }) => {
   const MENU_ITEMS = useMenu();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -187,9 +188,33 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
           </div>
         </div>
 
-        <span style={{ fontSize: '0.8rem', color: '#64748b', background: 'rgba(255,255,255,0.02)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-          Session Audit: {orders.length} total orders recorded
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ fontSize: '0.8rem', color: '#64748b', background: 'rgba(255,255,255,0.02)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            Session Audit: {orders.length} total orders recorded
+          </span>
+          <button
+            onClick={() => {
+              if (window.confirm('Are you absolutely sure you want to completely clear all data? This will erase all orders, requests, and revenue history. This action cannot be undone!')) {
+                onResetAllData?.();
+              }
+            }}
+            style={{
+              background: 'rgba(239, 68, 68, 0.15)',
+              color: '#ef4444',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              padding: '0.5rem 1rem',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+          >
+            RESET ALL DATA
+          </button>
+        </div>
       </header>
 
       {/* System Settings */}

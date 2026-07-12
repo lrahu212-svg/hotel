@@ -380,6 +380,16 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleResetAllData = () => {
+    setOrders([]);
+    setRequests([]);
+    setTablesOccupancy(getInitialOccupancy());
+    localStorage.removeItem('hotel_orders');
+    localStorage.removeItem('hotel_requests');
+    localStorage.removeItem('hotel_tables_occupancy');
+    postSyncEvent({ type: 'SYNC_STATE', orders: [], requests: [], tablesOccupancy: getInitialOccupancy() });
+  };
+
   const kitchenMatchForNavbar = path.match(/^\/kitchen\/(\d+)$/);
   let navbarKitchenInfo = '';
   if (kitchenMatchForNavbar) {
@@ -461,6 +471,7 @@ export const App: React.FC = () => {
           orders={orders}
           tablesOccupancy={tablesOccupancy}
           onCheckOutTable={handleTableCheckOut}
+          onResetAllData={handleResetAllData}
         />
       );
     }
