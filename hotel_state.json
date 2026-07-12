@@ -95,8 +95,5 @@
       "openedBy": "Customer"
     }
   },
-  "serverSecrets": {
-    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",
-    "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
-  }
+  "serverSecrets": {}
 }
