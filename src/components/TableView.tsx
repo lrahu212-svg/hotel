@@ -37,6 +37,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const [billEmail, setBillEmail] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Cash' | null>(null);
   const [razorpayLink, setRazorpayLink] = useState<string | null>(null);
+  const [razorpayLinkId, setRazorpayLinkId] = useState<string | null>(null);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
   const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -885,10 +886,6 @@ export const TableView: React.FC<TableViewProps> = ({
                           href={razorpayLink} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          onClick={() => {
-                            setTimeout(() => setPaymentSuccess(true), 3000);
-                            onCallWaiter('UPI Payment Completed');
-                          }}
                           style={{
                             background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
                             color: '#fff',
@@ -898,14 +895,51 @@ export const TableView: React.FC<TableViewProps> = ({
                             fontWeight: 800,
                             fontSize: '1.2rem',
                             boxShadow: '0 4px 15px rgba(14, 165, 233, 0.3)',
-                            display: 'inline-block'
+                            display: 'inline-block',
+                            textAlign: 'center'
                           }}
                         >
-                          Pay ₹{formattedAmount} via Razorpay
+                          1. Pay ₹{formattedAmount} via Razorpay
                         </a>
-                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', maxWidth: '300px', margin: '0 auto' }}>
-                          This secure payment link has locked the exact bill amount. This window will automatically update once you click.
+                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', maxWidth: '300px', margin: '0 auto', textAlign: 'center' }}>
+                          After you finish the payment in the new tab, come back here and click verify.
                         </p>
+                        
+                        <button
+                          onClick={async () => {
+                            if (!razorpayLinkId) return;
+                            setIsGeneratingLink(true);
+                            setPaymentLinkError(null);
+                            try {
+                              const res = await fetch(`/api/check-payment-status?id=${razorpayLinkId}`);
+                              const data = await res.json();
+                              if (res.ok && data.status === 'paid') {
+                                setPaymentSuccess(true);
+                                onCallWaiter('UPI Payment Verified and Completed');
+                              } else if (res.ok) {
+                                setPaymentLinkError(`Status: ${data.status}. Please complete the payment first.`);
+                              } else {
+                                setPaymentLinkError(data.error || 'Verification failed');
+                              }
+                            } catch (err) {
+                              setPaymentLinkError('Network error checking payment status');
+                            } finally {
+                              setIsGeneratingLink(false);
+                            }
+                          }}
+                          disabled={isGeneratingLink}
+                          style={{
+                            background: isGeneratingLink ? '#475569' : '#10b981',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '0.75rem 1.5rem',
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            cursor: isGeneratingLink ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {isGeneratingLink ? 'Verifying...' : '2. I have paid, Verify Now'}
+                        </button>
                       </div>
                     );
                   }
@@ -925,6 +959,7 @@ export const TableView: React.FC<TableViewProps> = ({
                             const data = await res.json();
                             if (res.ok && data.link) {
                               setRazorpayLink(data.link);
+                              setRazorpayLinkId(data.id);
                             } else {
                               setPaymentLinkError(data.error || 'Failed to generate link');
                             }

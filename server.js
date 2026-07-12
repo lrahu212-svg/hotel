@@ -189,7 +189,7 @@ app.post('/api/create-payment-link', (req, res) => {
         try {
           const parsed = JSON.parse(data);
           if (razorpayRes.statusCode === 200 && parsed.short_url) {
-            res.json({ link: parsed.short_url });
+            res.json({ link: parsed.short_url, id: parsed.id });
           } else {
             console.error('Razorpay Error:', parsed);
             res.status(400).json({ error: parsed.error?.description || 'Failed to generate link' });
@@ -217,8 +217,56 @@ app.post('/api/create-payment-link', (req, res) => {
 const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));
 
-// Fallback for React Router (catch-all)
-app.use((req, res) => {
+// Endpoint to check payment link status
+app.get('/api/check-payment-status', (req, res) => {
+  try {
+    const { id } = req.query;
+    const keyId = process.env.RAZORPAY_KEY_ID || state.serverSecrets?.razorpayKeyId;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || state.serverSecrets?.razorpayKeySecret;
+
+    if (!id || !keyId || !keySecret) {
+      return res.status(400).json({ error: 'Missing required parameters or API keys' });
+    }
+
+    const auth = Buffer.from(`${keyId}:${keySecret}`).toString('base64');
+    
+    const options = {
+      hostname: 'api.razorpay.com',
+      port: 443,
+      path: `/v1/payment_links/${id}`,
+      method: 'GET',
+      headers: { 'Authorization': `Basic ${auth}` }
+    };
+
+    const razorpayReq = https.request(options, (razorpayRes) => {
+      let data = '';
+      razorpayRes.on('data', (chunk) => { data += chunk; });
+      razorpayRes.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (razorpayRes.statusCode === 200) {
+            res.json({ status: parsed.status }); // status is usually 'created', 'paid', 'cancelled'
+          } else {
+            res.status(400).json({ error: parsed.error?.description || 'Failed to check status' });
+          }
+        } catch (e) {
+          res.status(500).json({ error: 'Invalid response from Razorpay' });
+        }
+      });
+    });
+
+    razorpayReq.on('error', (e) => {
+      res.status(500).json({ error: 'Network error checking payment status' });
+    });
+
+    razorpayReq.end();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fallback to index.html for React router
+app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

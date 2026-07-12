@@ -26,6 +26,41 @@
       "totalAmount": 6.75,
       "customerName": "Rahul",
       "servedBy": "Rahul"
+    },
+    {
+      "id": "ord_wz4430g0i",
+      "tableId": "1",
+      "items": [
+        {
+          "menuItemId": "c2",
+          "quantity": 1,
+          "notes": "",
+          "name": "Double Espresso",
+          "price": 3.75,
+          "status": "Served"
+        },
+        {
+          "menuItemId": "c3",
+          "quantity": 1,
+          "notes": "",
+          "name": "Americano",
+          "price": 3.5,
+          "status": "Served"
+        },
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Served"
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1783870271042,
+      "totalAmount": 10.25,
+      "customerName": "Rahul",
+      "servedBy": "rahul"
     }
   ],
   "requests": [
@@ -42,6 +77,13 @@
       "type": "UPI Payment Completed",
       "status": "Pending",
       "timestamp": 1783792732128
+    },
+    {
+      "id": "req_gj91hhnfx",
+      "tableId": "1",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783870748269
     }
   ],
   "tablesOccupancy": {
@@ -52,5 +94,9 @@
       "checkInTime": 1783792574658,
       "openedBy": "Customer"
     }
+  },
+  "serverSecrets": {
+    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",
+    "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
   }
 }
