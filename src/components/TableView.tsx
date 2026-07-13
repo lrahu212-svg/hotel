@@ -31,7 +31,6 @@ export const TableView: React.FC<TableViewProps> = ({
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
   const [activeTab, setActiveTab] = useState<'menu' | 'history'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
-  const [smsNotification, setSmsNotification] = useState<string | null>(null);
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [billEmail, setBillEmail] = useState('');
@@ -284,58 +283,6 @@ export const TableView: React.FC<TableViewProps> = ({
     // Track session in tab-specific storage
     sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
     setSessionActive(true);
-    
-    const targetNumber = phone.trim();
-    
-    if (targetNumber) {
-      const cleanPhone = targetNumber.replace(/[^0-9]/g, '');
-      const hotelNum = localStorage.getItem('whatsapp_number') || '9686652201';
-      const cleanHotelNum = hotelNum.replace(/[^0-9]/g, '');
-      const messageBody = `👋 Welcome to Dash Hotel! Your digital dining session at Table ${tableId} is now active. Enjoy your meal!`;
-      
-      const instanceId = localStorage.getItem('whatsapp_instance') || 'instance_demo';
-      const token = localStorage.getItem('whatsapp_token') || 'token_demo';
-
-      // Dispatch WhatsApp message directly in the background (no window redirect)
-      fetch(`https://api.ultramsg.com/${instanceId}/messages/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          token: token,
-          to: cleanPhone,
-          body: messageBody,
-          priority: '10'
-        })
-      })
-      .then(res => {
-        if (!res.ok) {
-          return res.json().then(errData => {
-            throw new Error(errData.message || errData.error || `HTTP Status ${res.status}`);
-          }).catch(() => {
-            throw new Error(`HTTP Status ${res.status}`);
-          });
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.sent === 'true' || data.success || data.id) {
-          showToast('💬 WhatsApp greeting sent directly!');
-          setSmsNotification(`✉️ [WhatsApp API Direct]: Welcome message sent successfully from Hotline (+${cleanHotelNum}) to ${targetNumber}.`);
-        } else {
-          throw new Error(data.error || 'Gateway accepted request but did not send');
-        }
-      })
-      .catch(err => {
-        console.warn('Background WhatsApp API dispatch encountered error:', err);
-        setSmsNotification(`welcome to hotel`);
-      });
-    } else {
-      // Simulate sending message to the entered phone number
-      const mockNumber = phone.trim() || `+1 (555) 019-${1000 + Math.floor(Math.random() * 9000)}`;
-      setSmsNotification(`✉️ [Simulated SMS to ${mockNumber}]: Hello ${custName}, welcome to Dash Hotel! Your dining session at Table ${tableId} is active.`);
-    }
-
-    setTimeout(() => setSmsNotification(null), 8500);
     showToast('👋 Welcome to Dash Hotel!');
   };
 
@@ -484,31 +431,7 @@ export const TableView: React.FC<TableViewProps> = ({
         </div>
       )}
 
-      {smsNotification && (
-        <div style={{
-          position: 'fixed',
-          top: '90px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid var(--accent-secondary)',
-          color: '#cbd5e1',
-          padding: '1rem 2rem',
-          borderRadius: '12px',
-          boxShadow: '0 10px 25px -5px rgba(14, 165, 233, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          fontWeight: 500,
-          fontSize: '0.85rem',
-          animation: 'fadeIn 0.2s ease-out',
-          maxWidth: '90%'
-        }}>
-          <Info size={18} color="var(--accent-secondary)" />
-          {smsNotification}
-        </div>
-      )}
+
 
       {/* Header Bar */}
       <header className="glass-panel customer-header">

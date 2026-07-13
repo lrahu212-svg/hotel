@@ -67,10 +67,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
 
   // Legacy function removed
 
-  // WhatsApp state values
-  const [waInstance, setWaInstance] = useState<string>(localStorage.getItem('whatsapp_instance') || 'instance_demo');
-  const [waToken, setWaToken] = useState<string>(localStorage.getItem('whatsapp_token') || 'token_demo');
-  const [waNumber, setWaNumber] = useState<string>(localStorage.getItem('whatsapp_number') || '9686652201');
+
   
   // Table Configuration count
   const [ownerTablesCount, setOwnerTablesCount] = useState<number>(parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
@@ -513,56 +510,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         </div>
       </div>
 
-      {/* WhatsApp SMS API Configuration */}
-      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          💬 WhatsApp Business API Configuration
-        </h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-          Configure your WhatsApp Gateway settings (e.g. UltraMsg / Wassenger) below to send background welcoming messages directly from the Hotel hotline to customers without redirecting them.
-        </p>
-        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 250px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instance ID</label>
-            <input
-              type="text"
-              placeholder="e.g. instance12345"
-              value={waInstance}
-              onChange={(e) => {
-                localStorage.setItem('whatsapp_instance', e.target.value);
-                setWaInstance(e.target.value);
-              }}
-              style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
-            />
-          </div>
-          <div style={{ flex: '1 1 250px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>API Token</label>
-            <input
-              type="password"
-              placeholder="Your API Access Token"
-              value={waToken}
-              onChange={(e) => {
-                localStorage.setItem('whatsapp_token', e.target.value);
-                setWaToken(e.target.value);
-              }}
-              style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
-            />
-          </div>
-          <div style={{ flex: '1 1 200px' }}>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Hotel Hotline Number</label>
-            <input
-              type="text"
-              placeholder="9686652201"
-              value={waNumber}
-              onChange={(e) => {
-                localStorage.setItem('whatsapp_number', e.target.value);
-                setWaNumber(e.target.value);
-              }}
-              style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
-            />
-          </div>
-        </div>
-      </div>
+
 
       {/* System Configurations (N Tables settings) */}
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
