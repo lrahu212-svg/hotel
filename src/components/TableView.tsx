@@ -44,30 +44,32 @@ export const TableView: React.FC<TableViewProps> = ({
   const [showCheckOutSuccess, setShowCheckOutSuccess] = useState(false);
   const [sessionActive, setSessionActive] = useState<boolean>(() => !!sessionStorage.getItem(`table_session_active_${tableId}`));
 
-  // Auto-verify payment when user returns to the tab
+  // Auto-verify payment by polling in the background
   useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && razorpayLinkId && !paymentSuccess) {
-        setIsGeneratingLink(true);
-        try {
-          const res = await fetch(`/api/check-payment-status?id=${razorpayLinkId}`);
-          const data = await res.json();
-          if (res.ok && data.status === 'paid') {
-            setPaymentSuccess(true);
-            setPaymentLinkError(null);
-            onCallWaiter('UPI Payment Completed');
-          } else if (res.ok) {
-            setPaymentLinkError('Payment Failed or Not Completed.');
-          }
-        } catch (err) {
-          // ignore
-        } finally {
-          setIsGeneratingLink(false);
+    if (!razorpayLinkId || paymentSuccess) return;
+
+    const checkPayment = async () => {
+      try {
+        const res = await fetch(`/api/check-payment-status?id=${razorpayLinkId}`);
+        const data = await res.json();
+        if (res.ok && data.status === 'paid') {
+          setPaymentSuccess(true);
+          setPaymentLinkError(null);
+          onCallWaiter('UPI Payment Completed');
+        } else if (res.ok && data.status === 'failed') {
+          setPaymentLinkError('Payment Failed. Please try again.');
         }
+      } catch (err) {
+        // ignore
       }
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    // Run immediately
+    checkPayment();
+
+    // Poll every 3 seconds
+    const interval = setInterval(checkPayment, 3000);
+    return () => clearInterval(interval);
   }, [razorpayLinkId, paymentSuccess, onCallWaiter]);
 
   // Auto-checkout and logout after successful payment
