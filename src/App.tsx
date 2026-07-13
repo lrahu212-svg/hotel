@@ -437,6 +437,8 @@ export const App: React.FC = () => {
     localStorage.removeItem('hotel_tables_occupancy');
     localStorage.removeItem('hotel_registered_waiters');
     localStorage.removeItem('hotel_active_waiters');
+    localStorage.removeItem('owner_razorpay_link');
+    localStorage.removeItem('owner_razorpay_key_id');
     
     // Clear all waiter sessions from local storage
     for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -455,7 +457,7 @@ export const App: React.FC = () => {
       orders: [], 
       requests: [], 
       tablesOccupancy: getInitialOccupancy(),
-      settings: { waiters: [] }
+      settings: { waiters: [], razorpayLink: '', resetAllSettings: true }
     });
   };
 

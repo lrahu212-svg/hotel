@@ -117,7 +117,12 @@ app.post('/event', (req, res) => {
       state.requests = event.requests || [];
       state.tablesOccupancy = event.tablesOccupancy || {};
       if (event.settings) {
-        state.settings = { ...state.settings, ...event.settings };
+        if (event.settings.resetAllSettings) {
+          state.settings = {};
+          delete state.serverSecrets;
+        } else {
+          state.settings = { ...state.settings, ...event.settings };
+        }
       }
     }
 
