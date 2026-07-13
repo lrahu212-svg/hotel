@@ -95,19 +95,7 @@ export const TableView: React.FC<TableViewProps> = ({
     }
   }, [paymentSuccess, onCheckOut, tableId]);
 
-  // Reset local states when table occupancy changes to unoccupied
-  useEffect(() => {
-    if (!occupancy.occupied && !showCheckOutSuccess && !paymentSuccess) {
-      setCart({});
-      setRazorpayLink(null);
-      setRazorpayLinkId(null);
-      setPaymentSuccess(false);
-      setShowCheckOutSuccess(false);
-      setPaymentLinkError(null);
-      sessionStorage.removeItem(`table_session_active_${tableId}`);
-      setSessionActive(false);
-    }
-  }, [occupancy.occupied, showCheckOutSuccess, paymentSuccess, tableId]);
+
 
   // Login inputs
   const [custName, setCustName] = useState<string>('');
@@ -225,41 +213,37 @@ export const TableView: React.FC<TableViewProps> = ({
     }
   };
 
-  // If the table is globally checked out, clear our local session
-  useEffect(() => {
-    if (!occupancy.occupied) {
-      setSessionActive(false);
-    }
-  }, [occupancy.occupied]);
-
   // Clear local state when table is checked out to prevent data leaks for the next customer
   useEffect(() => {
     if (!occupancy.occupied) {
-      if (paymentMethod) {
-        setShowCheckOutSuccess(true);
-        setTimeout(() => {
-          setShowCheckOutSuccess(false);
-          setCart({});
-          setShowPaymentModal(false);
-          setPaymentMethod(null);
-          setPaymentSuccess(false);
-          setActiveTab('menu');
-          setMenuSearch('');
-          setCustName('');
-          setPhone('');
-        }, 3500);
-      } else {
+      const resetAll = () => {
         setCart({});
         setShowPaymentModal(false);
         setPaymentMethod(null);
         setPaymentSuccess(false);
+        setShowCheckOutSuccess(false);
+        setPaymentLinkError(null);
+        setRazorpayLink(null);
+        setRazorpayLinkId(null);
         setActiveTab('menu');
         setMenuSearch('');
         setCustName('');
         setPhone('');
+        sessionStorage.removeItem(`table_session_active_${tableId}`);
+        setSessionActive(false);
+      };
+
+      if (paymentMethod) {
+        setShowCheckOutSuccess(true);
+        const timer = setTimeout(() => {
+          resetAll();
+        }, 5000);
+        return () => clearTimeout(timer);
+      } else {
+        resetAll();
       }
     }
-  }, [occupancy.occupied]);
+  }, [occupancy.occupied, paymentMethod, tableId]);
 
   const handleCheckOut = () => {
     sessionStorage.removeItem(`table_session_active_${tableId}`);
