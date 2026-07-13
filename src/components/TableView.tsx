@@ -78,12 +78,34 @@ export const TableView: React.FC<TableViewProps> = ({
       onCheckOut('UPI');
       
       const timer = setTimeout(() => {
+        // Reset all local session states to ensure the next customer starts completely fresh
+        setCart({});
+        setRazorpayLink(null);
+        setRazorpayLinkId(null);
+        setPaymentSuccess(false);
+        setShowCheckOutSuccess(false);
+        setPaymentLinkError(null);
+        
         sessionStorage.removeItem(`table_session_active_${tableId}`);
         setSessionActive(false);
       }, 5000);
       return () => clearTimeout(timer);
     }
   }, [paymentSuccess, onCheckOut, tableId]);
+
+  // Reset local states when table occupancy changes to unoccupied
+  useEffect(() => {
+    if (!occupancy.occupied) {
+      setCart({});
+      setRazorpayLink(null);
+      setRazorpayLinkId(null);
+      setPaymentSuccess(false);
+      setShowCheckOutSuccess(false);
+      setPaymentLinkError(null);
+      sessionStorage.removeItem(`table_session_active_${tableId}`);
+      setSessionActive(false);
+    }
+  }, [occupancy.occupied, tableId]);
 
   // Login inputs
   const [custName, setCustName] = useState<string>('');
