@@ -181,6 +181,13 @@
       "status": "Resolved",
       "timestamp": 1783922036413,
       "resolvedBy": "RAHUL"
+    },
+    {
+      "id": "req_ljzsx4dwm",
+      "tableId": "2",
+      "type": "UPI Payment Completed",
+      "status": "Pending",
+      "timestamp": 1783922457990
     }
   ],
   "tablesOccupancy": {
@@ -188,11 +195,7 @@
       "occupied": false
     },
     "2": {
-      "occupied": true,
-      "customerName": "ad",
-      "guestsCount": 1,
-      "checkInTime": 1783922103587,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "3": {
       "occupied": false

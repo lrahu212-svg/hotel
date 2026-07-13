@@ -109,9 +109,10 @@ const MenuManagement: React.FC = () => {
 interface ReceptionViewProps {
   onUpdateSettings?: (settings: any) => void;
   orders?: Order[];
+  onResetAllData?: () => void;
 }
 
-export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, orders = [] }) => {
+export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, orders = [], onResetAllData }) => {
   const [activeTab, setActiveTab] = useState<'waiters' | 'menu'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
@@ -425,9 +426,34 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
             Register employees and manage restaurant table assignments
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <button onClick={() => setActiveTab('waiters')} style={{ background: activeTab === 'waiters' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: activeTab === 'waiters' ? '#fff' : '#64748b', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>System Configuration</button>
           <button onClick={() => setActiveTab('menu')} style={{ background: activeTab === 'menu' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: activeTab === 'menu' ? '#fff' : '#64748b', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Menu Management</button>
+          {onResetAllData && (
+            <button 
+              onClick={() => {
+                if (window.confirm('⚠️ WARNING: This will completely reset the entire system, log out all waiters, and clear all tables. Are you sure?')) {
+                  onResetAllData();
+                }
+              }}
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                transition: 'all 0.2s',
+                marginLeft: '0.5rem'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)'}
+            >
+              Reset System
+            </button>
+          )}
         </div>
       </header>
 

@@ -92,6 +92,11 @@ export const App: React.FC = () => {
             if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
             if (msg.settings.kitchenConfigs) localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
             if (msg.settings.razorpayLink !== undefined) localStorage.setItem('owner_razorpay_link', msg.settings.razorpayLink || '');
+            if (msg.settings.waiters !== undefined) {
+              localStorage.setItem('hotel_registered_waiters', JSON.stringify(msg.settings.waiters));
+              localStorage.removeItem('hotel_active_waiters');
+              window.dispatchEvent(new StorageEvent('storage', { key: 'hotel_registered_waiters' }));
+            }
           }
           break;
         }
@@ -152,6 +157,11 @@ export const App: React.FC = () => {
           if (msg.settings.razorpayLink !== undefined) {
             localStorage.setItem('owner_razorpay_link', msg.settings.razorpayLink || '');
             window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
+          }
+          if (msg.settings.waiters !== undefined) {
+            localStorage.setItem('hotel_registered_waiters', JSON.stringify(msg.settings.waiters));
+            localStorage.removeItem('hotel_active_waiters');
+            window.dispatchEvent(new StorageEvent('storage', { key: 'hotel_registered_waiters' }));
           }
           break;
         }
@@ -420,10 +430,28 @@ export const App: React.FC = () => {
     localStorage.removeItem('hotel_orders');
     localStorage.removeItem('hotel_requests');
     localStorage.removeItem('hotel_tables_occupancy');
+    localStorage.removeItem('hotel_registered_waiters');
+    localStorage.removeItem('hotel_active_waiters');
+    
+    // Clear all waiter sessions from local storage
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('waiter_session_')) {
+        localStorage.removeItem(key);
+      }
+    }
+
     setOrders([]);
     setRequests([]);
     setTablesOccupancy(getInitialOccupancy());
-    postSyncEvent({ type: 'SYNC_STATE', orders: [], requests: [], tablesOccupancy: getInitialOccupancy() });
+    
+    postSyncEvent({ 
+      type: 'SYNC_STATE', 
+      orders: [], 
+      requests: [], 
+      tablesOccupancy: getInitialOccupancy(),
+      settings: { waiters: [] }
+    });
   };
 
   const kitchenMatchForNavbar = path.match(/^\/kitchen\/(\d+)$/);
@@ -517,6 +545,7 @@ export const App: React.FC = () => {
         <ReceptionView 
           orders={orders}
           onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
+          onResetAllData={handleResetAllData}
         />
       );
     }
