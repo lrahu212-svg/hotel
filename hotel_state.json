@@ -168,7 +168,7 @@
     "razorpayLink": ""
   },
   "serverSecrets": {
-    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",
+    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6 ",
     "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
   }
 }

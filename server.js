@@ -140,11 +140,11 @@ app.post('/api/save-razorpay-keys', (req, res) => {
     const { keyId, keySecret } = req.body;
     
     // Store securely in server settings only (not in broadcasted state.settings)
-    // We keep it in state.serverSecrets so it saves to disk but is never broadcasted to frontend!
+    // Keep existing secret if the user submitted an empty one
     state.serverSecrets = {
       ...state.serverSecrets,
-      razorpayKeyId: keyId,
-      razorpayKeySecret: keySecret
+      ...(keyId !== undefined && { razorpayKeyId: keyId }),
+      ...(keySecret && keySecret.trim() !== '' && { razorpayKeySecret: keySecret })
     };
     saveState();
     
