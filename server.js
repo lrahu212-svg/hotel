@@ -3,6 +3,8 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import nodemailer from 'nodemailer';
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -287,7 +289,107 @@ app.get('/api/check-payment-status', (req, res) => {
   }
 });
 
+// Save Gmail SMTP credentials securely in server memory
+app.post('/api/save-gmail-config', (req, res) => {
+  try {
+    const { gmailUser, gmailAppPassword } = req.body;
+    state.serverSecrets = {
+      ...state.serverSecrets,
+      ...(gmailUser && gmailUser.trim() !== '' && { gmailUser: gmailUser.trim() }),
+      ...(gmailAppPassword && gmailAppPassword.trim() !== '' && { gmailAppPassword: gmailAppPassword.trim() })
+    };
+    saveState();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Send reservation confirmation email via Gmail SMTP
+app.post('/api/send-reservation-email', async (req, res) => {
+  try {
+    const { toEmail, customerName, tableId, dateTime, guestsCount } = req.body;
+
+    const gmailUser = process.env.GMAIL_USER || state.serverSecrets?.gmailUser;
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD || state.serverSecrets?.gmailAppPassword;
+
+    if (!gmailUser || !gmailAppPassword) {
+      return res.status(400).json({ error: 'Gmail credentials are not configured. Please set them in Reception Settings.' });
+    }
+    if (!toEmail) {
+      return res.status(400).json({ error: 'No recipient email provided.' });
+    }
+
+    const formattedTime = new Date(dateTime).toLocaleString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailAppPassword
+      }
+    });
+
+    const mailOptions = {
+      from: `"Restaurant Reservation" <${gmailUser}>`,
+      to: toEmail,
+      subject: `✅ Table ${tableId} Reserved – ${formattedTime}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #fff; padding: 2rem; border-radius: 12px; border: 1px solid #1e293b;">
+          <h1 style="color: #38bdf8; font-size: 1.5rem; margin-bottom: 0.5rem;">🎉 Reservation Confirmed!</h1>
+          <p style="color: #94a3b8; margin-bottom: 2rem;">Your table has been successfully reserved. Here are your booking details:</p>
+
+          <div style="background: #1e293b; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 0.75rem 0; color: #64748b; font-size: 0.9rem;">👤 Name</td>
+                <td style="padding: 0.75rem 0; color: #fff; font-weight: 700;">${customerName}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 0.75rem 0; color: #64748b; font-size: 0.9rem;">🪑 Table Number</td>
+                <td style="padding: 0.75rem 0; color: #38bdf8; font-weight: 700; font-size: 1.1rem;">Table ${tableId}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #334155;">
+                <td style="padding: 0.75rem 0; color: #64748b; font-size: 0.9rem;">📅 Date & Time</td>
+                <td style="padding: 0.75rem 0; color: #fff; font-weight: 700;">${formattedTime}</td>
+              </tr>
+              <tr>
+                <td style="padding: 0.75rem 0; color: #64748b; font-size: 0.9rem;">👥 Guests</td>
+                <td style="padding: 0.75rem 0; color: #fff; font-weight: 700;">${guestsCount} ${guestsCount === 1 ? 'Guest' : 'Guests'}</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+            <p style="color: #fbbf24; margin: 0; font-size: 0.9rem;">⏰ <strong>Reminder:</strong> Each reservation is held for <strong>1 hour 30 minutes</strong> from the booked time. Please arrive on time.</p>
+          </div>
+
+          <p style="color: #64748b; font-size: 0.85rem; text-align: center; margin-top: 2rem;">
+            We look forward to seeing you! 🍽️<br/>
+            <span style="color: #38bdf8; font-weight: 600;">Powered by Volcano Restaurant System</span>
+          </p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: `Confirmation email sent to ${toEmail}` });
+  } catch (err) {
+    console.error('Email sending error:', err.message);
+    res.status(500).json({ error: `Failed to send email: ${err.message}` });
+  }
+});
+
 // Fallback to index.html for React router
+
 app.use((req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });

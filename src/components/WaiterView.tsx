@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { Order, ServiceRequest, TableOccupancy, OrderItem, OrderStatus } from '../types';
+import type { Order, ServiceRequest, TableOccupancy, OrderItem, OrderStatus, Reservation } from '../types';
 import { ConciergeBell, Check, Award, Layers, Users, Volume2, VolumeX, LogOut, Info, User } from 'lucide-react';
 import { TableView } from './TableView';
 
@@ -15,12 +15,14 @@ interface WaiterViewProps {
   orders: Order[];
   requests: ServiceRequest[];
   tablesOccupancy: { [tableId: string]: TableOccupancy };
+  reservations?: Reservation[];
+  onRemoveReservation?: (reservationId: string) => void;
   onResolveRequest: (requestId: string, resolvedBy: string) => void;
   onServeOrder: (orderId: string, servedBy: string) => void;
   onCheckOutTable: (tableId: string, paymentMethod?: 'Cash' | 'UPI') => void;
   onPlaceOrder: (tableId: string, items: OrderItem[]) => void;
   onCallWaiter: (tableId: string, type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed') => void;
-  onTableCheckIn: (tableId: string, customerName: string, guestsCount: number, openedBy?: 'Customer' | 'Waiter') => void;
+  onTableCheckIn: (tableId: string, customerName: string, guestsCount: number, openedBy?: 'Customer' | 'Waiter', phone?: string) => void;
   onUpdateItemStatus?: (orderId: string, itemIndex: number, status: OrderStatus) => void;
 }
 

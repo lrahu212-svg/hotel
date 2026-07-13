@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMenu } from '../data/menu';
-import type { Order, OrderItem, ServiceRequest, TableOccupancy } from '../types';
+import type { Order, OrderItem, ServiceRequest, TableOccupancy, Reservation } from '../types';
 import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search } from 'lucide-react';
 
 interface TableViewProps {
@@ -8,6 +8,8 @@ interface TableViewProps {
   occupancy: TableOccupancy;
   orders: Order[];
   requests: ServiceRequest[];
+  reservations?: Reservation[];
+  onRemoveReservation?: (reservationId: string) => void;
   onCheckIn: (name: string, guests: number, openedBy?: 'Customer' | 'Waiter', phone?: string) => void;
   onCheckOut: (paymentMethod?: 'Cash' | 'UPI') => void;
   onPlaceOrder: (items: OrderItem[]) => void;
@@ -20,6 +22,8 @@ export const TableView: React.FC<TableViewProps> = ({
   occupancy,
   orders,
   requests,
+  reservations = [],
+  onRemoveReservation,
   onCheckIn,
   onCheckOut,
   onPlaceOrder,
@@ -250,9 +254,35 @@ export const TableView: React.FC<TableViewProps> = ({
     onCheckOut();
   };
 
+  const activeRes = (reservations || []).find(res => {
+    if (res.tableId !== tableId) return false;
+    const resTime = new Date(res.dateTime).getTime();
+    const now = Date.now();
+    // 30 minutes before to 60 minutes after
+    return now >= (resTime - 30 * 60 * 1000) && now <= (resTime + 60 * 60 * 1000);
+  });
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!custName.trim()) return;
+
+    if (activeRes) {
+      const isNameMatch = activeRes.customerName.toLowerCase() === custName.trim().toLowerCase();
+      const isPhoneMatch = activeRes.phone.trim() === phone.trim();
+
+      if (isNameMatch && isPhoneMatch) {
+        onCheckIn(custName, activeRes.guestsCount, 'Customer', phone.trim());
+        if (onRemoveReservation) {
+          onRemoveReservation(activeRes.id);
+        }
+        sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
+        setSessionActive(true);
+        showToast('👋 Welcome! Your reservation check-in is complete.');
+      } else {
+        showToast('❌ This table is reserved. Only the registered customer can check in.');
+      }
+      return;
+    }
 
     if (occupancy.occupied) {
       if (occupancy.openedBy === 'Waiter') {
@@ -337,6 +367,22 @@ export const TableView: React.FC<TableViewProps> = ({
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Dining at Table {tableId} - Please check in to unlock the menu</p>
           </div>
+
+          {activeRes && (
+            <div style={{
+              background: 'rgba(245, 158, 11, 0.1)',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+              color: '#f59e0b',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              textAlign: 'center',
+              marginBottom: '1.5rem',
+              fontWeight: 600
+            }}>
+              ⚠️ This table is reserved. Only the customer with the registered reservation (Name & Phone) can check in.
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
             {/* Name Input */}

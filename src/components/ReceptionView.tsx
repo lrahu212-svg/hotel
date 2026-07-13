@@ -159,6 +159,107 @@ const MenuManagement: React.FC = () => {
   );
 };
 
+// Gmail SMTP Notification Settings component (used in Reception System Config tab)
+const GmailSettings: React.FC<{ showToast: (msg: string) => void }> = ({ showToast }) => {
+  const [gmailUser, setGmailUser] = useState('');
+  const [gmailAppPassword, setGmailAppPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!gmailUser.trim()) {
+      showToast('⚠️ Please enter your Gmail address.');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/save-gmail-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gmailUser: gmailUser.trim(), gmailAppPassword: gmailAppPassword.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('✅ Gmail credentials saved! Reservation emails will now be sent.');
+        setGmailAppPassword('');
+      } else {
+        showToast(`❌ Error: ${data.error}`);
+      }
+    } catch {
+      showToast('❌ Network error saving Gmail credentials.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem', borderLeft: '4px solid #ea4335' }}>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        📧 Gmail Email Notifications
+      </h2>
+      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+        Configure your Gmail credentials to automatically send reservation confirmation emails to customers.
+        Use a <strong style={{ color: '#38bdf8' }}>Gmail App Password</strong> (not your regular password).{' '}
+        <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8' }}>
+          Generate one here ↗
+        </a>
+      </p>
+
+      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '500px' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Sender Gmail Address
+          </label>
+          <input
+            type="email"
+            placeholder="yourrestaurant@gmail.com"
+            value={gmailUser}
+            onChange={e => setGmailUser(e.target.value)}
+            style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
+          />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Gmail App Password (16-character token)
+          </label>
+          <input
+            type="password"
+            placeholder="xxxx xxxx xxxx xxxx"
+            value={gmailAppPassword}
+            onChange={e => setGmailAppPassword(e.target.value)}
+            style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', color: '#fff', outline: 'none', fontSize: '0.9rem', letterSpacing: '0.15em' }}
+          />
+          <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+            ⚠️ Enable 2-Step Verification on your Google Account first, then generate an App Password.
+          </p>
+        </div>
+        <button
+          type="submit"
+          disabled={isSaving}
+          style={{
+            alignSelf: 'flex-start',
+            background: isSaving ? '#475569' : 'linear-gradient(135deg, #ea4335 0%, #dc2626 100%)',
+            color: '#fff',
+            border: 'none',
+            padding: '0.75rem 1.75rem',
+            borderRadius: '10px',
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            fontWeight: 700,
+            fontSize: '0.9rem',
+            boxShadow: isSaving ? 'none' : '0 4px 15px rgba(234, 67, 53, 0.3)',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}
+        >
+          {isSaving ? '⏳ Saving...' : '💾 Save Gmail Credentials'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
 interface ReceptionViewProps {
   onUpdateSettings?: (settings: any) => void;
   orders?: Order[];
@@ -691,6 +792,9 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
         </div>
 
       </div>
+
+      {/* Gmail Email Notification Settings */}
+      <GmailSettings showToast={showToast} />
 
       {/* Kitchen Station Configuration Panel */}
       <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem' }}>

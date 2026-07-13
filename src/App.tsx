@@ -522,6 +522,8 @@ export const App: React.FC = () => {
             occupancy={tablesOccupancy[tableId] || { occupied: false }}
             orders={orders}
             requests={requests}
+            reservations={reservations}
+            onRemoveReservation={(reservationId) => postSyncEvent({ type: 'REMOVE_RESERVATION', reservationId })}
             onCheckIn={(name, guests, openedBy, phone) => handleTableCheckIn(tableId, name, guests, openedBy, phone)}
             onCheckOut={(paymentMethod) => handleTableCheckOut(tableId, paymentMethod)}
             onPlaceOrder={(items) => handlePlaceOrder(tableId, items)}
@@ -555,6 +557,7 @@ export const App: React.FC = () => {
           orders={orders}
           requests={requests}
           tablesOccupancy={tablesOccupancy}
+          reservations={reservations}
           onResolveRequest={handleResolveRequest}
           onServeOrder={handleServeOrder}
           onCheckOutTable={handleTableCheckOut}
@@ -581,6 +584,8 @@ export const App: React.FC = () => {
       return (
         <ReceptionView 
           orders={orders}
+          reservations={reservations}
+          onRemoveReservation={(reservationId) => postSyncEvent({ type: 'REMOVE_RESERVATION', reservationId })}
           onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
           onResetAllData={handleResetAllData}
         />

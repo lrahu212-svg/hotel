@@ -17,18 +17,17 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
   const [razorpayLink, setRazorpayLink] = useState('');
+  const [reservationAdvance, setReservationAdvance] = useState<string>('');
   const [saveStatus, setSaveStatus] = useState('');
 
   // Load existing values
   useEffect(() => {
     const savedKeyId = localStorage.getItem('owner_razorpay_key_id');
-    if (savedKeyId) {
-      setRazorpayKeyId(savedKeyId);
-    }
+    if (savedKeyId) setRazorpayKeyId(savedKeyId);
     const savedLink = localStorage.getItem('owner_razorpay_link');
-    if (savedLink) {
-      setRazorpayLink(savedLink);
-    }
+    if (savedLink) setRazorpayLink(savedLink);
+    const savedAdvance = localStorage.getItem('owner_reservation_advance');
+    if (savedAdvance) setReservationAdvance(savedAdvance);
   }, []);
 
   const handleSaveKeys = async () => {
@@ -55,7 +54,13 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
       if (response.ok && linkResponse.ok) {
         localStorage.setItem('owner_razorpay_key_id', razorpayKeyId);
         localStorage.setItem('owner_razorpay_link', razorpayLink);
-        setSaveStatus('Settings saved securely!');
+        // Save reservation advance amount
+        if (reservationAdvance.trim() !== '') {
+          localStorage.setItem('owner_reservation_advance', reservationAdvance.trim());
+        } else {
+          localStorage.removeItem('owner_reservation_advance');
+        }
+        setSaveStatus('✅ Settings saved securely!');
         setTimeout(() => setSaveStatus(''), 3000);
       } else {
         setSaveStatus('Failed to save settings.');
@@ -270,6 +275,19 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
               onChange={e => setRazorpayLink(e.target.value)} 
               style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
             />
+          </div>
+          <div style={{ flex: '0 0 180px', minWidth: '150px' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#fbbf24', marginBottom: '0.25rem', fontWeight: 700 }}>🪙 Reservation Advance (₹)</label>
+            <input 
+              type="number" 
+              min="0"
+              step="1"
+              placeholder="e.g. 200  (0 = free)" 
+              value={reservationAdvance} 
+              onChange={e => setReservationAdvance(e.target.value)} 
+              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(251, 191, 36, 0.05)', border: '1px solid rgba(251, 191, 36, 0.4)', borderRadius: '8px', color: '#fbbf24', outline: 'none', fontWeight: 700 }} 
+            />
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#64748b' }}>Charged via Razorpay before reservation is confirmed</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button
