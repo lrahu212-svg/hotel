@@ -157,7 +157,7 @@ app.post('/api/save-razorpay-keys', (req, res) => {
 // Secure endpoint to create a dynamic locked Razorpay Payment Link
 app.post('/api/create-payment-link', (req, res) => {
   try {
-    const { amount, receipt } = req.body;
+    const { amount, receipt, callbackUrl } = req.body;
     const keyId = process.env.RAZORPAY_KEY_ID || state.serverSecrets?.razorpayKeyId;
     const keySecret = process.env.RAZORPAY_KEY_SECRET || state.serverSecrets?.razorpayKeySecret;
 
@@ -177,7 +177,9 @@ app.post('/api/create-payment-link', (req, res) => {
         name: 'Restaurant Customer',
         email: 'customer@restaurant.local'
       },
-      reminder_enable: false
+      reminder_enable: false,
+      callback_url: callbackUrl,
+      callback_method: 'get'
     });
 
     const options = {

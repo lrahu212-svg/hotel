@@ -993,7 +993,7 @@ export const TableView: React.FC<TableViewProps> = ({
                             const res = await fetch('/api/create-payment-link', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ amount: totalAmount, receipt: `TBL-${tableId}-${Date.now()}` })
+                              body: JSON.stringify({ amount: totalAmount, receipt: `TBL-${tableId}-${Date.now()}`, callbackUrl: window.location.href })
                             });
                             const data = await res.json();
                             if (res.ok && data.link) {
