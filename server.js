@@ -14,7 +14,8 @@ let state = {
   orders: [],
   requests: [],
   tablesOccupancy: {},
-  settings: {}
+  settings: {},
+  reservations: []
 };
 
 // Load state from file if exists
@@ -112,14 +113,20 @@ app.post('/event', (req, res) => {
       state.tablesOccupancy[event.tableId] = { occupied: false };
     } else if (event.type === 'UPDATE_SETTINGS') {
       state.settings = { ...state.settings, ...event.settings };
+    } else if (event.type === 'ADD_RESERVATION') {
+      state.reservations = [...(state.reservations || []).filter(r => r.id !== event.reservation.id), event.reservation];
+    } else if (event.type === 'REMOVE_RESERVATION') {
+      state.reservations = (state.reservations || []).filter(r => r.id !== event.reservationId);
     } else if (event.type === 'SYNC_STATE') {
       state.orders = event.orders || [];
       state.requests = event.requests || [];
       state.tablesOccupancy = event.tablesOccupancy || {};
+      state.reservations = event.reservations || [];
       if (event.settings) {
         if (event.settings.resetAllSettings) {
           state.settings = {};
           delete state.serverSecrets;
+          state.reservations = [];
         } else {
           state.settings = { ...state.settings, ...event.settings };
         }

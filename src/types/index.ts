@@ -38,6 +38,16 @@ export interface TableOccupancy {
   phone?: string;
 }
 
+export interface Reservation {
+  id: string;
+  customerName: string;
+  phone: string;
+  guestsCount: number;
+  dateTime: string; // e.g. "2026-07-13T18:00"
+  tableId: string;
+  timestamp: number;
+}
+
 // BroadcastChannel event message definitions
 export type BroadcastEvent =
   | { type: 'NEW_ORDER'; order: Order; customerName?: string }
@@ -47,5 +57,7 @@ export type BroadcastEvent =
   | { type: 'RESOLVE_SERVICE_REQUEST'; requestId: string; resolvedBy?: string }
   | { type: 'TABLE_CHECK_IN'; tableId: string; customerName: string; guestsCount: number; openedBy?: 'Customer' | 'Waiter'; phone?: string }
   | { type: 'TABLE_CHECK_OUT'; tableId: string; paymentMethod?: 'Cash' | 'UPI' }
-  | { type: 'SYNC_STATE'; orders: Order[]; requests: ServiceRequest[]; tablesOccupancy: { [tableId: string]: TableOccupancy } }
+  | { type: 'ADD_RESERVATION'; reservation: Reservation }
+  | { type: 'REMOVE_RESERVATION'; reservationId: string }
+  | { type: 'SYNC_STATE'; orders: Order[]; requests: ServiceRequest[]; tablesOccupancy: { [tableId: string]: TableOccupancy }; settings?: any; reservations?: Reservation[] }
   | { type: 'REQUEST_SYNC' };

@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import type { Order, OrderItem, OrderStatus, ServiceRequest, TableOccupancy } from './types';
+import type { Order, OrderItem, OrderStatus, ServiceRequest, TableOccupancy, Reservation } from './types';
 import { Portal } from './components/Portal';
 import { TableView } from './components/TableView';
 import { KitchenView } from './components/KitchenView';
 import { WaiterView } from './components/WaiterView';
 import { OwnerDashboard } from './components/OwnerDashboard';
 import { ReceptionView } from './components/ReceptionView';
+import { ReservationPortal } from './components/ReservationPortal';
 
 export const App: React.FC = () => {
-  // Helper to get total table capacity configuration
+  // Helper to get table capacity configuration
   const getTablesCount = () => parseInt(localStorage.getItem('owner_tables_count') || '4', 10);
 
   const getInitialOccupancy = () => {
@@ -22,6 +23,10 @@ export const App: React.FC = () => {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>(() => {
+    const saved = localStorage.getItem('hotel_reservations');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [tablesOccupancy, setTablesOccupancy] = useState<{ [tableId: string]: TableOccupancy }>(() => {
     const saved = localStorage.getItem('hotel_tables_occupancy');
     if (saved) {
@@ -56,8 +61,11 @@ export const App: React.FC = () => {
     const savedRequests = localStorage.getItem('hotel_requests');
     const savedOccupancy = localStorage.getItem('hotel_tables_occupancy');
     
+    const savedReservations = localStorage.getItem('hotel_reservations');
+    
     if (savedOrders) setOrders(JSON.parse(savedOrders));
     if (savedRequests) setRequests(JSON.parse(savedRequests));
+    if (savedReservations) setReservations(JSON.parse(savedReservations));
     if (savedOccupancy) {
       const parsed = JSON.parse(savedOccupancy);
       const total = getTablesCount();
@@ -74,6 +82,7 @@ export const App: React.FC = () => {
         case 'SYNC_STATE': {
           setOrders(msg.orders);
           setRequests(msg.requests);
+          setReservations(msg.reservations || []);
           
           const parsed = msg.tablesOccupancy;
           const total = getTablesCount();
@@ -87,6 +96,7 @@ export const App: React.FC = () => {
           localStorage.setItem('hotel_orders', JSON.stringify(msg.orders));
           localStorage.setItem('hotel_requests', JSON.stringify(msg.requests));
           localStorage.setItem('hotel_tables_occupancy', JSON.stringify(parsed));
+          localStorage.setItem('hotel_reservations', JSON.stringify(msg.reservations || []));
           
           if (msg.settings) {
             if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
@@ -223,6 +233,22 @@ export const App: React.FC = () => {
           window.dispatchEvent(new CustomEvent('TABLE_SETTLED', { 
             detail: { tableId: msg.tableId, paymentMethod: msg.paymentMethod } 
           }));
+          break;
+        }
+        case 'ADD_RESERVATION': {
+          setReservations(prev => {
+            const updated = [...prev.filter(r => r.id !== msg.reservation.id), msg.reservation];
+            localStorage.setItem('hotel_reservations', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'REMOVE_RESERVATION': {
+          setReservations(prev => {
+            const updated = prev.filter(r => r.id !== msg.reservationId);
+            localStorage.setItem('hotel_reservations', JSON.stringify(updated));
+            return updated;
+          });
           break;
         }
       }
@@ -440,6 +466,8 @@ export const App: React.FC = () => {
     localStorage.removeItem('owner_razorpay_link');
     localStorage.removeItem('owner_razorpay_key_id');
     
+    localStorage.removeItem('hotel_reservations');
+    
     // Clear all waiter sessions from local storage
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const key = localStorage.key(i);
@@ -450,12 +478,14 @@ export const App: React.FC = () => {
 
     setOrders([]);
     setRequests([]);
+    setReservations([]);
     setTablesOccupancy(getInitialOccupancy());
     
     postSyncEvent({ 
       type: 'SYNC_STATE', 
       orders: [], 
       requests: [], 
+      reservations: [],
       tablesOccupancy: getInitialOccupancy(),
       settings: { waiters: [], razorpayLink: '', resetAllSettings: true }
     });
@@ -553,6 +583,15 @@ export const App: React.FC = () => {
           orders={orders}
           onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
           onResetAllData={handleResetAllData}
+        />
+      );
+    }
+
+    if (path === '/reserve') {
+      return (
+        <ReservationPortal 
+          onAddReservation={(reservation) => postSyncEvent({ type: 'ADD_RESERVATION', reservation })}
+          reservations={reservations}
         />
       );
     }

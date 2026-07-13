@@ -190,6 +190,39 @@ export const Portal: React.FC = () => {
               </button>
             ))}
           </div>
+          
+          <button
+            onClick={() => openWindow('/reserve')}
+            style={{
+              width: '100%',
+              background: 'rgba(6, 182, 212, 0.08)',
+              border: '1px solid rgba(6, 182, 212, 0.2)',
+              color: '#38bdf8',
+              padding: '1rem',
+              borderRadius: '12px',
+              fontWeight: 800,
+              cursor: 'pointer',
+              fontSize: '1rem',
+              textAlign: 'center',
+              display: 'flex',
+              gap: '0.6rem',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+              marginTop: '1.5rem',
+              boxShadow: '0 4px 15px rgba(6, 182, 212, 0.05)'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.15)';
+              e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
+              e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.2)';
+            }}
+          >
+            📅 Open Customer Table Reservation Portal
+          </button>
         </div>
 
         {/* Staff Dashboards */}
