@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserPlus, Trash2, Calendar, ClipboardList, ChefHat, Settings, Menu, Plus } from 'lucide-react';
 import { useMenu, addMenuItem, deleteMenuItem, type MenuItem } from '../data/menu';
+import type { Order } from '../types';
 
 interface Waiter {
   id: string;
@@ -107,9 +108,10 @@ const MenuManagement: React.FC = () => {
 
 interface ReceptionViewProps {
   onUpdateSettings?: (settings: any) => void;
+  orders?: Order[];
 }
 
-export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings }) => {
+export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, orders = [] }) => {
   const [activeTab, setActiveTab] = useState<'waiters' | 'menu'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
@@ -118,6 +120,135 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings }
   const [kitchenMode, setKitchenMode] = useState<'monitor' | 'printer'>(
     (localStorage.getItem('hotel_kitchen_mode') as 'monitor' | 'printer') || 'monitor'
   );
+
+  // Printing Queue system for bills
+  const printQueue = useRef<{ tableId: string; paymentMethod: string; orders: Order[] }[]>([]);
+  const isPrinting = useRef(false);
+
+  const enqueueBillPrint = (tableId: string, paymentMethod: string, tableOrders: Order[]) => {
+    printQueue.current.push({ tableId, paymentMethod, orders: tableOrders });
+    processPrintQueue();
+  };
+
+  const processPrintQueue = () => {
+    if (isPrinting.current || printQueue.current.length === 0) return;
+
+    isPrinting.current = true;
+    const job = printQueue.current.shift()!;
+    const { tableId, paymentMethod, orders: tableOrders } = job;
+
+    // Combine all items across all orders for this table
+    const itemMap = new Map<string, { name: string; quantity: number; price: number }>();
+    tableOrders.forEach(order => {
+      order.items.forEach(item => {
+        const existing = itemMap.get(item.menuItemId);
+        if (existing) {
+          existing.quantity += item.quantity;
+        } else {
+          itemMap.set(item.menuItemId, {
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price
+          });
+        }
+      });
+    });
+
+    const items = Array.from(itemMap.values());
+    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Remove any existing print section
+    const oldPrints = document.querySelectorAll('#print-section');
+    oldPrints.forEach(p => p.remove());
+
+    const printDiv = document.createElement('div');
+    printDiv.id = 'print-section';
+    printDiv.style.fontFamily = 'monospace';
+    printDiv.style.color = '#000';
+    printDiv.style.padding = '0';
+    printDiv.style.background = '#fff';
+
+    printDiv.innerHTML = `
+      <div style="padding: 15px 0;">
+        <h2 style="text-align: center; margin: 5px 0; color: #000;">GUEST BILL</h2>
+        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${tableId}</h3>
+        <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
+          Date: ${new Date().toLocaleString()}
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
+          <span style="flex: 2;">Item</span>
+          <span style="flex: 1; text-align: center;">Qty</span>
+          <span style="flex: 1; text-align: right;">Price</span>
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        ${items.map(item => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
+            <span style="flex: 2;">${item.name}</span>
+            <span style="flex: 1; text-align: center;">${item.quantity}</span>
+            <span style="flex: 1; text-align: right;">₹${(item.price * item.quantity).toFixed(2)}</span>
+          </div>
+        `).join('')}
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; margin-top: 10px; color: #000;">
+          <span>GRAND TOTAL:</span>
+          <span>₹${totalAmount.toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-top: 5px; color: #000;">
+          <span>Payment Method:</span>
+          <span style="font-weight: bold;">${paymentMethod}</span>
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="text-align: center; margin-top: 15px; font-weight: bold; color: #000;">
+          Thank you for dining with us!
+        </div>
+        <div style="text-align: center; font-size: 0.8em; margin-top: 5px; color: #000;">
+          Powered by Volcano
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(printDiv);
+
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        const prints = document.querySelectorAll('#print-section');
+        prints.forEach(p => p.remove());
+
+        setTimeout(() => {
+          isPrinting.current = false;
+          processPrintQueue();
+        }, 3000);
+      }, 1000);
+    }, 100);
+  };
+
+  useEffect(() => {
+    const channel = new BroadcastChannel('hotel_ordering_system');
+    channel.onmessage = (event) => {
+      if (event.data && event.data.type === 'TABLE_CHECK_OUT') {
+        const { tableId, paymentMethod } = event.data;
+        
+        // Find orders for this table session
+        let tableOrders = orders.filter(o => o.tableId === tableId);
+        if (tableOrders.length === 0) {
+          const now = Date.now();
+          tableOrders = orders.filter(o => 
+            o.tableId.startsWith(`${tableId}_archived_`) && 
+            now - parseInt(o.tableId.split('_archived_')[1], 10) < 15000
+          );
+        }
+        
+        if (tableOrders.length > 0) {
+          enqueueBillPrint(tableId, paymentMethod || 'Unspecified', tableOrders);
+        }
+      }
+    };
+    return () => {
+      channel.close();
+    };
+  }, [orders]);
 
   const [kitchenConfigs, setKitchenConfigs] = useState<KitchenConfig[]>(() => {
     const saved = localStorage.getItem('hotel_kitchen_configs');

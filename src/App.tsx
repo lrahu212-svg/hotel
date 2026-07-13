@@ -515,6 +515,7 @@ export const App: React.FC = () => {
     if (path === '/reception') {
       return (
         <ReceptionView 
+          orders={orders}
           onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
         />
       );
