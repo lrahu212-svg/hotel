@@ -116,9 +116,8 @@ app.post('/event', (req, res) => {
       state.orders = event.orders || [];
       state.requests = event.requests || [];
       state.tablesOccupancy = event.tablesOccupancy || {};
-      if (event.orders && event.orders.length === 0 && event.requests && event.requests.length === 0) {
-        state.settings = {};
-        delete state.serverSecrets;
+      if (event.settings) {
+        state.settings = { ...state.settings, ...event.settings };
       }
     }
 

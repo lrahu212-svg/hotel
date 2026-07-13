@@ -98,6 +98,25 @@
       "totalAmount": 4.5,
       "customerName": "AA",
       "servedBy": "RAHUL"
+    },
+    {
+      "id": "ord_g7gsr81jr",
+      "tableId": "2",
+      "items": [
+        {
+          "menuItemId": "c2",
+          "quantity": 1,
+          "notes": "",
+          "name": "Double Espresso",
+          "price": 3.75,
+          "status": "Served"
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1783923516769,
+      "totalAmount": 3.75,
+      "customerName": "fgh",
+      "servedBy": "RAHUL"
     }
   ],
   "requests": [
@@ -186,8 +205,17 @@
       "id": "req_ljzsx4dwm",
       "tableId": "2",
       "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783922457990
+      "status": "Resolved",
+      "timestamp": 1783922457990,
+      "resolvedBy": "RAHUL"
+    },
+    {
+      "id": "req_yc2t2glu3",
+      "tableId": "2",
+      "type": "Cash Payment Collection",
+      "status": "Resolved",
+      "timestamp": 1783923539506,
+      "resolvedBy": "RAHUL"
     }
   ],
   "tablesOccupancy": {
