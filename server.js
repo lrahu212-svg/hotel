@@ -7,6 +7,7 @@ import https from 'https';
 const app = express();
 const PORT = process.env.PORT || 3000;
 const STATE_FILE = path.join(process.cwd(), 'hotel_state.json');
+const distPath = path.join(process.cwd(), 'dist');
 
 let clients = [];
 let state = {
@@ -39,6 +40,7 @@ const saveState = () => {
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(distPath));
 
 // Server-Sent Events Endpoint
 app.get('/events', (req, res) => {
@@ -110,6 +112,14 @@ app.post('/event', (req, res) => {
       state.tablesOccupancy[event.tableId] = { occupied: false };
     } else if (event.type === 'UPDATE_SETTINGS') {
       state.settings = { ...state.settings, ...event.settings };
+    } else if (event.type === 'SYNC_STATE') {
+      state.orders = event.orders || [];
+      state.requests = event.requests || [];
+      state.tablesOccupancy = event.tablesOccupancy || {};
+      if (event.orders && event.orders.length === 0 && event.requests && event.requests.length === 0) {
+        state.settings = {};
+        delete state.serverSecrets;
+      }
     }
 
     saveState();
@@ -214,7 +224,6 @@ app.post('/api/create-payment-link', (req, res) => {
 });
 
 // Serve the static frontend files
-const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));
 
 // Endpoint to check payment link status

@@ -16,33 +16,52 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
   const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
+  const [razorpayLink, setRazorpayLink] = useState('');
   const [saveStatus, setSaveStatus] = useState('');
 
-  // Load existing values (Key ID is safe in localStorage, Secret should be write-only but we won't load it for security)
+  // Load existing values
   useEffect(() => {
     const savedKeyId = localStorage.getItem('owner_razorpay_key_id');
     if (savedKeyId) {
       setRazorpayKeyId(savedKeyId);
+    }
+    const savedLink = localStorage.getItem('owner_razorpay_link');
+    if (savedLink) {
+      setRazorpayLink(savedLink);
     }
   }, []);
 
   const handleSaveKeys = async () => {
     try {
       setSaveStatus('Saving...');
+      
+      // Save secure keys on backend
       const response = await fetch('/api/save-razorpay-keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keyId: razorpayKeyId, keySecret: razorpayKeySecret })
       });
-      if (response.ok) {
+
+      // Save static payment link / UPI link in system settings and broadcast
+      const linkResponse = await fetch('/event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'UPDATE_SETTINGS',
+          settings: { razorpayLink: razorpayLink }
+        })
+      });
+
+      if (response.ok && linkResponse.ok) {
         localStorage.setItem('owner_razorpay_key_id', razorpayKeyId);
-        setSaveStatus('Keys saved securely!');
+        localStorage.setItem('owner_razorpay_link', razorpayLink);
+        setSaveStatus('Settings saved securely!');
         setTimeout(() => setSaveStatus(''), 3000);
       } else {
-        setSaveStatus('Failed to save.');
+        setSaveStatus('Failed to save settings.');
       }
     } catch (err) {
-      setSaveStatus('Error saving keys.');
+      setSaveStatus('Error saving settings.');
     }
   };
 
@@ -221,7 +240,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         <h3 style={{ fontSize: '1rem', color: '#cbd5e1', margin: 0, fontWeight: 700, textTransform: 'uppercase' }}>Secure Razorpay Integration</h3>
         <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
-          Enter your Live API Keys below. These will be securely saved on the backend server to dynamically generate fixed-price payment links. Customers will NOT be able to change the bill amount.
+          Configure dynamic or static Razorpay payments. For dynamic links (locked pricing per bill), enter the <b>Key ID</b> and <b>Key Secret</b>. Alternatively, enter a <b>Static Payment/UPI Link</b> (customers will click this and manually type/confirm their amount).
         </p>
         
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
@@ -245,12 +264,22 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
               style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
             />
           </div>
+          <div style={{ flex: 1.5, minWidth: '250px' }}>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Static UPI / Razorpay Link (Alternative)</label>
+            <input 
+              type="text" 
+              placeholder="https://rzp.io/i/xxxxxx or upi://pay?..." 
+              value={razorpayLink} 
+              onChange={e => setRazorpayLink(e.target.value)} 
+              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+            />
+          </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button
               onClick={handleSaveKeys}
               style={{ padding: '0.75rem 1.5rem', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
             >
-              Save Securely
+              Save Settings
             </button>
           </div>
         </div>

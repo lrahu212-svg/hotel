@@ -69,7 +69,7 @@ export const Portal: React.FC = () => {
   };
 
   const openWindow = (path: string) => {
-    window.open(path, '_blank');
+    window.location.href = path;
   };
 
   return (

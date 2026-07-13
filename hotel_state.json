@@ -1,7 +1,7 @@
 {
   "orders": [
     {
-      "id": "ord_x2wgtx929",
+      "id": "ord_1lx7ke0rd",
       "tableId": "1",
       "items": [
         {
@@ -22,15 +22,23 @@
         }
       ],
       "status": "Served",
-      "timestamp": 1783792583462,
+      "timestamp": 1783916775569,
       "totalAmount": 6.75,
-      "customerName": "Rahul",
-      "servedBy": "Rahul"
+      "customerName": "RAHUL",
+      "servedBy": "HANNUAL"
     },
     {
-      "id": "ord_wz4430g0i",
+      "id": "ord_1ckp279xn",
       "tableId": "1",
       "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Served"
+        },
         {
           "menuItemId": "c2",
           "quantity": 1,
@@ -46,7 +54,17 @@
           "name": "Americano",
           "price": 3.5,
           "status": "Served"
-        },
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1783917131792,
+      "totalAmount": 10.25,
+      "customerName": "RAHUL"
+    },
+    {
+      "id": "ord_5f5hvc08g",
+      "tableId": "1",
+      "items": [
         {
           "menuItemId": "c1",
           "quantity": 1,
@@ -57,100 +75,93 @@
         }
       ],
       "status": "Served",
-      "timestamp": 1783870271042,
-      "totalAmount": 10.25,
-      "customerName": "Rahul",
-      "servedBy": "rahul"
+      "timestamp": 1783917204300,
+      "totalAmount": 3,
+      "customerName": "RAHUL",
+      "servedBy": "HANNUAL"
     },
     {
-      "id": "ord_2c5wt9yyq",
-      "tableId": "1",
+      "id": "ord_8vboxr5hw",
+      "tableId": "2",
       "items": [
         {
-          "menuItemId": "c1",
+          "menuItemId": "b9",
           "quantity": 1,
           "notes": "",
-          "name": "Espresso",
-          "price": 3,
-          "status": "Ready"
-        },
-        {
-          "menuItemId": "c2",
-          "quantity": 1,
-          "notes": "",
-          "name": "Double Espresso",
-          "price": 3.75,
-          "status": "Ready"
+          "name": "Fresh Squeezed Orange Juice",
+          "price": 4.5,
+          "status": "Served"
         }
       ],
-      "status": "Ready",
-      "timestamp": 1783872472717,
-      "totalAmount": 6.75,
-      "customerName": "fgtyt"
+      "status": "Served",
+      "timestamp": 1783918914881,
+      "totalAmount": 4.5,
+      "customerName": "AA",
+      "servedBy": "RAHUL"
     }
   ],
   "requests": [
     {
-      "id": "req_mt201j4f1",
+      "id": "req_hqe90ee1r",
       "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783792663405
+      "type": "Cash Payment Collection",
+      "status": "Resolved",
+      "timestamp": 1783917173800,
+      "resolvedBy": "HANNUAL"
     },
     {
-      "id": "req_bzvp9omde",
+      "id": "req_wl5c0n2cn",
       "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783792732128
+      "type": "Call Waiter",
+      "status": "Resolved",
+      "timestamp": 1783917211744,
+      "resolvedBy": "HANNUAL"
     },
     {
-      "id": "req_gj91hhnfx",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783870748269
-    },
-    {
-      "id": "req_8pcjp3t4m",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783871044383
-    },
-    {
-      "id": "req_fopn6g7mc",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783871806784
-    },
-    {
-      "id": "req_k38950ra6",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783871874056
-    },
-    {
-      "id": "req_6dkha6600",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783872476915
-    },
-    {
-      "id": "req_88mp1q3k3",
-      "tableId": "1",
-      "type": "UPI Payment Completed",
-      "status": "Pending",
-      "timestamp": 1783872485033
+      "id": "req_uoyevmanw",
+      "tableId": "2",
+      "type": "Cash Payment Collection",
+      "status": "Resolved",
+      "timestamp": 1783919021507,
+      "resolvedBy": "RAHUL"
     }
   ],
   "tablesOccupancy": {
     "1": {
       "occupied": false
+    },
+    "2": {
+      "occupied": false
+    },
+    "3": {
+      "occupied": false
+    },
+    "4": {
+      "occupied": false
     }
+  },
+  "settings": {
+    "kitchenMode": "monitor",
+    "kitchenConfigs": [
+      {
+        "id": "1",
+        "name": "JUICE COUNTER",
+        "categories": [
+          "Cold Beverages"
+        ]
+      },
+      {
+        "id": "2",
+        "name": "General Kitchen Station #2",
+        "categories": [
+          "Coffee & Espresso",
+          "Teas & Infusions",
+          "Breakfast & Bakery",
+          "Sandwiches & Salads"
+        ]
+      }
+    ],
+    "razorpayLink": ""
   },
   "serverSecrets": {
     "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",

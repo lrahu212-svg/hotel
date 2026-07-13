@@ -7,7 +7,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/events': 'http://localhost:3000',
-      '/event': 'http://localhost:3000'
+      '/event': 'http://localhost:3000',
+      '/api': 'http://localhost:3000'
     }
   }
 })

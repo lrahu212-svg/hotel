@@ -69,159 +69,195 @@ export const App: React.FC = () => {
       setTablesOccupancy(parsed);
     }
 
+    const handleIncoming = (msg: any) => {
+      switch (msg.type) {
+        case 'SYNC_STATE': {
+          setOrders(msg.orders);
+          setRequests(msg.requests);
+          
+          const parsed = msg.tablesOccupancy;
+          const total = getTablesCount();
+          for (let i = 1; i <= total; i++) {
+            if (!parsed[i.toString()]) {
+              parsed[i.toString()] = { occupied: false };
+            }
+          }
+          setTablesOccupancy(parsed);
+          
+          localStorage.setItem('hotel_orders', JSON.stringify(msg.orders));
+          localStorage.setItem('hotel_requests', JSON.stringify(msg.requests));
+          localStorage.setItem('hotel_tables_occupancy', JSON.stringify(parsed));
+          
+          if (msg.settings) {
+            if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
+            if (msg.settings.kitchenConfigs) localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
+            if (msg.settings.razorpayLink !== undefined) localStorage.setItem('owner_razorpay_link', msg.settings.razorpayLink || '');
+          }
+          break;
+        }
+        case 'NEW_ORDER': {
+          setOrders(prev => {
+            const nextOrders = [...prev.filter(o => o.id !== msg.order.id), { ...msg.order, customerName: msg.order.customerName }];
+            localStorage.setItem('hotel_orders', JSON.stringify(nextOrders));
+            return nextOrders;
+          });
+          break;
+        }
+        case 'UPDATE_ORDER_STATUS': {
+          setOrders(prev => {
+            const updated = prev.map(o => {
+              if (o.id === msg.orderId) {
+                let newItems = o.items;
+                if (msg.status === 'Ready' || msg.status === 'Served') {
+                  newItems = o.items.map(item => ({ ...item, status: msg.status }));
+                }
+                return { ...o, status: msg.status, servedBy: msg.servedBy || o.servedBy, items: newItems };
+              }
+              return o;
+            });
+            localStorage.setItem('hotel_orders', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'UPDATE_ORDER_ITEM_STATUS': {
+          setOrders(prev => {
+            const updated = prev.map(o => {
+              if (o.id === msg.orderId) {
+                const newItems = [...o.items];
+                if (newItems[msg.itemIndex]) {
+                  newItems[msg.itemIndex] = { ...newItems[msg.itemIndex], status: msg.status };
+                }
+                const allServed = newItems.every(item => item.status === 'Served');
+                const allReadyOrServed = newItems.every(item => item.status === 'Ready' || item.status === 'Served');
+                const newOrderStatus = allServed ? 'Served' : (allReadyOrServed ? 'Ready' : (o.status === 'Pending' ? 'Preparing' : o.status));
+
+                return { ...o, items: newItems, status: newOrderStatus };
+              }
+              return o;
+            });
+            localStorage.setItem('hotel_orders', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'UPDATE_SETTINGS': {
+          if (msg.settings.kitchenMode) {
+            localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
+            window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
+          }
+          if (msg.settings.kitchenConfigs) {
+            localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
+          }
+          if (msg.settings.razorpayLink !== undefined) {
+            localStorage.setItem('owner_razorpay_link', msg.settings.razorpayLink || '');
+            window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
+          }
+          break;
+        }
+        case 'NEW_SERVICE_REQUEST': {
+          setRequests(prev => {
+            const updated = [...prev.filter(r => r.id !== msg.request.id), msg.request];
+            localStorage.setItem('hotel_requests', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'RESOLVE_SERVICE_REQUEST': {
+          setRequests(prev => {
+            const updated = prev.map(r => r.id === msg.requestId ? { ...r, status: 'Resolved' as const, resolvedBy: msg.resolvedBy || r.resolvedBy } : r);
+            localStorage.setItem('hotel_requests', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'TABLE_CHECK_IN': {
+          setTablesOccupancy(prev => {
+            const updated = {
+              ...prev,
+              [msg.tableId]: {
+                occupied: true,
+                customerName: msg.customerName,
+                guestsCount: msg.guestsCount,
+                checkInTime: Date.now(),
+                openedBy: msg.openedBy || 'Customer',
+                phone: msg.phone
+              }
+            };
+            localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'TABLE_CHECK_OUT': {
+          setTablesOccupancy(prev => {
+            const updated = {
+              ...prev,
+              [msg.tableId]: { occupied: false }
+            };
+            localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
+            return updated;
+          });
+          setOrders(prev => {
+            const updated = prev.map(o => o.tableId === msg.tableId ? { ...o, tableId: `${msg.tableId}_archived_${Date.now()}`, status: 'Served' as const } : o);
+            localStorage.setItem('hotel_orders', JSON.stringify(updated));
+            return updated;
+          });
+          setRequests(prev => {
+            const updated = prev.map(r => r.tableId === msg.tableId ? { ...r, status: 'Resolved' as const } : r);
+            localStorage.setItem('hotel_requests', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+      }
+    };
+
     // Connect to Node.js SSE Sync Server
     const eventSource = new EventSource(`/events`);
 
     eventSource.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        switch (msg.type) {
-          case 'SYNC_STATE': {
-            setOrders(msg.orders);
-            setRequests(msg.requests);
-            
-            const parsed = msg.tablesOccupancy;
-            const total = getTablesCount();
-            for (let i = 1; i <= total; i++) {
-              if (!parsed[i.toString()]) {
-                parsed[i.toString()] = { occupied: false };
-              }
-            }
-            setTablesOccupancy(parsed);
-            
-            localStorage.setItem('hotel_orders', JSON.stringify(msg.orders));
-            localStorage.setItem('hotel_requests', JSON.stringify(msg.requests));
-            localStorage.setItem('hotel_tables_occupancy', JSON.stringify(parsed));
-            
-            if (msg.settings) {
-              if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
-              if (msg.settings.kitchenConfigs) localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
-            }
-            break;
-          }
-          case 'NEW_ORDER': {
-            setOrders(prev => {
-              const nextOrders = [...prev.filter(o => o.id !== msg.order.id), { ...msg.order, customerName: msg.order.customerName }];
-              localStorage.setItem('hotel_orders', JSON.stringify(nextOrders));
-              return nextOrders;
-            });
-            break;
-          }
-          case 'UPDATE_ORDER_STATUS': {
-            setOrders(prev => {
-              const updated = prev.map(o => {
-                if (o.id === msg.orderId) {
-                  let newItems = o.items;
-                  if (msg.status === 'Ready' || msg.status === 'Served') {
-                    newItems = o.items.map(item => ({ ...item, status: msg.status }));
-                  }
-                  return { ...o, status: msg.status, servedBy: msg.servedBy || o.servedBy, items: newItems };
-                }
-                return o;
-              });
-              localStorage.setItem('hotel_orders', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
-          case 'UPDATE_ORDER_ITEM_STATUS': {
-            setOrders(prev => {
-              const updated = prev.map(o => {
-                if (o.id === msg.orderId) {
-                  const newItems = [...o.items];
-                  if (newItems[msg.itemIndex]) {
-                    newItems[msg.itemIndex] = { ...newItems[msg.itemIndex], status: msg.status };
-                  }
-                  const allServed = newItems.every(item => item.status === 'Served');
-                  const allReadyOrServed = newItems.every(item => item.status === 'Ready' || item.status === 'Served');
-                  const newOrderStatus = allServed ? 'Served' : (allReadyOrServed ? 'Ready' : (o.status === 'Pending' ? 'Preparing' : o.status));
-
-                  return { ...o, items: newItems, status: newOrderStatus };
-                }
-                return o;
-              });
-              localStorage.setItem('hotel_orders', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
-          case 'UPDATE_SETTINGS': {
-            if (msg.settings.kitchenMode) {
-              localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
-              window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
-            }
-            if (msg.settings.kitchenConfigs) {
-              localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
-            }
-            break;
-          }
-          case 'NEW_SERVICE_REQUEST': {
-            setRequests(prev => {
-              const updated = [...prev.filter(r => r.id !== msg.request.id), msg.request];
-              localStorage.setItem('hotel_requests', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
-          case 'RESOLVE_SERVICE_REQUEST': {
-            setRequests(prev => {
-              const updated = prev.map(r => r.id === msg.requestId ? { ...r, status: 'Resolved' as const, resolvedBy: msg.resolvedBy || r.resolvedBy } : r);
-              localStorage.setItem('hotel_requests', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
-          case 'TABLE_CHECK_IN': {
-            setTablesOccupancy(prev => {
-              const updated = {
-                ...prev,
-                [msg.tableId]: {
-                  occupied: true,
-                  customerName: msg.customerName,
-                  guestsCount: msg.guestsCount,
-                  checkInTime: Date.now(),
-                  openedBy: msg.openedBy || 'Customer',
-                  phone: msg.phone
-                }
-              };
-              localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
-          case 'TABLE_CHECK_OUT': {
-            setTablesOccupancy(prev => {
-              const updated = {
-                ...prev,
-                [msg.tableId]: { occupied: false }
-              };
-              localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
-              return updated;
-            });
-            setOrders(prev => {
-              const updated = prev.map(o => o.tableId === msg.tableId ? { ...o, tableId: `${msg.tableId}_archived_${Date.now()}`, status: 'Served' as const } : o);
-              localStorage.setItem('hotel_orders', JSON.stringify(updated));
-              return updated;
-            });
-            setRequests(prev => {
-              const updated = prev.map(r => r.tableId === msg.tableId ? { ...r, status: 'Resolved' as const } : r);
-              localStorage.setItem('hotel_requests', JSON.stringify(updated));
-              return updated;
-            });
-            break;
-          }
+        handleIncoming(msg);
+        
+        // Sync locally with other tabs
+        try {
+          const channel = new BroadcastChannel('hotel_ordering_system');
+          channel.postMessage(msg);
+          channel.close();
+        } catch (bcErr) {
+          // ignore
         }
       } catch (err) {
         console.error('Error parsing SSE event:', err);
       }
     };
 
+    // Listen to local BroadcastChannel from other tabs
+    const localChannel = new BroadcastChannel('hotel_ordering_system');
+    localChannel.onmessage = (event) => {
+      if (event.data) {
+        handleIncoming(event.data);
+      }
+    };
+
     return () => {
       eventSource.close();
+      localChannel.close();
     };
   }, []);
 
   const postSyncEvent = async (event: any) => {
+    // Broadcast locally immediately so other tabs of the same browser update in-place instantly
+    try {
+      const channel = new BroadcastChannel('hotel_ordering_system');
+      channel.postMessage(event);
+      channel.close();
+    } catch (bcErr) {
+      // ignore
+    }
+
     try {
         await fetch(`/event`, {
         method: 'POST',
@@ -381,12 +417,12 @@ export const App: React.FC = () => {
   };
 
   const handleResetAllData = () => {
-    setOrders([]);
-    setRequests([]);
-    setTablesOccupancy(getInitialOccupancy());
     localStorage.removeItem('hotel_orders');
     localStorage.removeItem('hotel_requests');
     localStorage.removeItem('hotel_tables_occupancy');
+    setOrders([]);
+    setRequests([]);
+    setTablesOccupancy(getInitialOccupancy());
     postSyncEvent({ type: 'SYNC_STATE', orders: [], requests: [], tablesOccupancy: getInitialOccupancy() });
   };
 

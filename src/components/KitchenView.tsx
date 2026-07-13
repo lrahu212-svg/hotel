@@ -148,10 +148,12 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       } else if (key === 'Enter') {
         e.preventDefault();
         if (currentFocusedOrder) {
-          if (openedViaNumber) {
+          const kitchenMode = localStorage.getItem('hotel_kitchen_mode') || 'monitor';
+          if (openedViaNumber || kitchenMode === 'printer') {
             // Ready all
             markAllComplete(currentFocusedOrder);
             setOpenedViaNumber(false);
+            setIsNavigatingItems(false);
           } else if (isNavigatingItems) {
             // Toggle focused item
             const item = currentFocusedOrder.filteredItems[focusedItemIndex];
