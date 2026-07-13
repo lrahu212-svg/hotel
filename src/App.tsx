@@ -218,6 +218,11 @@ export const App: React.FC = () => {
             localStorage.setItem('hotel_requests', JSON.stringify(updated));
             return updated;
           });
+          
+          // Dispatch local custom event to trigger printing on Reception Desk
+          window.dispatchEvent(new CustomEvent('TABLE_SETTLED', { 
+            detail: { tableId: msg.tableId, paymentMethod: msg.paymentMethod } 
+          }));
           break;
         }
       }

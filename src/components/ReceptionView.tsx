@@ -225,29 +225,39 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
     }, 100);
   };
 
+  // Track printed sessions to prevent duplicate prints
+  const printedCheckouts = useRef(new Set<string>());
+
   useEffect(() => {
-    const channel = new BroadcastChannel('hotel_ordering_system');
-    channel.onmessage = (event) => {
-      if (event.data && event.data.type === 'TABLE_CHECK_OUT') {
-        const { tableId, paymentMethod } = event.data;
-        
-        // Find orders for this table session
-        let tableOrders = orders.filter(o => o.tableId === tableId);
-        if (tableOrders.length === 0) {
-          const now = Date.now();
-          tableOrders = orders.filter(o => 
-            o.tableId.startsWith(`${tableId}_archived_`) && 
-            now - parseInt(o.tableId.split('_archived_')[1], 10) < 15000
-          );
+    const handleSettled = (event: Event) => {
+      const { tableId, paymentMethod } = (event as CustomEvent).detail;
+      if (!tableId) return;
+
+      // Find orders for this table session
+      let tableOrders = orders.filter(o => o.tableId === tableId);
+      if (tableOrders.length === 0) {
+        const now = Date.now();
+        tableOrders = orders.filter(o => 
+          o.tableId.startsWith(`${tableId}_archived_`) && 
+          now - parseInt(o.tableId.split('_archived_')[1], 10) < 15000
+        );
+      }
+
+      if (tableOrders.length > 0) {
+        // Create a unique print ID using order IDs to prevent duplicate printing of the same bill
+        const printId = `${tableId}_${tableOrders.map(o => o.id).sort().join('_')}`;
+        if (printedCheckouts.current.has(printId)) {
+          return; // Already printed this session's bill!
         }
-        
-        if (tableOrders.length > 0) {
-          enqueueBillPrint(tableId, paymentMethod || 'Unspecified', tableOrders);
-        }
+        printedCheckouts.current.add(printId);
+
+        enqueueBillPrint(tableId, paymentMethod || 'Unspecified', tableOrders);
       }
     };
+
+    window.addEventListener('TABLE_SETTLED', handleSettled);
     return () => {
-      channel.close();
+      window.removeEventListener('TABLE_SETTLED', handleSettled);
     };
   }, [orders]);
 
