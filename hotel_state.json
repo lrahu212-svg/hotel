@@ -131,7 +131,11 @@
       "occupied": false
     },
     "2": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "ad",
+      "guestsCount": 1,
+      "checkInTime": 1783920684219,
+      "openedBy": "Customer"
     },
     "3": {
       "occupied": false

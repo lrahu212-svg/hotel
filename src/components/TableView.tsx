@@ -95,7 +95,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
   // Reset local states when table occupancy changes to unoccupied
   useEffect(() => {
-    if (!occupancy.occupied) {
+    if (!occupancy.occupied && !showCheckOutSuccess && !paymentSuccess) {
       setCart({});
       setRazorpayLink(null);
       setRazorpayLinkId(null);
@@ -105,7 +105,7 @@ export const TableView: React.FC<TableViewProps> = ({
       sessionStorage.removeItem(`table_session_active_${tableId}`);
       setSessionActive(false);
     }
-  }, [occupancy.occupied, tableId]);
+  }, [occupancy.occupied, showCheckOutSuccess, paymentSuccess, tableId]);
 
   // Login inputs
   const [custName, setCustName] = useState<string>('');
