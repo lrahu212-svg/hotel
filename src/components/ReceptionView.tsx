@@ -316,10 +316,20 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem('hotel_registered_waiters');
-    if (saved) {
-      setWaiters(JSON.parse(saved));
-    }
+    const syncWaiters = () => {
+      const saved = localStorage.getItem('hotel_registered_waiters');
+      if (saved) {
+        setWaiters(JSON.parse(saved));
+      } else {
+        setWaiters([]);
+      }
+    };
+    syncWaiters();
+
+    window.addEventListener('storage', syncWaiters);
+    return () => {
+      window.removeEventListener('storage', syncWaiters);
+    };
   }, []);
 
   const saveWaiters = (updated: Waiter[]) => {
