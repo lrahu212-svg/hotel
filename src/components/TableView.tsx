@@ -9,7 +9,7 @@ interface TableViewProps {
   orders: Order[];
   requests: ServiceRequest[];
   onCheckIn: (name: string, guests: number, openedBy?: 'Customer' | 'Waiter', phone?: string) => void;
-  onCheckOut: () => void;
+  onCheckOut: (paymentMethod?: 'Cash' | 'UPI') => void;
   onPlaceOrder: (items: OrderItem[]) => void;
   onCallWaiter: (type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed') => void;
   isWaiterMode?: boolean;
@@ -73,8 +73,11 @@ export const TableView: React.FC<TableViewProps> = ({
   // Auto-checkout and logout after successful payment
   useEffect(() => {
     if (paymentSuccess) {
+      setShowCheckOutSuccess(true);
+      // Check out immediately with UPI to trigger the bill print on reception
+      onCheckOut('UPI');
+      
       const timer = setTimeout(() => {
-        onCheckOut();
         sessionStorage.removeItem(`table_session_active_${tableId}`);
         setSessionActive(false);
       }, 5000);

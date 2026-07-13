@@ -458,7 +458,7 @@ export const App: React.FC = () => {
             orders={orders}
             requests={requests}
             onCheckIn={(name, guests, openedBy, phone) => handleTableCheckIn(tableId, name, guests, openedBy, phone)}
-            onCheckOut={() => handleTableCheckOut(tableId)}
+            onCheckOut={(paymentMethod) => handleTableCheckOut(tableId, paymentMethod)}
             onPlaceOrder={(items) => handlePlaceOrder(tableId, items)}
             onCallWaiter={(type) => handleCallWaiter(tableId, type)}
           />
