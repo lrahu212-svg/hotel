@@ -17,7 +17,8 @@ let state = {
   requests: [],
   tablesOccupancy: {},
   settings: {},
-  reservations: []
+  reservations: [],
+  inventory: []
 };
 
 // Load state from file if exists
@@ -26,11 +27,23 @@ try {
     const raw = fs.readFileSync(STATE_FILE, 'utf8');
     if (raw) {
       state = JSON.parse(raw);
+      if (!state.inventory) state.inventory = [];
       console.log('Loaded state from hotel_state.json');
     }
   }
 } catch (err) {
   console.error('Error loading state file:', err.message);
+}
+
+// Seed default inventory values if empty
+if (!state.inventory || state.inventory.length === 0) {
+  state.inventory = [
+    { id: 'inv_1', name: 'Coffee Beans', quantity: 2000, unit: 'g', threshold: 500 },
+    { id: 'inv_2', name: 'Milk', quantity: 5000, unit: 'ml', threshold: 1000 },
+    { id: 'inv_3', name: 'Flour', quantity: 3000, unit: 'g', threshold: 1000 },
+    { id: 'inv_4', name: 'Sugar', quantity: 1500, unit: 'g', threshold: 300 },
+    { id: 'inv_5', name: 'Water', quantity: 10000, unit: 'ml', threshold: 2000 }
+  ];
 }
 
 const saveState = () => {
@@ -78,6 +91,48 @@ app.post('/event', (req, res) => {
     // Update local server state
     if (event.type === 'NEW_ORDER') {
       state.orders = [...state.orders.filter(o => o.id !== event.order.id), event.order];
+      
+      // Deduct ingredients from inventory
+      const INGREDIENT_MAPS = {
+        'c1': { 'inv_1': 15, 'inv_5': 50 }, // Espresso
+        'c2': { 'inv_1': 30, 'inv_5': 100 }, // Double Espresso
+        'c3': { 'inv_1': 15, 'inv_5': 200 }, // Americano
+        'c4': { 'inv_1': 15, 'inv_2': 50, 'inv_5': 50 }, // Macchiato
+        'c5': { 'inv_1': 15, 'inv_2': 150, 'inv_5': 50 }, // Cappuccino
+        'c6': { 'inv_1': 15, 'inv_2': 200, 'inv_5': 50 }, // Latte
+        'm1': { 'inv_3': 100, 'inv_2': 50, 'inv_4': 20 }, // Pancake
+        'm2': { 'inv_3': 50, 'inv_4': 30 } // Pastry
+      };
+
+      if (event.order.items) {
+        event.order.items.forEach(item => {
+          const recipe = INGREDIENT_MAPS[item.menuItemId];
+          if (recipe) {
+            Object.entries(recipe).forEach(([ingId, qtyNeeded]) => {
+              const ing = state.inventory.find(i => i.id === ingId);
+              if (ing) {
+                ing.quantity = Math.max(0, ing.quantity - (qtyNeeded * item.quantity));
+                // Add system alert warning if quantity falls below threshold
+                if (ing.quantity < ing.threshold) {
+                  const alertId = `alert_${ingId}_${Date.now()}`;
+                  const alertMessage = `⚠️ Low stock warning: ${ing.name} is down to ${ing.quantity}${ing.unit} (Threshold: ${ing.threshold}${ing.unit})`;
+                  const alreadyAlerted = state.requests.some(r => r.type === 'Warning' && r.text.includes(ing.name) && r.status !== 'Resolved');
+                  if (!alreadyAlerted) {
+                    state.requests.push({
+                      id: alertId,
+                      tableId: 'System',
+                      type: 'Warning',
+                      text: alertMessage,
+                      status: 'Pending',
+                      timestamp: Date.now()
+                    });
+                  }
+                }
+              }
+            });
+          }
+        });
+      }
     } else if (event.type === 'UPDATE_ORDER_STATUS') {
       state.orders = state.orders.map(o => {
         if (o.id === event.orderId) {
@@ -127,11 +182,20 @@ app.post('/event', (req, res) => {
       state.reservations = [...(state.reservations || []).filter(r => r.id !== event.reservation.id), event.reservation];
     } else if (event.type === 'REMOVE_RESERVATION') {
       state.reservations = (state.reservations || []).filter(r => r.id !== event.reservationId);
+    } else if (event.type === 'UPDATE_INVENTORY') {
+      state.inventory = event.inventory || [];
+    } else if (event.type === 'ADD_TABLE') {
+      state.tablesOccupancy[event.tableId] = { occupied: false };
+    } else if (event.type === 'REMOVE_TABLE') {
+      delete state.tablesOccupancy[event.tableId];
+      // Clean up requests and orders for that table
+      state.requests = state.requests.filter(r => r.tableId !== event.tableId);
     } else if (event.type === 'SYNC_STATE') {
       state.orders = event.orders || [];
       state.requests = event.requests || [];
       state.tablesOccupancy = event.tablesOccupancy || {};
       state.reservations = event.reservations || [];
+      state.inventory = event.inventory || [];
       if (event.settings) {
         if (event.settings.resetAllSettings) {
           state.settings = {};

@@ -2,7 +2,7 @@
   "orders": [
     {
       "id": "ord_duo8iemwj",
-      "tableId": "1",
+      "tableId": "1_archived_1784019555339",
       "items": [
         {
           "menuItemId": "c1",
@@ -18,16 +18,97 @@
       "totalAmount": 3,
       "customerName": "r",
       "servedBy": "rahul"
+    },
+    {
+      "id": "ord_zt28vgx8c",
+      "tableId": "1_archived_1784037129605",
+      "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Ready"
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1784036384800,
+      "totalAmount": 3,
+      "customerName": "hanual"
+    },
+    {
+      "id": "ord_qllvufn0c",
+      "tableId": "2_archived_1784037130363",
+      "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3,
+          "status": "Ready"
+        },
+        {
+          "menuItemId": "c2",
+          "quantity": 1,
+          "notes": "",
+          "name": "Double Espresso",
+          "price": 3.75,
+          "status": "Ready"
+        },
+        {
+          "menuItemId": "c3",
+          "quantity": 1,
+          "notes": "",
+          "name": "Americano",
+          "price": 3.5,
+          "status": "Ready"
+        },
+        {
+          "menuItemId": "c4",
+          "quantity": 1,
+          "notes": "",
+          "name": "Macchiato",
+          "price": 3.75,
+          "status": "Ready"
+        },
+        {
+          "menuItemId": "c5",
+          "quantity": 1,
+          "notes": "",
+          "name": "Cortado",
+          "price": 4,
+          "status": "Ready"
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1784036585587,
+      "totalAmount": 18,
+      "customerName": "John Doe"
+    },
+    {
+      "id": "ord_lfxv8g3am",
+      "tableId": "1_archived_1784038464168",
+      "items": [
+        {
+          "menuItemId": "c1",
+          "quantity": 1,
+          "notes": "",
+          "name": "Espresso",
+          "price": 3
+        }
+      ],
+      "status": "Served",
+      "timestamp": 1784038442889,
+      "totalAmount": 3,
+      "customerName": "jolla"
     }
   ],
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": true,
-      "customerName": "r",
-      "guestsCount": 1,
-      "checkInTime": 1783931651479,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "2": {
       "occupied": false
@@ -50,7 +131,7 @@
   },
   "reservations": [],
   "serverSecrets": {
-    "razorpayKeyId": "rzp_live_TCdn0D9fpsXvS6",
+    "razorpayKeyId": "",
     "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
   }
 }

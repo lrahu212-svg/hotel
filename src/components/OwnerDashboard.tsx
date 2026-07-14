@@ -14,67 +14,6 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const MENU_ITEMS = useMenu();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [razorpayKeyId, setRazorpayKeyId] = useState('');
-  const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
-  const [razorpayLink, setRazorpayLink] = useState('');
-  const [reservationAdvance, setReservationAdvance] = useState<string>('');
-  const [saveStatus, setSaveStatus] = useState('');
-
-  // Load existing values
-  useEffect(() => {
-    const savedKeyId = localStorage.getItem('owner_razorpay_key_id');
-    if (savedKeyId) setRazorpayKeyId(savedKeyId);
-    const savedLink = localStorage.getItem('owner_razorpay_link');
-    if (savedLink) setRazorpayLink(savedLink);
-    const savedAdvance = localStorage.getItem('owner_reservation_advance');
-    if (savedAdvance) setReservationAdvance(savedAdvance);
-  }, []);
-
-  const handleSaveKeys = async () => {
-    try {
-      setSaveStatus('Saving...');
-      
-      // Save secure keys on backend
-      const response = await fetch('/api/save-razorpay-keys', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyId: razorpayKeyId, keySecret: razorpayKeySecret })
-      });
-
-      // Save static payment link / UPI link in system settings and broadcast
-      const linkResponse = await fetch('/event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'UPDATE_SETTINGS',
-          settings: { razorpayLink: razorpayLink }
-        })
-      });
-
-      if (response.ok && linkResponse.ok) {
-        localStorage.setItem('owner_razorpay_key_id', razorpayKeyId);
-        localStorage.setItem('owner_razorpay_link', razorpayLink);
-        // Save reservation advance amount
-        if (reservationAdvance.trim() !== '') {
-          localStorage.setItem('owner_reservation_advance', reservationAdvance.trim());
-        } else {
-          localStorage.removeItem('owner_reservation_advance');
-        }
-        setSaveStatus('✅ Settings saved securely!');
-        setTimeout(() => setSaveStatus(''), 3000);
-      } else {
-        setSaveStatus('Failed to save settings.');
-      }
-    } catch (err) {
-      setSaveStatus('Error saving settings.');
-    }
-  };
-
-  // Legacy function removed
-
-
-  
-  // Table Configuration count
   const [ownerTablesCount, setOwnerTablesCount] = useState<number>(parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
 
   // Active waiters state
@@ -241,69 +180,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         </div>
       </header>
 
-      {/* System Settings */}
-      <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h3 style={{ fontSize: '1.1rem', color: '#1a1a1a', margin: 0, fontWeight: 800, textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Secure Razorpay Integration</h3>
-        <p style={{ fontSize: '0.85rem', color: '#555', margin: 0, fontWeight: 600 }}>
-          Configure dynamic or static Razorpay payments. For dynamic links (locked pricing per bill), enter the <b>Key ID</b> and <b>Key Secret</b>. Alternatively, enter a <b>Static Payment/UPI Link</b> (customers will click this and manually type/confirm their amount).
-        </p>
-        
-        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Key ID</label>
-            <input 
-              type="text" 
-              placeholder="rzp_live_xxxxxxxxxxxxxx" 
-              value={razorpayKeyId} 
-              onChange={e => setRazorpayKeyId(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
-            />
-          </div>
-          <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Key Secret (Hidden)</label>
-            <input 
-              type="password" 
-              placeholder="Enter new Key Secret to update" 
-              value={razorpayKeySecret} 
-              onChange={e => setRazorpayKeySecret(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
-            />
-          </div>
-          <div style={{ flex: 1.5, minWidth: '250px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Static UPI / Razorpay Link (Alternative)</label>
-            <input 
-              type="text" 
-              placeholder="https://rzp.io/i/xxxxxx or upi://pay?..." 
-              value={razorpayLink} 
-              onChange={e => setRazorpayLink(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
-            />
-          </div>
-          <div style={{ flex: '0 0 180px', minWidth: '150px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#d92626', marginBottom: '0.25rem', fontWeight: 800 }}>🪙 Reservation Advance (₹)</label>
-            <input 
-              type="number" 
-              min="0"
-              step="1"
-              placeholder="e.g. 200  (0 = free)" 
-              value={reservationAdvance} 
-              onChange={e => setReservationAdvance(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #1a1a1a', borderRadius: '0px', color: '#1a1a1a', outline: 'none', fontWeight: 800 }} 
-            />
-            <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#555', fontWeight: 600 }}>Charged via Razorpay before reservation is confirmed</p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-            <button
-              onClick={handleSaveKeys}
-              className="btn-constructivist-secondary"
-              style={{ padding: '0.75rem 1.5rem', fontSize: '0.9rem', boxShadow: '2px 2px 0px #1a1a1a' }}
-            >
-              Save Settings
-            </button>
-          </div>
-        </div>
-        {saveStatus && <p style={{ margin: 0, fontSize: '0.85rem', color: saveStatus.includes('Error') || saveStatus.includes('Failed') ? 'var(--status-cancelled)' : 'var(--status-ready)' }}>{saveStatus}</p>}
-      </div>
+
 
       {/* Financial Overview Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
@@ -314,10 +191,10 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
             <DollarSign size={100} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--status-ready)', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Gross Revenue</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Gross Revenue</span>
             <DollarSign size={20} />
           </div>
-          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff' }}>₹{totalRevenue.toFixed(2)}</h3>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b' }}>₹{totalRevenue.toFixed(2)}</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--status-ready)', marginTop: '0.25rem' }}>
             From {servedOrders.length} completed transactions
           </p>
@@ -326,11 +203,11 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         {/* Net Profit */}
         <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '3px solid var(--status-ready)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--status-ready)', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Net Profit</span>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Net Profit</span>
             <TrendingUp size={20} />
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--status-ready)' }}>₹{netProfit.toFixed(2)}</h3>
-          <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
             Net earnings after ingredients
           </p>
         </div>
@@ -343,7 +220,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         
         {/* Category Sales Visual Chart */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b' }}>
             Revenue distribution by Food Category
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -353,13 +230,13 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                 <div key={category}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.35rem' }}>
                     <span style={{ fontWeight: 550 }}>{category}</span>
-                    <span style={{ fontWeight: 700, color: '#fff' }}>₹{value.toFixed(2)}</span>
+                    <span style={{ fontWeight: 700, color: '#1e293b' }}>₹{value.toFixed(2)}</span>
                   </div>
-                  <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(0,0,0,0.06)', borderRadius: '4px', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div style={{
                       width: `${percentage}%`,
                       height: '100%',
-                      background: 'linear-gradient(90deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)',
+                      background: 'linear-gradient(90deg, var(--accent-primary) 0%, #06b6d4 100%)',
                       borderRadius: '4px',
                       transition: 'width 0.5s ease-out'
                     }} />
@@ -372,7 +249,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
 
         {/* Top Selling Leaderboard */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff' }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b' }}>
             Top Selling Dishes (by Quantity)
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -393,16 +270,16 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                     />
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: 550, color: '#f8fafc' }}>{name}</span>
-                        <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                          <strong style={{ color: 'var(--accent-secondary)' }}>{stat.qty} units</strong> (₹{stat.revenue.toFixed(2)})
+                        <span style={{ fontWeight: 550, color: '#1e293b' }}>{name}</span>
+                        <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                          <strong style={{ color: 'var(--accent-primary)' }}>{stat.qty} units</strong> (₹{stat.revenue.toFixed(2)})
                         </span>
                       </div>
-                      <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                         <div style={{
                           width: `${percentage}%`,
                           height: '100%',
-                          background: 'var(--accent-secondary)',
+                          background: 'var(--accent-primary)',
                           borderRadius: '3px',
                           transition: 'width 0.5s ease-out'
                         }} />
@@ -418,15 +295,15 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
 
       {/* Comprehensive Dish Sales Report */}
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <TrendingUp size={18} color="var(--accent-secondary)" /> Comprehensive Dish Sales Ledger
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <TrendingUp size={18} color="var(--accent-primary)" /> Comprehensive Dish Sales Ledger
         </h2>
         {allSortedDishes.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: '0.9rem', textAlign: 'center', padding: '2rem' }}>No orders served yet to compile list.</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
             {allSortedDishes.map(([name, stat]) => (
-              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
+              <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
                 <img 
                   src={stat.image} 
                   alt={name}
@@ -436,15 +313,15 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                   style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc', marginBottom: '0.25rem' }}>{name}</div>
-                  <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                    <strong style={{ color: 'var(--accent-secondary)' }}>{stat.qty} units</strong> sold
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.25rem' }}>{name}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    <strong style={{ color: 'var(--accent-primary)' }}>{stat.qty} units</strong> sold
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Revenue</div>
-                  <div style={{ fontWeight: 700, color: '#fff', fontSize: '1rem' }}>
-                    ${stat.revenue.toFixed(2)}
+                  <div style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Revenue</div>
+                  <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>
+                    ₹{stat.revenue.toFixed(2)}
                   </div>
                 </div>
               </div>
@@ -455,8 +332,8 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
 
       {/* Table Map */}
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Layers size={20} color="var(--accent-secondary)" /> Table Map
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Layers size={20} color="var(--accent-primary)" /> Table Map
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
           {allTables.length === 0 ? (
@@ -609,7 +486,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', color: '#94a3b8' }}>
+              <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', color: '#64748b' }}>
                 <th style={{ padding: '1rem' }}>Order ID</th>
                 <th style={{ padding: '1rem' }}>Time</th>
                 <th style={{ padding: '1rem' }}>Table</th>
@@ -631,16 +508,16 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                   const profit = getOrderProfit(order);
                   const margin = order.totalAmount > 0 ? (profit / order.totalAmount) * 100 : 0;
                   return (
-                    <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.01)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#cbd5e1' }}>#{order.id.slice(-6).toUpperCase()}</td>
+                    <tr key={order.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#475569' }}>#{order.id.slice(-6).toUpperCase()}</td>
                       <td style={{ padding: '1rem', color: '#64748b' }}>
                         {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td style={{ padding: '1rem', fontWeight: 600 }}>
                         Table {order.tableId.split('_archived_')[0]}
-                        {order.customerName && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-secondary)' }}>{order.customerName}</span>}
+                        {order.customerName && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-primary)' }}>{order.customerName}</span>}
                       </td>
-                      <td style={{ padding: '1rem', color: '#e2e8f0' }}>
+                      <td style={{ padding: '1rem', color: '#475569' }}>
                         {order.items.map((item, idx) => (
                           <span key={idx} style={{ display: 'block', fontSize: '0.85rem' }}>
                             {item.quantity}x {item.name}
@@ -666,12 +543,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                           </span>
                         )}
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#fff' }}>
-                        ${order.totalAmount.toFixed(2)}
+                      <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#1e293b' }}>
+                        ₹{order.totalAmount.toFixed(2)}
                       </td>
                       <td style={{ padding: '1rem', textAlign: 'right' }}>
                         <span style={{ color: profit >= 0 ? 'var(--status-ready)' : 'var(--status-cancelled)', fontWeight: 650 }}>
-                          +${profit.toFixed(2)}
+                          +₹{profit.toFixed(2)}
                         </span>
                         <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>
                           ({margin.toFixed(0)}% margin)
@@ -685,7 +562,95 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
           </table>
         </div>
       </div>
-      
+
+      {/* Visitor Frequency Ledger */}
+      <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem', marginBottom: '2.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-secondary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          👥 Guest Visit Frequency & Loyalty
+        </h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.08)', color: '#64748b' }}>
+                <th style={{ padding: '1rem' }}>Guest Name</th>
+                <th style={{ padding: '1rem' }}>Total Visits</th>
+                <th style={{ padding: '1rem' }}>Total Spend</th>
+                <th style={{ padding: '1rem' }}>Last Visit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                // Group by customerName
+                const customerMap: { [name: string]: { visits: number; spend: number; lastVisit: number } } = {};
+                orders.forEach(o => {
+                  if (o.customerName && o.customerName.trim()) {
+                    const name = o.customerName.trim();
+                    if (!customerMap[name]) {
+                      customerMap[name] = { visits: 0, spend: 0, lastVisit: 0 };
+                    }
+                    customerMap[name].spend += o.totalAmount;
+                    if (o.timestamp > customerMap[name].lastVisit) {
+                      customerMap[name].lastVisit = o.timestamp;
+                    }
+                  }
+                });
+                
+                const visitorVisits: { [name: string]: Set<string> } = {};
+                orders.forEach(o => {
+                  if (o.customerName && o.customerName.trim()) {
+                    const name = o.customerName.trim();
+                    if (!visitorVisits[name]) {
+                      visitorVisits[name] = new Set();
+                    }
+                    const archiveMatch = o.tableId.split('_archived_')[1];
+                    if (archiveMatch) {
+                      visitorVisits[name].add(archiveMatch);
+                    } else {
+                      visitorVisits[name].add(new Date(o.timestamp).toDateString());
+                    }
+                  }
+                });
+
+                Object.keys(customerMap).forEach(name => {
+                  customerMap[name].visits = visitorVisits[name] ? visitorVisits[name].size : 1;
+                });
+
+                const sortedGuests = Object.entries(customerMap).sort((a, b) => b[1].visits - a[1].visits);
+
+                if (sortedGuests.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+                        No guest history found.
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return sortedGuests.map(([name, stats]) => (
+                  <tr key={name} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                    <td style={{ padding: '1rem', fontWeight: 600, color: '#000' }}>{name}</td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{
+                        background: stats.visits > 1 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(0,0,0,0.05)',
+                        color: stats.visits > 1 ? 'var(--status-ready)' : 'var(--accent-secondary)',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '4px',
+                        fontWeight: 700
+                      }}>
+                        Visited {stats.visits} {stats.visits === 1 ? 'time' : 'times'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 700, color: '#000' }}>₹{stats.spend.toFixed(2)}</td>
+                    <td style={{ padding: '1rem', color: '#64748b' }}>{new Date(stats.lastVisit).toLocaleDateString()}</td>
+                  </tr>
+                ));
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 };

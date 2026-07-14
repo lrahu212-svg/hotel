@@ -30,18 +30,11 @@ export const App: React.FC = () => {
   const [tablesOccupancy, setTablesOccupancy] = useState<{ [tableId: string]: TableOccupancy }>(() => {
     const saved = localStorage.getItem('hotel_tables_occupancy');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      // Ensure it contains all configured table entries
-      const total = getTablesCount();
-      for (let i = 1; i <= total; i++) {
-        if (!parsed[i.toString()]) {
-          parsed[i.toString()] = { occupied: false };
-        }
-      }
-      return parsed;
+      return JSON.parse(saved);
     }
     return getInitialOccupancy();
   });
+  const [inventory, setInventory] = useState<any[]>([]);
 
 
   // Parse path client-side
@@ -60,21 +53,15 @@ export const App: React.FC = () => {
     const savedOrders = localStorage.getItem('hotel_orders');
     const savedRequests = localStorage.getItem('hotel_requests');
     const savedOccupancy = localStorage.getItem('hotel_tables_occupancy');
-    
     const savedReservations = localStorage.getItem('hotel_reservations');
+    const savedInventory = localStorage.getItem('hotel_inventory');
     
     if (savedOrders) setOrders(JSON.parse(savedOrders));
     if (savedRequests) setRequests(JSON.parse(savedRequests));
     if (savedReservations) setReservations(JSON.parse(savedReservations));
+    if (savedInventory) setInventory(JSON.parse(savedInventory));
     if (savedOccupancy) {
-      const parsed = JSON.parse(savedOccupancy);
-      const total = getTablesCount();
-      for (let i = 1; i <= total; i++) {
-        if (!parsed[i.toString()]) {
-          parsed[i.toString()] = { occupied: false };
-        }
-      }
-      setTablesOccupancy(parsed);
+      setTablesOccupancy(JSON.parse(savedOccupancy));
     }
 
     const handleIncoming = (msg: any) => {
@@ -83,20 +70,14 @@ export const App: React.FC = () => {
           setOrders(msg.orders);
           setRequests(msg.requests);
           setReservations(msg.reservations || []);
-          
-          const parsed = msg.tablesOccupancy;
-          const total = getTablesCount();
-          for (let i = 1; i <= total; i++) {
-            if (!parsed[i.toString()]) {
-              parsed[i.toString()] = { occupied: false };
-            }
-          }
-          setTablesOccupancy(parsed);
+          setTablesOccupancy(msg.tablesOccupancy || {});
+          setInventory(msg.inventory || []);
           
           localStorage.setItem('hotel_orders', JSON.stringify(msg.orders));
           localStorage.setItem('hotel_requests', JSON.stringify(msg.requests));
-          localStorage.setItem('hotel_tables_occupancy', JSON.stringify(parsed));
+          localStorage.setItem('hotel_tables_occupancy', JSON.stringify(msg.tablesOccupancy || {}));
           localStorage.setItem('hotel_reservations', JSON.stringify(msg.reservations || []));
+          localStorage.setItem('hotel_inventory', JSON.stringify(msg.inventory || []));
           
           if (msg.settings) {
             if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
@@ -247,6 +228,33 @@ export const App: React.FC = () => {
           setReservations(prev => {
             const updated = prev.filter(r => r.id !== msg.reservationId);
             localStorage.setItem('hotel_reservations', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'UPDATE_INVENTORY': {
+          setInventory(msg.inventory);
+          localStorage.setItem('hotel_inventory', JSON.stringify(msg.inventory));
+          break;
+        }
+        case 'ADD_TABLE': {
+          setTablesOccupancy(prev => {
+            const updated = { ...prev, [msg.tableId]: { occupied: false } };
+            localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
+            return updated;
+          });
+          break;
+        }
+        case 'REMOVE_TABLE': {
+          setTablesOccupancy(prev => {
+            const updated = { ...prev };
+            delete updated[msg.tableId];
+            localStorage.setItem('hotel_tables_occupancy', JSON.stringify(updated));
+            return updated;
+          });
+          setRequests(prev => {
+            const updated = prev.filter(r => r.tableId !== msg.tableId);
+            localStorage.setItem('hotel_requests', JSON.stringify(updated));
             return updated;
           });
           break;
@@ -606,6 +614,11 @@ export const App: React.FC = () => {
         <ReceptionView 
           orders={orders}
           reservations={reservations}
+          tablesOccupancy={tablesOccupancy}
+          inventory={inventory}
+          onUpdateInventory={(inv) => postSyncEvent({ type: 'UPDATE_INVENTORY', inventory: inv })}
+          onAddTable={(tableId) => postSyncEvent({ type: 'ADD_TABLE', tableId })}
+          onRemoveTable={(tableId) => postSyncEvent({ type: 'REMOVE_TABLE', tableId })}
           onRemoveReservation={(reservationId) => postSyncEvent({ type: 'REMOVE_RESERVATION', reservationId })}
           onUpdateSettings={(settings) => postSyncEvent({ type: 'UPDATE_SETTINGS', settings })}
           onResetAllData={handleResetAllData}

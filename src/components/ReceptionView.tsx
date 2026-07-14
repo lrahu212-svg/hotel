@@ -159,103 +159,123 @@ const MenuManagement: React.FC = () => {
   );
 };
 
-// Gmail SMTP Notification Settings component (used in Reception System Config tab)
-const GmailSettings: React.FC<{ showToast: (msg: string) => void }> = ({ showToast }) => {
-  const [gmailUser, setGmailUser] = useState('');
-  const [gmailAppPassword, setGmailAppPassword] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+// Inventory Management sub-panel for ingredients
+const InventoryStockManager: React.FC<{ inventory: any[]; onUpdateInventory?: (inv: any[]) => void }> = ({ inventory, onUpdateInventory }) => {
+  const [ingName, setIngName] = useState('');
+  const [ingQty, setIngQty] = useState('');
+  const [ingUnit, setIngUnit] = useState('g');
+  const [ingThreshold, setIngThreshold] = useState('');
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleAddIngredient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gmailUser.trim()) {
-      showToast('⚠️ Please enter your Gmail address.');
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const res = await fetch('/api/save-gmail-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gmailUser: gmailUser.trim(), gmailAppPassword: gmailAppPassword.trim() })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        showToast('✅ Gmail credentials saved! Reservation emails will now be sent.');
-        setGmailAppPassword('');
-      } else {
-        showToast(`❌ Error: ${data.error}`);
-      }
-    } catch {
-      showToast('❌ Network error saving Gmail credentials.');
-    } finally {
-      setIsSaving(false);
+    if (!ingName || !ingQty) return;
+    const newItem = {
+      id: 'inv_' + Date.now().toString(),
+      name: ingName,
+      quantity: parseFloat(ingQty),
+      unit: ingUnit,
+      threshold: parseFloat(ingThreshold || '0')
+    };
+    onUpdateInventory?.([...inventory, newItem]);
+    setIngName('');
+    setIngQty('');
+    setIngThreshold('');
+  };
+
+  const handleUpdateStock = (id: string, newStock: number) => {
+    const updated = inventory.map(item => item.id === id ? { ...item, quantity: Math.max(0, newStock) } : item);
+    onUpdateInventory?.(updated);
+  };
+
+  const handleDeleteIngredient = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this ingredient from registry?')) {
+      onUpdateInventory?.(inventory.filter(item => item.id !== id));
     }
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem', borderLeft: '4px solid #ea4335' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        📧 Gmail Email Notifications
-      </h2>
-      <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-        Configure your Gmail credentials to automatically send reservation confirmation emails to customers.
-        Use a <strong style={{ color: '#38bdf8' }}>Gmail App Password</strong> (not your regular password).{' '}
-        <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" style={{ color: '#38bdf8' }}>
-          Generate one here ↗
-        </a>
-      </p>
+    <div className="reception-layout-grid animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--accent-secondary)', marginBottom: '1.5rem' }}>
+          ➕ Register New Ingredient
+        </h2>
+        <form onSubmit={handleAddIngredient} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Ingredient Name</label>
+            <input type="text" required value={ingName} onChange={e => setIngName(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Initial Stock</label>
+              <input type="number" required value={ingQty} onChange={e => setIngQty(e.target.value)} style={{ width: '100%' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Unit</label>
+              <select value={ingUnit} onChange={e => setIngUnit(e.target.value)} style={{ width: '100%', height: '38px', padding: '0.35rem' }}>
+                <option value="g">g (grams)</option>
+                <option value="ml">ml (milliliters)</option>
+                <option value="pcs">pcs (pieces)</option>
+                <option value="kg">kg (kilograms)</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Low-Stock Warning Threshold</label>
+            <input type="number" value={ingThreshold} onChange={e => setIngThreshold(e.target.value)} style={{ width: '100%' }} />
+          </div>
+          <button type="submit" className="btn-constructivist-primary" style={{ background: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.75rem', fontWeight: 600 }}>Register Ingredient</button>
+        </form>
+      </div>
 
-      <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '500px' }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Sender Gmail Address
-          </label>
-          <input
-            type="email"
-            placeholder="yourrestaurant@gmail.com"
-            value={gmailUser}
-            onChange={e => setGmailUser(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', color: '#fff', outline: 'none', fontSize: '0.9rem' }}
-          />
+      <div className="glass-panel" style={{ padding: '2rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--accent-secondary)', marginBottom: '1.5rem' }}>
+          📦 Ingredient Inventory Ledger
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+          {inventory.length === 0 ? (
+            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No ingredients registered yet.</p>
+          ) : (
+            inventory.map(item => {
+              const isLow = item.quantity < item.threshold;
+              return (
+                <div key={item.id} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '1rem',
+                  background: isLow ? 'rgba(239, 68, 68, 0.04)' : '#f8fafc',
+                  border: isLow ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid var(--border-glass)',
+                  borderRadius: '12px'
+                }}>
+                  <div>
+                    <strong style={{ color: isLow ? '#ef4444' : 'var(--accent-secondary)', display: 'block' }}>
+                      {item.name} {isLow && '⚠️ (Low Stock)'}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      Threshold: {item.threshold}{item.unit}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) => handleUpdateStock(item.id, parseFloat(e.target.value) || 0)}
+                      style={{ width: '90px', padding: '0.35rem !important', fontSize: '0.85rem' }}
+                    />
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-secondary)', width: '30px' }}>{item.unit}</span>
+                    <button
+                      onClick={() => handleDeleteIngredient(item.id)}
+                      style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
-        <div>
-          <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Gmail App Password (16-character token)
-          </label>
-          <input
-            type="password"
-            placeholder="xxxx xxxx xxxx xxxx"
-            value={gmailAppPassword}
-            onChange={e => setGmailAppPassword(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', color: '#fff', outline: 'none', fontSize: '0.9rem', letterSpacing: '0.15em' }}
-          />
-          <p style={{ margin: '0.4rem 0 0', fontSize: '0.75rem', color: '#64748b' }}>
-            ⚠️ Enable 2-Step Verification on your Google Account first, then generate an App Password.
-          </p>
-        </div>
-        <button
-          type="submit"
-          disabled={isSaving}
-          style={{
-            alignSelf: 'flex-start',
-            background: isSaving ? '#475569' : 'linear-gradient(135deg, #ea4335 0%, #dc2626 100%)',
-            color: '#fff',
-            border: 'none',
-            padding: '0.75rem 1.75rem',
-            borderRadius: '10px',
-            cursor: isSaving ? 'not-allowed' : 'pointer',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            boxShadow: isSaving ? 'none' : '0 4px 15px rgba(234, 67, 53, 0.3)',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          {isSaving ? '⏳ Saving...' : '💾 Save Gmail Credentials'}
-        </button>
-      </form>
+      </div>
     </div>
   );
 };
@@ -266,10 +286,26 @@ interface ReceptionViewProps {
   onResetAllData?: () => void;
   reservations?: Reservation[];
   onRemoveReservation?: (reservationId: string) => void;
+  tablesOccupancy?: { [tableId: string]: any };
+  inventory?: any[];
+  onUpdateInventory?: (inventory: any[]) => void;
+  onAddTable?: (tableId: string) => void;
+  onRemoveTable?: (tableId: string) => void;
 }
 
-export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, orders = [], onResetAllData, reservations = [], onRemoveReservation }) => {
-  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations'>('waiters');
+export const ReceptionView: React.FC<ReceptionViewProps> = ({ 
+  onUpdateSettings, 
+  orders = [], 
+  onResetAllData, 
+  reservations = [], 
+  onRemoveReservation,
+  tablesOccupancy = {},
+  inventory = [],
+  onUpdateInventory,
+  onAddTable,
+  onRemoveTable
+}) => {
+  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations' | 'inventory'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -654,6 +690,23 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
             Menu Management
           </button>
           
+          <button 
+            onClick={() => setActiveTab('inventory')} 
+            style={{ 
+              background: activeTab === 'inventory' ? 'var(--bg-secondary)' : 'transparent', 
+              border: activeTab === 'inventory' ? '1px solid #cbd5e1' : '1px solid transparent', 
+              color: activeTab === 'inventory' ? 'var(--accent-secondary)' : '#64748b', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '0.75rem'
+            }}
+          >
+            Inventory Stock
+          </button>
+          
           {onResetAllData && (
             <button 
               onClick={() => {
@@ -679,6 +732,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
         <MenuManagement />
       ) : activeTab === 'reservations' ? (
         <ReservationsList reservations={reservations} onRemove={onRemoveReservation} />
+      ) : activeTab === 'inventory' ? (
+        <InventoryStockManager inventory={inventory} onUpdateInventory={onUpdateInventory} />
       ) : (
       <>
         <div className="reception-layout-grid">
@@ -834,8 +889,74 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
 
       </div>
 
-      {/* Gmail Email Notification Settings */}
-      <GmailSettings showToast={showToast} />
+      {/* Table Registry Management Panel */}
+      <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-secondary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          🪑 Table Registry Management
+        </h2>
+        
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+          <input
+            type="text"
+            placeholder="e.g. Table 7 or 7"
+            id="new-table-input"
+            style={{ padding: '0.5rem 1rem', flex: 1, borderRadius: '8px', border: '1px solid var(--border-glass)', background: '#fff' }}
+          />
+          <button
+            onClick={() => {
+              const el = document.getElementById('new-table-input') as HTMLInputElement;
+              if (el && el.value.trim()) {
+                const tid = el.value.trim();
+                if (tablesOccupancy[tid]) {
+                  showToast('⚠️ Table already exists!');
+                } else {
+                  onAddTable?.(tid);
+                  el.value = '';
+                  showToast(`🎉 Table ${tid} added successfully!`);
+                }
+              }
+            }}
+            className="btn-constructivist-primary"
+            style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem' }}
+          >
+            Add Table
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+          {Object.keys(tablesOccupancy || {}).sort((a,b) => parseInt(a,10) - parseInt(b,10)).map(tableId => (
+            <div key={tableId} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1rem',
+              background: '#f8fafc',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '8px'
+            }}>
+              <span style={{ fontWeight: 700, color: 'var(--accent-secondary)' }}>Table {tableId}</span>
+              <button
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to remove Table ${tableId}?`)) {
+                    onRemoveTable?.(tableId);
+                    showToast(`🗑️ Table ${tableId} removed.`);
+                  }
+                }}
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: 'none',
+                  color: '#ef4444',
+                  padding: '0.35rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Kitchen Station Configuration Panel */}
       <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem' }}>

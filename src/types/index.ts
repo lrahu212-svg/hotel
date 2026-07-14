@@ -48,6 +48,14 @@ export interface Reservation {
   timestamp: number;
 }
 
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  threshold: number;
+}
+
 // BroadcastChannel event message definitions
 export type BroadcastEvent =
   | { type: 'NEW_ORDER'; order: Order; customerName?: string }
@@ -59,5 +67,8 @@ export type BroadcastEvent =
   | { type: 'TABLE_CHECK_OUT'; tableId: string; paymentMethod?: 'Cash' | 'UPI' }
   | { type: 'ADD_RESERVATION'; reservation: Reservation }
   | { type: 'REMOVE_RESERVATION'; reservationId: string }
-  | { type: 'SYNC_STATE'; orders: Order[]; requests: ServiceRequest[]; tablesOccupancy: { [tableId: string]: TableOccupancy }; settings?: any; reservations?: Reservation[] }
+  | { type: 'UPDATE_INVENTORY'; inventory: InventoryItem[] }
+  | { type: 'ADD_TABLE'; tableId: string }
+  | { type: 'REMOVE_TABLE'; tableId: string }
+  | { type: 'SYNC_STATE'; orders: Order[]; requests: ServiceRequest[]; tablesOccupancy: { [tableId: string]: TableOccupancy }; settings?: any; reservations?: Reservation[]; inventory?: InventoryItem[] }
   | { type: 'REQUEST_SYNC' };

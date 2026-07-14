@@ -529,7 +529,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
       {/* Occupancy Indicator Panel */}
       <div className="glass-panel occupancy-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#e2e8f0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
           <span style={{ width: '8px', height: '8px', background: 'var(--status-ready)', borderRadius: '50%', display: 'inline-block' }}></span>
           <span>Welcome to <strong>Dash Hotel</strong> | Checked In: <strong>{occupancy.customerName}</strong></span>
         </div>
@@ -874,96 +874,11 @@ export const TableView: React.FC<TableViewProps> = ({
                 <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Please wait for the Waiter to confirm and check out your table.</p>
               </div>
             ) : paymentMethod === 'UPI' ? (
-              <div style={{ textAlign: 'center', padding: '1rem' }}>
-                {(() => {
-                  const totalAmount = tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0);
-                  const formattedAmount = totalAmount % 1 === 0 ? totalAmount.toString() : totalAmount.toFixed(2);
-                  
-                  const errorDisplay = paymentLinkError ? (
-                    <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px' }}>
-                      <p style={{ margin: 0 }}>{paymentLinkError}</p>
-                    </div>
-                  ) : null;
-
-                  if (razorpayLink) {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center', marginTop: '1rem' }}>
-                        {errorDisplay}
-                        <a 
-                          href={razorpayLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{
-                            background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)',
-                            color: '#fff',
-                            padding: '1rem 2rem',
-                            borderRadius: '12px',
-                            textDecoration: 'none',
-                            fontWeight: 800,
-                            fontSize: '1.2rem',
-                            boxShadow: '0 4px 15px rgba(14, 165, 233, 0.3)',
-                            display: 'inline-block',
-                            textAlign: 'center'
-                          }}
-                        >
-                          Click here to Pay ₹{formattedAmount} via Razorpay
-                        </a>
-                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', maxWidth: '300px', margin: '0 auto', textAlign: 'center' }}>
-                          After you finish the payment, come back to this page. We will automatically verify it for you!
-                        </p>
-                        {isGeneratingLink && (
-                          <p style={{ color: '#0ea5e9', fontSize: '0.9rem', margin: '0' }}>Verifying payment status...</p>
-                        )}
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <div style={{ marginTop: '1rem' }}>
-                      {errorDisplay}
-                      <button
-                        onClick={async () => {
-                          setIsGeneratingLink(true);
-                          setPaymentLinkError(null);
-                          try {
-                            const res = await fetch('/api/create-payment-link', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ amount: totalAmount, receipt: `TBL-${tableId}-${Date.now()}`, callbackUrl: window.location.href })
-                            });
-                            const data = await res.json();
-                            if (res.ok && data.link) {
-                              setRazorpayLink(data.link);
-                              setRazorpayLinkId(data.id);
-                            } else {
-                              setPaymentLinkError(data.error || 'Failed to generate link');
-                            }
-                          } catch (err) {
-                            setPaymentLinkError('Network error connecting to payment server');
-                          } finally {
-                            setIsGeneratingLink(false);
-                          }
-                        }}
-                        disabled={isGeneratingLink}
-                        style={{
-                          background: isGeneratingLink ? '#475569' : '#0ea5e9',
-                          color: '#fff',
-                          border: 'none',
-                          padding: '0.75rem 1.5rem',
-                          borderRadius: '8px',
-                          fontWeight: 600,
-                          cursor: isGeneratingLink ? 'not-allowed' : 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          margin: '1rem auto 0'
-                        }}
-                      >
-                        {isGeneratingLink ? 'Securing Link...' : 'Generate Secure Link'}
-                      </button>
-                    </div>
-                  );
-                })()}
+              <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+                <h3 style={{ color: '#ef4444', fontSize: '1.25rem', marginBottom: '0.5rem' }}>UPI Payment Not Available</h3>
+                <p style={{ color: '#475569', fontSize: '0.9rem', marginBottom: '1rem' }}>Coming soon. Please use Cash or call waiter for assistance.</p>
+                <button onClick={() => setPaymentMethod(null)} style={{ background: '#000', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Back</button>
               </div>
             ) : paymentMethod === 'Cash' ? (
               <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -973,22 +888,15 @@ export const TableView: React.FC<TableViewProps> = ({
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <button 
-                  onClick={() => {
-                    const razorpayLink = localStorage.getItem('owner_razorpay_link');
-                    if (razorpayLink && razorpayLink.trim() !== '') {
-                      setPaymentMethod('UPI');
-                    } else {
-                      handlePayment('UPI');
-                    }
-                  }}
-                  style={{ background: 'var(--accent-primary)', color: '#fff', border: '3px solid #1a1a1a', padding: '1rem', borderRadius: '0px', fontWeight: 800, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Syne', sans-serif", boxShadow: '4px 4px 0px #1a1a1a' }}
+                  onClick={() => setPaymentMethod('UPI')}
+                  style={{ background: '#000', color: '#fff', border: '1px solid #000', padding: '1rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Outfit', sans-serif" }}
                 >
                   <span style={{ fontSize: '1.5rem' }}>📱</span>
                   PAY WITH UPI
                 </button>
                 <button 
                   onClick={() => handlePayment('Cash')}
-                  style={{ background: '#1a1a1a', color: '#fff', border: '3px solid #1a1a1a', padding: '1rem', borderRadius: '0px', fontWeight: 800, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Syne', sans-serif", boxShadow: '4px 4px 0px var(--accent-primary)' }}
+                  style={{ background: '#000', color: '#fff', border: '1px solid #000', padding: '1rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Outfit', sans-serif" }}
                 >
                   <span style={{ fontSize: '1.5rem' }}>💵</span>
                   PAY WITH CASH

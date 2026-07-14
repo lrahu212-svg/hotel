@@ -454,8 +454,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
             <ConciergeBell size={24} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.6rem', fontWeight: 800 }}>Front of House / Waiter Board</h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--accent-secondary)', fontWeight: 650 }}>Active Profile: {waiterName}</p>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e293b' }}>Front of House / Waiter Board</h1>
+            <p style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 650 }}>Active Profile: {waiterName}</p>
           </div>
         </div>
 
@@ -553,7 +553,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                 {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>Table {order.tableId}</h3>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>Table {order.tableId}</h3>
                           </div>
                           
                           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -563,7 +563,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                   onServeOrder(order.id, loggedInWaiter?.name || 'Waiter');
                                 }}
                                 style={{
-                                  background: 'linear-gradient(135deg, var(--status-ready) 0%, #059669 100%)',
+                                  background: '#0f172a',
                                   border: 'none',
                                   color: '#fff',
                                   padding: '0.5rem 1rem',
@@ -582,8 +582,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                           </div>
                         </div>
 
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
-                          <h4 style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items to Serve</h4>
+                        <div style={{ background: '#f8fafc', border: '1px solid var(--border-glass)', padding: '1rem', borderRadius: '8px' }}>
+                          <h4 style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items to Serve</h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {order.items.map((item, index) => {
                               const isServed = item.status === 'Served' || order.status === 'Served';
@@ -591,8 +591,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                               
                               return (
                                 <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.9rem', color: '#e2e8f0', textDecoration: isServed ? 'line-through' : 'none', opacity: isServed ? 0.5 : 1 }}>
-                                    <strong style={{ color: 'var(--accent-secondary)' }}>{item.quantity}x</strong> {item.name}
+                                  <span style={{ fontSize: '0.9rem', color: '#1e293b', textDecoration: isServed ? 'line-through' : 'none', opacity: isServed ? 0.5 : 1 }}>
+                                    <strong style={{ color: 'var(--accent-primary)' }}>{item.quantity}x</strong> {item.name}
                                   </span>
                                   {isReady && !isServed && (
                                     <button
@@ -648,8 +648,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            background: isBill ? 'rgba(16, 185, 129, 0.04)' : 'rgba(245, 158, 11, 0.04)',
-                            border: `1px solid ${isBill ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`,
+                            background: req.type === 'Warning' ? 'rgba(239, 68, 68, 0.06)' : (isBill ? 'rgba(16, 185, 129, 0.06)' : 'rgba(245, 158, 11, 0.06)'),
+                            border: `1px solid ${req.type === 'Warning' ? 'rgba(239, 68, 68, 0.3)' : (isBill ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)')}`,
                             padding: '1.25rem',
                             borderRadius: '12px'
                           }}
@@ -659,7 +659,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                               <span style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
-                                background: isBill ? 'var(--status-ready)' : 'var(--status-pending)',
+                                background: req.type === 'Warning' ? 'var(--status-cancelled)' : (isBill ? 'var(--status-ready)' : 'var(--status-pending)'),
                                 color: '#fff',
                                 padding: '0.15rem 0.5rem',
                                 borderRadius: '4px'
@@ -670,7 +670,12 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                 {new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                               </span>
                             </div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>Table {req.tableId}</h3>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-secondary)' }}>
+                              {req.tableId === 'System' ? 'System Warning' : `Table ${req.tableId}`}
+                            </h3>
+                            {req.text && (
+                              <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.25rem' }}>{req.text}</p>
+                            )}
                           </div>
                           <button
                             onClick={() => {
@@ -680,8 +685,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                               }
                             }}
                             style={{
-                              background: 'rgba(255,255,255,0.08)',
-                              border: '1px solid rgba(255,255,255,0.1)',
+                              background: '#0f172a',
+                              border: '1px solid #0f172a',
                               color: '#fff',
                               padding: '0.5rem 1rem',
                               borderRadius: '8px',
@@ -691,10 +696,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.25rem',
-                              transition: 'all 0.2s'
+                              transition: 'all 0.15s ease-in-out'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--status-ready)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                           >
                             <Check size={14} /> Mark Handled
                           </button>
@@ -709,8 +712,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
 
           {/* RIGHT SIDE: Table Occupancy Map (Always visible in 3 lines / 3 columns grid on the side) */}
           <div className="glass-panel waiter-right-panel">
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Layers size={18} color="var(--accent-secondary)" /> Table Map
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Layers size={18} color="var(--accent-primary)" /> Table Map
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
               {assignedTables.length === 0 ? (
@@ -759,8 +762,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
 
                       {occ.occupied ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                          <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
-                            👤 <strong>{occ.customerName}</strong> ({occ.guestsCount}) {occ.openedBy !== 'Waiter' && <span style={{ color: '#fbbf24', fontSize: '0.65rem' }}>[Customer]</span>}
+                          <span style={{ fontSize: '0.75rem', color: '#475569' }}>
+                            👤 <strong>{occ.customerName}</strong> ({occ.guestsCount}) {occ.openedBy !== 'Waiter' && <span style={{ color: 'var(--accent-primary)', fontSize: '0.65rem' }}>[Customer]</span>}
                           </span>
                           <div style={{ display: 'flex', gap: '0.35rem', width: '100%', flexWrap: 'wrap' }}>
                             {!paymentStep[tableId] && (
