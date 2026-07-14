@@ -348,11 +348,16 @@ body {
 }
 
 /* Global Constructivist Text & Input overrides (Ensures high contrast black text on cream/white blocks) */
-h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div, li, a {
+h1, h2, h3, h4, h5, h6, p, label, strong, td, th, li {
+  color: #1a1a1a !important;
+}
+
+/* Fallback colors for spans and containers without explicit inline overrides */
+span, div, a {
   color: #1a1a1a;
 }
 
-/* Specific exclusions or overrides for dark buttons/containers */
+/* Specific panel child element overrides */
 .glass-panel h1, 
 .glass-panel h2, 
 .glass-panel h3, 
@@ -360,13 +365,11 @@ h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div, li, a {
 .glass-panel h5, 
 .glass-panel h6, 
 .glass-panel p, 
-.glass-panel span, 
 .glass-panel label, 
-.glass-panel div,
-.glass-panel strong,
-.glass-panel td,
+.glass-panel strong, 
+.glass-panel td, 
 .glass-panel th {
-  color: #1a1a1a;
+  color: #1a1a1a !important;
 }
 
 /* Forms & inputs contrast styling */
