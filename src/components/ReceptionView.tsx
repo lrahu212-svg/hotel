@@ -595,17 +595,68 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
         borderColor: 'rgba(255,255,255,0.05)'
       }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 855, margin: 0, letterSpacing: '-0.02em', color: '#fff' }}>
-            Reception Desk
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', color: '#1a1a1a', fontFamily: "'Syne', sans-serif" }}>
+            RECEPTION DESK
           </h1>
-          <p style={{ margin: '0.25rem 0 0 0', color: '#94a3b8', fontSize: '0.9rem' }}>
+          <p style={{ margin: '0.25rem 0 0 0', color: '#555', fontSize: '0.9rem', fontWeight: 600 }}>
             Register employees and manage restaurant table assignments
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <button onClick={() => setActiveTab('waiters')} style={{ background: activeTab === 'waiters' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: activeTab === 'waiters' ? '#fff' : '#64748b', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>System Configuration</button>
-          <button onClick={() => setActiveTab('reservations')} style={{ background: activeTab === 'reservations' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: activeTab === 'reservations' ? '#fff' : '#64748b', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Reservations ({reservations.length})</button>
-          <button onClick={() => setActiveTab('menu')} style={{ background: activeTab === 'menu' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: activeTab === 'menu' ? '#fff' : '#64748b', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Menu Management</button>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => setActiveTab('waiters')} 
+            style={{ 
+              background: activeTab === 'waiters' ? '#1a1a1a' : 'transparent', 
+              border: '2px solid #1a1a1a', 
+              color: activeTab === 'waiters' ? '#fff' : '#1a1a1a', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '0px', 
+              cursor: 'pointer', 
+              fontWeight: 800,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: '0.75rem',
+              boxShadow: activeTab === 'waiters' ? '2px 2px 0px var(--accent-primary)' : 'none'
+            }}
+          >
+            SYSTEM CONFIG
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('reservations')} 
+            style={{ 
+              background: activeTab === 'reservations' ? '#1a1a1a' : 'transparent', 
+              border: '2px solid #1a1a1a', 
+              color: activeTab === 'reservations' ? '#fff' : '#1a1a1a', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '0px', 
+              cursor: 'pointer', 
+              fontWeight: 800,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: '0.75rem',
+              boxShadow: activeTab === 'reservations' ? '2px 2px 0px var(--accent-primary)' : 'none'
+            }}
+          >
+            RESERVATIONS ({reservations.length})
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('menu')} 
+            style={{ 
+              background: activeTab === 'menu' ? '#1a1a1a' : 'transparent', 
+              border: '2px solid #1a1a1a', 
+              color: activeTab === 'menu' ? '#fff' : '#1a1a1a', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '0px', 
+              cursor: 'pointer', 
+              fontWeight: 800,
+              fontFamily: "'Syne', sans-serif",
+              fontSize: '0.75rem',
+              boxShadow: activeTab === 'menu' ? '2px 2px 0px var(--accent-primary)' : 'none'
+            }}
+          >
+            MENU MANAGEMENT
+          </button>
+          
           {onResetAllData && (
             <button 
               onClick={() => {
@@ -613,22 +664,15 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
                   onResetAllData();
                 }
               }}
+              className="btn-constructivist-primary"
               style={{
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#ef4444',
                 padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                transition: 'all 0.2s',
-                marginLeft: '0.5rem'
+                fontSize: '0.75rem',
+                marginLeft: '0.5rem',
+                boxShadow: '2px 2px 0px #1a1a1a'
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)'}
             >
-              Reset System
+              RESET SYSTEM
             </button>
           )}
         </div>
