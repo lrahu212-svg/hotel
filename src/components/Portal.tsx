@@ -77,13 +77,14 @@ export const Portal: React.FC = () => {
       <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
           <div style={{
-            background: 'var(--accent-primary)',
-            padding: '0.35rem 1.25rem',
-            border: '4px solid #1a1a1a',
-            display: 'inline-flex',
-            alignItems: 'center'
+            borderLeft: '3px solid #d4af37',
+            borderRight: '3px solid #d4af37',
+            padding: '0.2rem 1rem',
+            position: 'relative'
           }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', letterSpacing: '0.15em', fontFamily: "'Syne', sans-serif" }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', letterSpacing: '0.15em', fontFamily: "'Outfit', sans-serif" }}>
               SCAN
             </h1>
           </div>

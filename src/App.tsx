@@ -631,15 +631,17 @@ export const App: React.FC = () => {
           }}
           style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer' }}
         >
-          {/* Logo SCAN with Constructivist solid box */}
+          {/* Logo SCAN with Gold brackets */}
           <div style={{
-            background: 'var(--accent-primary)',
-            padding: '0.25rem 0.75rem',
-            border: '3px solid #1a1a1a',
-            display: 'inline-flex',
-            alignItems: 'center'
+            borderLeft: '2px solid #d4af37',
+            borderRight: '2px solid #d4af37',
+            padding: '0.1rem 0.6rem',
+            position: 'relative',
+            display: 'inline-block'
           }}>
-            <span style={{ fontWeight: 900, letterSpacing: '0.1em', color: '#fff', fontSize: '1.25rem', fontFamily: "'Syne', sans-serif" }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1.5px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1.5px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
+            <span style={{ fontWeight: 800, letterSpacing: '0.1em', color: '#fff', fontSize: '1.15rem', fontFamily: "'Outfit', sans-serif" }}>
               SCAN
             </span>
           </div>
