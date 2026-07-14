@@ -770,44 +770,68 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                           <span style={{ fontSize: '0.75rem', color: '#cbd5e1' }}>
                             👤 <strong>{occ.customerName}</strong> ({occ.guestsCount}) {occ.openedBy !== 'Waiter' && <span style={{ color: '#fbbf24', fontSize: '0.65rem' }}>[Customer]</span>}
                           </span>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button
-                              onClick={() => setOrderingForTable(tableId)}
-                              disabled={occ.openedBy !== 'Waiter' || paymentStep[tableId] !== undefined}
-                              style={{
-                                background: occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(14, 165, 233, 0.1)',
-                                border: `1px solid ${occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.1)' : 'rgba(14, 165, 233, 0.2)'}`,
-                                borderRadius: '6px',
-                                color: occ.openedBy !== 'Waiter' ? '#64748b' : 'var(--status-ready)',
-                                padding: '0.25rem 0.5rem',
-                                fontSize: '0.7rem',
-                                cursor: occ.openedBy !== 'Waiter' ? 'not-allowed' : 'pointer',
-                                fontWeight: 600,
-                                flex: 1,
-                                display: paymentStep[tableId] ? 'none' : 'block'
-                              }}
-                            >
-                              Add Order
-                            </button>
-                            
+                          <div style={{ display: 'flex', gap: '0.35rem', width: '100%', flexWrap: 'wrap' }}>
                             {!paymentStep[tableId] && (
-                              <button
-                                onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
-                                disabled={occ.openedBy !== 'Waiter'}
-                                style={{
-                                  background: occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(239, 68, 68, 0.1)',
-                                  border: `1px solid ${occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.1)' : 'rgba(239, 68, 68, 0.2)'}`,
-                                  borderRadius: '6px',
-                                  color: occ.openedBy !== 'Waiter' ? '#64748b' : '#ef4444',
-                                  padding: '0.25rem 0.5rem',
-                                  fontSize: '0.7rem',
-                                  cursor: occ.openedBy !== 'Waiter' ? 'not-allowed' : 'pointer',
-                                  fontWeight: 600,
-                                  flex: 1
-                                }}
-                              >
-                                Take Pay
-                              </button>
+                              <>
+                                <button
+                                  onClick={() => setOrderingForTable(tableId)}
+                                  disabled={occ.openedBy !== 'Waiter'}
+                                  style={{
+                                    background: occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.02)' : 'rgba(14, 165, 233, 0.1)',
+                                    border: `1px solid ${occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(14, 165, 233, 0.2)'}`,
+                                    borderRadius: '6px',
+                                    color: occ.openedBy !== 'Waiter' ? '#475569' : 'var(--status-ready)',
+                                    padding: '0.25rem 0.4rem',
+                                    fontSize: '0.7rem',
+                                    cursor: occ.openedBy !== 'Waiter' ? 'not-allowed' : 'pointer',
+                                    fontWeight: 600,
+                                    flex: '1 1 auto'
+                                  }}
+                                  title={occ.openedBy !== 'Waiter' ? "Ordering disabled for customer-owned tables" : "Add Order"}
+                                >
+                                  Order
+                                </button>
+                                
+                                <button
+                                  onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
+                                  style={{
+                                    background: 'rgba(16, 185, 129, 0.1)',
+                                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                                    borderRadius: '6px',
+                                    color: 'var(--status-ready)',
+                                    padding: '0.25rem 0.4rem',
+                                    fontSize: '0.7rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    flex: '1 1 auto'
+                                  }}
+                                  title="Record Payment & Settle"
+                                >
+                                  Settle
+                                </button>
+                                
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`Are you sure you want to clear Table ${tableId}? This resets table occupancy and resolves requests.`)) {
+                                      onCheckOutTable(tableId);
+                                    }
+                                  }}
+                                  style={{
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    borderRadius: '6px',
+                                    color: '#ef4444',
+                                    padding: '0.25rem 0.4rem',
+                                    fontSize: '0.7rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    flex: '1 1 auto'
+                                  }}
+                                  title="Force Clear/Checkout Table"
+                                >
+                                  Clear
+                                </button>
+                              </>
                             )}
                             
                             {paymentStep[tableId] === 'SELECT' && (
