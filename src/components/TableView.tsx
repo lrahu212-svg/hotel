@@ -603,11 +603,12 @@ export const TableView: React.FC<TableViewProps> = ({
           {/* Menu area */}
           <div style={{ flex: '2 1 500px' }}>
             {/* Category Filters */}
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+            <div className="category-scroll-container">
               {['All', 'Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'].map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
+                  className="category-btn"
                   style={{
                     background: selectedCategory === cat ? 'rgba(255,255,255,0.08)' : 'transparent',
                     border: '1px solid',
@@ -640,7 +641,7 @@ export const TableView: React.FC<TableViewProps> = ({
             </div>
 
             {/* Menu Items Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.25rem' }}>
+            <div className="menu-items-grid">
               {filteredMenu.map((item) => {
                 const cartItem = cart[item.id];
                 return (
