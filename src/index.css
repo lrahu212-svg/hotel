@@ -348,7 +348,7 @@ body {
 }
 
 /* Global Constructivist Text & Input overrides (Ensures high contrast black text on cream/white blocks) */
-h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div {
+h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div, li, a {
   color: #1a1a1a;
 }
 
@@ -366,7 +366,7 @@ h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div {
 .glass-panel strong,
 .glass-panel td,
 .glass-panel th {
-  color: #1a1a1a !important;
+  color: #1a1a1a;
 }
 
 /* Forms & inputs contrast styling */

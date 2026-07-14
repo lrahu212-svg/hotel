@@ -593,6 +593,86 @@ export const TableView: React.FC<TableViewProps> = ({
 
       {activeTab === 'menu' ? (
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {/* Cart Panel */}
+          <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+              <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
+            </h2>
+
+            {getCartItemCount() === 0 ? (
+              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                <ShoppingCart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                <p>Your cart is empty. Add some delicious dishes!</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.5rem' }}>
+                  {Object.entries(cart).map(([itemId, data]) => {
+                    const item = MENU_ITEMS.find(m => m.id === itemId)!;
+                    return (
+                      <div key={itemId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <img 
+                          src={item.image} 
+                          alt={item.name} 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+                          }}
+                          style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.05)' }} 
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name} <span style={{ color: 'var(--accent-primary)' }}>x{data.quantity}</span></span>
+                            <span style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * data.quantity).toFixed(2)}</span>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Add special instructions..."
+                            value={data.notes}
+                            onChange={(e) => updateCartNotes(itemId, e.target.value)}
+                            style={{
+                              width: '100%',
+                              background: 'rgba(0,0,0,0.2)',
+                              border: '1px solid rgba(255,255,255,0.05)',
+                              borderRadius: '6px',
+                              padding: '0.3rem 0.5rem',
+                              color: '#e2e8f0',
+                              fontSize: '0.75rem',
+                              marginTop: '0.15rem',
+                              outline: 'none'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
+                    <span>Items Total:</span>
+                    <span>{getCartItemCount()} items</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
+                    <span>Total Amount:</span>
+                    <span style={{ color: 'var(--accent-secondary)' }}>₹{getCartTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleCheckout}
+                  className="btn-constructivist-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem',
+                    fontSize: '1rem'
+                  }}
+                >
+                  CONFIRM & PLACE ORDER
+                </button>
+              </>
+            )}
+          </div>
+
           {/* Menu area */}
           <div style={{ flex: '2 1 500px' }}>
             {/* Category Filters */}
@@ -691,93 +771,6 @@ export const TableView: React.FC<TableViewProps> = ({
                 );
               })}
             </div>
-          </div>
-
-          {/* Cart Panel */}
-          <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
-              <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
-            </h2>
-
-            {getCartItemCount() === 0 ? (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                <ShoppingCart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                <p>Your cart is empty. Add some delicious dishes!</p>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.5rem' }}>
-                  {Object.entries(cart).map(([itemId, data]) => {
-                    const item = MENU_ITEMS.find(m => m.id === itemId)!;
-                    return (
-                      <div key={itemId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
-                          }}
-                          style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.05)' }} 
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name} <span style={{ color: 'var(--accent-primary)' }}>x{data.quantity}</span></span>
-                            <span style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * data.quantity).toFixed(2)}</span>
-                          </div>
-                          <input
-                            type="text"
-                            placeholder="Add special instructions..."
-                            value={data.notes}
-                            onChange={(e) => updateCartNotes(itemId, e.target.value)}
-                            style={{
-                              width: '100%',
-                              background: 'rgba(0,0,0,0.2)',
-                              border: '1px solid rgba(255,255,255,0.05)',
-                              borderRadius: '6px',
-                              padding: '0.3rem 0.5rem',
-                              color: '#e2e8f0',
-                              fontSize: '0.75rem',
-                              marginTop: '0.15rem',
-                              outline: 'none'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
-                    <span>Items Total:</span>
-                    <span>{getCartItemCount()} items</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
-                    <span>Total Amount:</span>
-                    <span style={{ color: 'var(--accent-secondary)' }}>₹{getCartTotal().toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleCheckout}
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(135deg, var(--accent-primary) 0%, #4f46e5 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '0.9rem',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  Confirm & Place Order
-                </button>
-              </>
-            )}
           </div>
         </div>
       ) : (
