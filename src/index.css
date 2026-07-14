@@ -240,6 +240,27 @@ body {
   }
 }
 
+/* Responsive Layout Grids */
+.reception-layout-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+}
+
+.waiter-history-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .reception-layout-grid,
+  .waiter-history-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
 @media print {
   /* Reset html/body to prevent thermal printer spooling */
   html, body {

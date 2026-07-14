@@ -101,7 +101,7 @@ const MenuManagement: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', flexWrap: 'wrap' }}>
+    <div className="reception-layout-grid">
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Plus size={20} color="var(--accent-secondary)" /> Add Food Item
@@ -640,7 +640,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
         <ReservationsList reservations={reservations} onRemove={onRemoveReservation} />
       ) : (
       <>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', flexWrap: 'wrap' }}>
+        <div className="reception-layout-grid">
         
         {/* Registration Form */}
         <div className="glass-panel" style={{ padding: '2rem' }}>

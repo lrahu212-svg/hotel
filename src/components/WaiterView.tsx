@@ -933,7 +933,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         </div>
       ) : (
         /* History Logs View */
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div className="waiter-history-grid">
           {/* Served Orders */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--status-served)' }}>
