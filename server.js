@@ -113,6 +113,8 @@ app.post('/event', (req, res) => {
       };
     } else if (event.type === 'TABLE_CHECK_OUT') {
       state.tablesOccupancy[event.tableId] = { occupied: false };
+      state.orders = state.orders.map(o => o.tableId === event.tableId ? { ...o, tableId: `${event.tableId}_archived_${Date.now()}`, status: 'Served' } : o);
+      state.requests = state.requests.filter(r => r.tableId !== event.tableId);
     } else if (event.type === 'UPDATE_SETTINGS') {
       state.settings = { ...state.settings, ...event.settings };
     } else if (event.type === 'ADD_RESERVATION') {
