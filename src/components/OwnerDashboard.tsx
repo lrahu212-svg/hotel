@@ -206,12 +206,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         borderColor: 'rgba(255,255,255,0.05)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ background: 'var(--accent-primary)', padding: '0.5rem', border: '2px solid #1a1a1a', color: '#fff' }}>
+          <div style={{ background: 'var(--accent-primary)', padding: '0.5rem', borderRadius: '8px', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <TrendingUp size={24} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1a1a1a', margin: 0, fontFamily: "'Syne', sans-serif" }}>
-              EXECUTIVE MANAGEMENT BOARD
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--accent-secondary)', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
+              Executive Management Board
             </h1>
             <p style={{ fontSize: '0.85rem', color: '#555', margin: '0.25rem 0 0 0', fontWeight: 600 }}>
               Real-time revenue analytics, cost analysis, and order ledger audit

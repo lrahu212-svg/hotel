@@ -362,8 +362,8 @@ export const TableView: React.FC<TableViewProps> = ({
         <form onSubmit={handleLoginSubmit} className="glass-panel glass-panel-login" style={{ border: '1px solid rgba(99, 102, 241, 0.2)' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🛎️</span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1a1a1a', marginTop: '1rem', fontFamily: "'Syne', sans-serif" }}>
-              WELCOME TO DASH HOTEL
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
+              Welcome to Dash Hotel
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Dining at Table {tableId} - Please check in to unlock the menu</p>
           </div>

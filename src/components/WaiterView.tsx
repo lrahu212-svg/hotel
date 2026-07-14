@@ -286,8 +286,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         <form onSubmit={handleLoginSubmit} className="glass-panel" style={{ padding: '2.5rem', width: '100%', maxWidth: '420px', border: '1px solid rgba(14, 165, 233, 0.2)' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🛎️</span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1a1a1a', marginTop: '1rem', fontFamily: "'Syne', sans-serif" }}>
-              WAITER LOGIN
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
+              Waiter Login
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem', lineHeight: '1.4' }}>
               Please sign in as <strong style={{ color: 'var(--accent-secondary)' }}>{targetProfile ? targetProfile.name : 'Registered Waiter'}</strong> to access this dashboard
@@ -728,10 +728,10 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                     <div key={tableId} style={{
                       padding: '1.25rem',
                       background: '#ffffff',
-                      border: '3px solid #1a1a1a',
-                      borderRadius: '0px',
-                      boxShadow: isAssignedToMe ? '4px 4px 0px var(--accent-primary)' : '4px 4px 0px #1a1a1a',
-                      transition: 'all 0.2s'
+                      border: isAssignedToMe ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                      borderRadius: '12px',
+                      boxShadow: isAssignedToMe ? '0 4px 12px rgba(37, 99, 235, 0.05)' : '0 4px 6px -1px rgba(0, 0, 0, 0.03)',
+                      transition: 'all 0.2s ease-in-out'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>

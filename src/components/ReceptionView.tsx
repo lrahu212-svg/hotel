@@ -595,10 +595,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
         borderColor: 'rgba(255,255,255,0.05)'
       }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 900, margin: 0, letterSpacing: '-0.02em', color: '#1a1a1a', fontFamily: "'Syne', sans-serif" }}>
-            RECEPTION DESK
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0, letterSpacing: '-0.01em', color: 'var(--accent-secondary)', fontFamily: "'Outfit', sans-serif" }}>
+            Reception Desk
           </h1>
-          <p style={{ margin: '0.25rem 0 0 0', color: '#555', fontSize: '0.9rem', fontWeight: 600 }}>
+          <p style={{ margin: '0.25rem 0 0 0', color: '#555', fontSize: '0.9rem', fontWeight: 500 }}>
             Register employees and manage restaurant table assignments
           </p>
         </div>
@@ -606,55 +606,52 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({ onUpdateSettings, 
           <button 
             onClick={() => setActiveTab('waiters')} 
             style={{ 
-              background: activeTab === 'waiters' ? '#1a1a1a' : 'transparent', 
-              border: '2px solid #1a1a1a', 
-              color: activeTab === 'waiters' ? '#fff' : '#1a1a1a', 
+              background: activeTab === 'waiters' ? 'var(--bg-secondary)' : 'transparent', 
+              border: activeTab === 'waiters' ? '1px solid #cbd5e1' : '1px solid transparent', 
+              color: activeTab === 'waiters' ? 'var(--accent-secondary)' : '#64748b', 
               padding: '0.5rem 1rem', 
-              borderRadius: '0px', 
+              borderRadius: '8px', 
               cursor: 'pointer', 
-              fontWeight: 800,
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '0.75rem',
-              boxShadow: activeTab === 'waiters' ? '2px 2px 0px var(--accent-primary)' : 'none'
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '0.75rem'
             }}
           >
-            SYSTEM CONFIG
+            System Config
           </button>
           
           <button 
             onClick={() => setActiveTab('reservations')} 
             style={{ 
-              background: activeTab === 'reservations' ? '#1a1a1a' : 'transparent', 
-              border: '2px solid #1a1a1a', 
-              color: activeTab === 'reservations' ? '#fff' : '#1a1a1a', 
+              background: activeTab === 'reservations' ? 'var(--bg-secondary)' : 'transparent', 
+              border: activeTab === 'reservations' ? '1px solid #cbd5e1' : '1px solid transparent', 
+              color: activeTab === 'reservations' ? 'var(--accent-secondary)' : '#64748b', 
               padding: '0.5rem 1rem', 
-              borderRadius: '0px', 
+              borderRadius: '8px', 
               cursor: 'pointer', 
-              fontWeight: 800,
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '0.75rem',
-              boxShadow: activeTab === 'reservations' ? '2px 2px 0px var(--accent-primary)' : 'none'
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '0.75rem'
             }}
           >
-            RESERVATIONS ({reservations.length})
+            Reservations ({reservations.length})
           </button>
           
           <button 
             onClick={() => setActiveTab('menu')} 
             style={{ 
-              background: activeTab === 'menu' ? '#1a1a1a' : 'transparent', 
-              border: '2px solid #1a1a1a', 
-              color: activeTab === 'menu' ? '#fff' : '#1a1a1a', 
+              background: activeTab === 'menu' ? 'var(--bg-secondary)' : 'transparent', 
+              border: activeTab === 'menu' ? '1px solid #cbd5e1' : '1px solid transparent', 
+              color: activeTab === 'menu' ? 'var(--accent-secondary)' : '#64748b', 
               padding: '0.5rem 1rem', 
-              borderRadius: '0px', 
+              borderRadius: '8px', 
               cursor: 'pointer', 
-              fontWeight: 800,
-              fontFamily: "'Syne', sans-serif",
-              fontSize: '0.75rem',
-              boxShadow: activeTab === 'menu' ? '2px 2px 0px var(--accent-primary)' : 'none'
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '0.75rem'
             }}
           >
-            MENU MANAGEMENT
+            Menu Management
           </button>
           
           {onResetAllData && (

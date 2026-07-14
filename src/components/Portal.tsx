@@ -156,32 +156,34 @@ export const Portal: React.FC = () => {
               <button
                 key={id}
                 onClick={() => openWindow(`/table/${id}`)}
-                style={{
+                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   background: '#ffffff',
-                  border: '3px solid #1a1a1a',
+                  border: '1px solid var(--border-glass)',
                   padding: '1.25rem',
-                  borderRadius: '0px',
-                  color: '#1a1a1a',
+                  borderRadius: '12px',
+                  color: 'var(--accent-secondary)',
                   cursor: 'pointer',
-                  fontWeight: 800,
+                  fontWeight: 600,
                   fontSize: '1rem',
                   textAlign: 'left',
-                  transition: 'all 0.2s',
-                  boxShadow: '4px 4px 0px #1a1a1a',
-                  fontFamily: "'Syne', sans-serif"
+                  transition: 'all 0.15s ease-in-out',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                  fontFamily: "'Outfit', sans-serif"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = '6px 6px 0px var(--accent-primary)';
+                  e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                  e.currentTarget.style.background = '#f8fafc';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = '4px 4px 0px #1a1a1a';
+                  e.currentTarget.style.borderColor = 'var(--border-glass)';
+                  e.currentTarget.style.background = '#ffffff';
                 }}
               >
-                <span>TABLE {id}</span>
-                <ArrowUpRight size={18} />
+                <span>Table {id}</span>
+                <ArrowUpRight size={18} color="var(--accent-primary)" />
               </button>
             ))}
           </div>

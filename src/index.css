@@ -1,31 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light;
-  color: #1a1a1a;
-  background-color: #f4ede4;
+  color: #1e293b;
+  background-color: #f8fafc;
 
-  /* Constructivist Theme Palette */
-  --bg-primary: #f4ede4;
-  --bg-secondary: #ebdcd0;
+  /* Minimalist Theme Palette */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
   --bg-glass: #ffffff;
-  --border-glass: #1a1a1a;
-  --border-glass-hover: #1a1a1a;
+  --border-glass: #e2e8f0;
+  --border-glass-hover: #cbd5e1;
   
-  --accent-primary: #d92626; /* Constructivist Solid Red */
-  --accent-primary-glow: #d92626;
-  --accent-secondary: #1a1a1a; /* Constructivist Solid Black */
-  --accent-secondary-glow: #1a1a1a;
+  --accent-primary: #2563eb; /* Clean Royal Blue */
+  --accent-primary-glow: rgba(37, 99, 235, 0.08);
+  --accent-secondary: #0f172a; /* Slate Black */
+  --accent-secondary-glow: rgba(15, 23, 42, 0.04);
   
-  --status-pending: #df9f28; /* Solid Ochre */
-  --status-preparing: #2a2a2a; /* Solid Charcoal */
-  --status-ready: #d92626; /* Solid Red */
-  --status-served: #7c7c7c; /* Solid Grey */
-  --status-cancelled: #7f1d1d; /* Solid Dark Red */
+  --status-pending: #f59e0b; /* Amber */
+  --status-preparing: #6366f1; /* Indigo */
+  --status-ready: #10b981; /* Emerald */
+  --status-served: #64748b; /* Slate */
+  --status-cancelled: #ef4444; /* Red */
   
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -43,23 +43,23 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #f4ede4;
+  background: #f8fafc;
   background-attachment: fixed;
   overflow-x: hidden;
 }
 
-/* Constructivist Panel Styling (Flat, thick solid borders, heavy geometric drop-shadows) */
+/* Minimalist Panel Styling (Sleek, rounded corners, hairline borders, soft drop-shadows) */
 .glass-panel {
   background: var(--bg-glass);
-  border: 3px solid #1a1a1a;
-  border-radius: 0px !important;
-  box-shadow: 6px 6px 0px 0px #1a1a1a;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease-in-out;
 }
 
 .glass-panel:hover {
-  border-color: #1a1a1a;
-  box-shadow: 10px 10px 0px 0px var(--accent-primary);
+  border-color: var(--border-glass-hover);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
 /* Animations */
@@ -304,57 +304,58 @@ body {
 
 
 
-/* Constructivist Button Styles */
+/* Minimalist Button Styles (using old class names to avoid breaking component bindings) */
 .btn-constructivist-primary {
   background: var(--accent-primary);
-  color: #ffffff;
-  border: 3px solid #1a1a1a;
-  border-radius: 0px !important;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #ffffff !important;
+  border: 1px solid var(--accent-primary);
+  border-radius: 8px !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
   padding: 0.6rem 1.2rem;
   cursor: pointer;
-  box-shadow: 4px 4px 0px 0px #1a1a1a;
-  transition: all 0.15s ease;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.08);
+  transition: all 0.15s ease-in-out;
 }
 
 .btn-constructivist-primary:hover {
-  background: #ffffff;
-  color: #1a1a1a;
-  box-shadow: 6px 6px 0px 0px var(--accent-primary);
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #ffffff !important;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.12);
 }
 
 .btn-constructivist-secondary {
-  background: #1a1a1a;
-  color: #ffffff;
-  border: 3px solid #1a1a1a;
-  border-radius: 0px !important;
-  font-family: 'Syne', sans-serif;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  background: #f1f5f9;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px !important;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
   padding: 0.6rem 1.2rem;
   cursor: pointer;
-  box-shadow: 4px 4px 0px 0px var(--accent-primary);
-  transition: all 0.15s ease;
+  box-shadow: none;
+  transition: all 0.15s ease-in-out;
 }
 
 .btn-constructivist-secondary:hover {
-  background: #ffffff;
-  color: #1a1a1a;
-  box-shadow: 6px 6px 0px 0px #1a1a1a;
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  color: #0f172a !important;
 }
 
-/* Global Constructivist Text & Input overrides (Ensures high contrast black text on cream/white blocks) */
+/* Global Minimalist Text & Input overrides */
 h1, h2, h3, h4, h5, h6, p, label, strong, td, th, li {
-  color: #1a1a1a !important;
+  color: #1e293b !important;
 }
 
-/* Fallback colors for spans and containers without explicit inline overrides */
+/* Fallback colors for spans and containers */
 span, div, a {
-  color: #1a1a1a;
+  color: #334155;
 }
 
 /* Specific panel child element overrides */
@@ -369,7 +370,7 @@ span, div, a {
 .glass-panel strong, 
 .glass-panel td, 
 .glass-panel th {
-  color: #1a1a1a !important;
+  color: #1e293b !important;
 }
 
 /* Forms & inputs contrast styling */
@@ -380,31 +381,30 @@ input[type="text"],
 input[type="number"],
 select,
 textarea {
-  color: #1a1a1a !important;
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 2px solid #1a1a1a !important;
-  border-radius: 0px !important;
+  color: #1e293b !important;
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
   padding: 0.65rem !important;
+  font-family: 'Inter', sans-serif !important;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.glass-panel input:focus,
+input:focus {
+  border-color: var(--accent-primary) !important;
+  outline: none;
 }
 
 .glass-panel input::placeholder,
 input::placeholder {
-  color: #777777 !important;
+  color: #94a3b8 !important;
 }
 
 /* Explicit button typography overrides to maintain dark-button white-text contrast */
-.btn-constructivist-primary,
 .btn-constructivist-primary *,
-.btn-constructivist-secondary,
 .btn-constructivist-secondary * {
-  color: #ffffff !important;
-}
-
-.btn-constructivist-primary:hover,
-.btn-constructivist-primary:hover *,
-.btn-constructivist-secondary:hover,
-.btn-constructivist-secondary:hover * {
-  color: #1a1a1a !important;
+  color: inherit !important;
 }
 
 @media print {
