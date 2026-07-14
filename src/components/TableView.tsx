@@ -322,7 +322,7 @@ export const TableView: React.FC<TableViewProps> = ({
   if (showCheckOutSuccess) {
     return (
       <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '1rem' }}>
-        <div className="glass-panel" style={{ padding: '3rem', width: '100%', maxWidth: '420px', border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center', background: 'rgba(16, 185, 129, 0.05)' }}>
+        <div className="glass-panel glass-panel-login" style={{ border: '1px solid rgba(16, 185, 129, 0.3)', textAlign: 'center', background: 'rgba(16, 185, 129, 0.05)' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1.5rem', animation: 'pulse 2s infinite' }}>✅</div>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10b981', marginBottom: '1rem' }}>Payment Done!</h2>
           <p style={{ color: '#94a3b8', fontSize: '1rem' }}>Your table has been successfully settled. Thank you for dining with Dash Hotel!</p>
@@ -359,7 +359,7 @@ export const TableView: React.FC<TableViewProps> = ({
           </div>
         )}
         <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '1rem' }}>
-        <form onSubmit={handleLoginSubmit} className="glass-panel" style={{ padding: '2.5rem', width: '100%', maxWidth: '420px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+        <form onSubmit={handleLoginSubmit} className="glass-panel glass-panel-login" style={{ border: '1px solid rgba(99, 102, 241, 0.2)' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🛎️</span>
             <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', marginTop: '1rem', background: 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -485,7 +485,7 @@ export const TableView: React.FC<TableViewProps> = ({
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Table {tableId}</h1>
           <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           {!isWaiterMode && (
             <>
               <button
@@ -599,7 +599,7 @@ export const TableView: React.FC<TableViewProps> = ({
       </div>
 
       {activeTab === 'menu' ? (
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap-reverse', alignItems: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Menu area */}
           <div style={{ flex: '2 1 500px' }}>
             {/* Category Filters */}

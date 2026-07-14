@@ -261,6 +261,19 @@ body {
   }
 }
 
+.glass-panel-login {
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (max-width: 480px) {
+  .glass-panel-login {
+    padding: 1.5rem 1.25rem !important;
+  }
+}
+
+
 @media print {
   /* Reset html/body to prevent thermal printer spooling */
   html, body {
