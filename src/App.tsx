@@ -290,6 +290,7 @@ export const App: React.FC = () => {
   }, []);
 
   const postSyncEvent = async (event: any) => {
+    console.log('App: postSyncEvent sending event:', event);
     // Broadcast locally immediately so other tabs of the same browser update in-place instantly
     try {
       const channel = new BroadcastChannel('hotel_ordering_system');
@@ -300,13 +301,14 @@ export const App: React.FC = () => {
     }
 
     try {
-        await fetch(`/event`, {
+      const res = await fetch(`/event`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(event)
       });
+      console.log('App: postSyncEvent response status:', res.status);
     } catch (err) {
       console.error('Failed to post event to sync server:', err);
     }
@@ -429,6 +431,7 @@ export const App: React.FC = () => {
   };
 
   const handleTableCheckOut = (tableId: string, paymentMethod?: 'Cash' | 'UPI') => {
+    console.log('App: handleTableCheckOut called for tableId:', tableId, 'paymentMethod:', paymentMethod);
     setTablesOccupancy(prev => {
       const updated = {
         ...prev,

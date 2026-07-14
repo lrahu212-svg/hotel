@@ -804,7 +804,9 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                 
                                 <button
                                   onClick={() => {
+                                    console.log('WaiterView: Clear button clicked for tableId:', tableId);
                                     if (window.confirm(`Are you sure you want to clear Table ${tableId}? This resets table occupancy and resolves requests.`)) {
+                                      console.log('WaiterView: Clear confirmed. Calling onCheckOutTable for tableId:', tableId);
                                       onCheckOutTable(tableId);
                                     }
                                   }}
