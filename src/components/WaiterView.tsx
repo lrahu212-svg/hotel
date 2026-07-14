@@ -462,54 +462,45 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
+            className="btn-constructivist-secondary"
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              color: '#fff',
-              cursor: 'pointer',
+              fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: '0.85rem'
+              boxShadow: '2px 2px 0px #1a1a1a'
             }}
           >
-            {soundEnabled ? <Volume2 size={16} color="var(--status-ready)" /> : <VolumeX size={16} color="#64748b" />}
-            Alerts: {soundEnabled ? 'ON' : 'OFF'}
+            {soundEnabled ? <Volume2 size={16} color="var(--accent-primary)" /> : <VolumeX size={16} color="#64748b" />}
+            ALERTS: {soundEnabled ? 'ON' : 'OFF'}
           </button>
           
           <button
             onClick={() => setShowHistory(!showHistory)}
+            className="btn-constructivist-secondary"
             style={{
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
               padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: '0.85rem'
+              fontSize: '0.85rem',
+              boxShadow: '2px 2px 0px #1a1a1a'
             }}
           >
-            {showHistory ? 'Show Active Tasks' : 'Show Past Log'}
+            {showHistory ? 'SHOW ACTIVE TASKS' : 'SHOW PAST LOG'}
           </button>
 
           <button
             onClick={handleLogout}
+            className="btn-constructivist-primary"
             style={{
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              color: '#ef4444',
               padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
               fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem'
+              gap: '0.35rem',
+              boxShadow: '2px 2px 0px #1a1a1a'
             }}
           >
-            <LogOut size={16} /> Logout
+            <LogOut size={16} /> LOGOUT
           </button>
         </div>
       </header>
