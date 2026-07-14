@@ -427,21 +427,14 @@ export const TableView: React.FC<TableViewProps> = ({
 
           <button
             type="submit"
+            className="btn-constructivist-primary"
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, var(--accent-primary) 0%, #4f46e5 100%)',
-              color: '#fff',
-              border: 'none',
               padding: '0.9rem',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: '1rem',
-              boxShadow: '0 4px 15px rgba(99, 102, 241, 0.3)',
-              transition: 'all 0.2s'
+              fontSize: '1rem'
             }}
           >
-            Check In & Order
+            CHECK IN & ORDER
           </button>
         </form>
       </div>
@@ -684,19 +677,13 @@ export const TableView: React.FC<TableViewProps> = ({
                       ) : (
                         <button
                           onClick={() => updateCartQuantity(item.id, 1)}
+                          className="btn-constructivist-primary"
                           style={{
-                            background: 'var(--accent-primary)',
-                            color: '#fff',
-                            border: 'none',
                             padding: '0.5rem 1rem',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                            fontSize: '0.9rem',
-                            transition: 'all 0.2s'
+                            fontSize: '0.85rem'
                           }}
                         >
-                          Add to Cart
+                          ADD TO CART
                         </button>
                       )}
                     </div>
@@ -1001,17 +988,17 @@ export const TableView: React.FC<TableViewProps> = ({
                       handlePayment('UPI');
                     }
                   }}
-                  style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #3b82f6 100%)', color: '#fff', border: 'none', padding: '1rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}
+                  style={{ background: 'var(--accent-primary)', color: '#fff', border: '3px solid #1a1a1a', padding: '1rem', borderRadius: '0px', fontWeight: 800, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Syne', sans-serif", boxShadow: '4px 4px 0px #1a1a1a' }}
                 >
                   <span style={{ fontSize: '1.5rem' }}>📱</span>
-                  Pay with UPI
+                  PAY WITH UPI
                 </button>
                 <button 
                   onClick={() => handlePayment('Cash')}
-                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', border: 'none', padding: '1rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}
+                  style={{ background: '#1a1a1a', color: '#fff', border: '3px solid #1a1a1a', padding: '1rem', borderRadius: '0px', fontWeight: 800, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Syne', sans-serif", boxShadow: '4px 4px 0px var(--accent-primary)' }}
                 >
                   <span style={{ fontSize: '1.5rem' }}>💵</span>
-                  Pay with Cash
+                  PAY WITH CASH
                 </button>
               </div>
             )}

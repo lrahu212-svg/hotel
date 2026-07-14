@@ -1,31 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
 
 :root {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: #e2e8f0;
-  background-color: #0b0f19;
+  color-scheme: light;
+  color: #1a1a1a;
+  background-color: #f4ede4;
 
-  /* Premium Theme Palette */
-  --bg-primary: #0b0f19;
-  --bg-secondary: #161f30;
-  --bg-glass: rgba(22, 31, 48, 0.7);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glass-hover: rgba(255, 255, 255, 0.15);
+  /* Constructivist Theme Palette */
+  --bg-primary: #f4ede4;
+  --bg-secondary: #ebdcd0;
+  --bg-glass: #ffffff;
+  --border-glass: #1a1a1a;
+  --border-glass-hover: #1a1a1a;
   
-  --accent-primary: #6366f1; /* Indigo */
-  --accent-primary-glow: rgba(99, 102, 241, 0.3);
-  --accent-secondary: #0ea5e9; /* Sky blue */
-  --accent-secondary-glow: rgba(14, 165, 233, 0.3);
+  --accent-primary: #d92626; /* Constructivist Solid Red */
+  --accent-primary-glow: #d92626;
+  --accent-secondary: #1a1a1a; /* Constructivist Solid Black */
+  --accent-secondary-glow: #1a1a1a;
   
-  --status-pending: #f59e0b; /* Amber */
-  --status-preparing: #3b82f6; /* Blue */
-  --status-ready: #10b981; /* Emerald */
-  --status-served: #8b5cf6; /* Purple */
-  --status-cancelled: #ef4444; /* Red */
+  --status-pending: #df9f28; /* Solid Ochre */
+  --status-preparing: #2a2a2a; /* Solid Charcoal */
+  --status-ready: #d92626; /* Solid Red */
+  --status-served: #7c7c7c; /* Solid Grey */
+  --status-cancelled: #7f1d1d; /* Solid Dark Red */
   
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -43,25 +43,23 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0b0f19 80%);
+  background: #f4ede4;
   background-attachment: fixed;
   overflow-x: hidden;
 }
 
-/* Glassmorphism styling helper */
+/* Constructivist Panel Styling (Flat, thick solid borders, heavy geometric drop-shadows) */
 .glass-panel {
   background: var(--bg-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 3px solid #1a1a1a;
+  border-radius: 0px !important;
+  box-shadow: 6px 6px 0px 0px #1a1a1a;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-panel:hover {
-  border-color: var(--border-glass-hover);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5), 0 0 15px rgba(99, 102, 241, 0.1);
+  border-color: #1a1a1a;
+  box-shadow: 10px 10px 0px 0px var(--accent-primary);
 }
 
 /* Animations */
@@ -305,6 +303,49 @@ body {
 }
 
 
+
+/* Constructivist Button Styles */
+.btn-constructivist-primary {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border: 3px solid #1a1a1a;
+  border-radius: 0px !important;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px 0px #1a1a1a;
+  transition: all 0.15s ease;
+}
+
+.btn-constructivist-primary:hover {
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 6px 6px 0px 0px var(--accent-primary);
+}
+
+.btn-constructivist-secondary {
+  background: #1a1a1a;
+  color: #ffffff;
+  border: 3px solid #1a1a1a;
+  border-radius: 0px !important;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  box-shadow: 4px 4px 0px 0px var(--accent-primary);
+  transition: all 0.15s ease;
+}
+
+.btn-constructivist-secondary:hover {
+  background: #ffffff;
+  color: #1a1a1a;
+  box-shadow: 6px 6px 0px 0px #1a1a1a;
+}
 
 @media print {
   /* Reset html/body to prevent thermal printer spooling */

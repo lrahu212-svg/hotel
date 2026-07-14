@@ -616,11 +616,10 @@ export const App: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderRadius: '12px',
-        borderColor: 'rgba(255, 255, 255, 0.05)',
         position: 'sticky',
         top: '1rem',
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: '4px 4px 0px #1a1a1a'
       }}>
         <div 
           onClick={() => {
@@ -629,16 +628,15 @@ export const App: React.FC = () => {
           }}
           style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer' }}
         >
-          {/* Logo SCAN with gold brackets */}
+          {/* Logo SCAN with Constructivist solid box */}
           <div style={{
-            borderLeft: '2.5px solid #d4af37',
-            borderRight: '2.5px solid #d4af37',
-            padding: '0.15rem 0.65rem',
-            position: 'relative'
+            background: 'var(--accent-primary)',
+            padding: '0.25rem 0.75rem',
+            border: '3px solid #1a1a1a',
+            display: 'inline-flex',
+            alignItems: 'center'
           }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
-            <span style={{ fontWeight: 800, letterSpacing: '0.15em', color: '#fff', fontSize: '1.25rem' }}>
+            <span style={{ fontWeight: 900, letterSpacing: '0.1em', color: '#fff', fontSize: '1.25rem', fontFamily: "'Syne', sans-serif" }}>
               SCAN
             </span>
           </div>
@@ -647,14 +645,14 @@ export const App: React.FC = () => {
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              borderLeft: '1px solid rgba(255,255,255,0.1)', 
+              borderLeft: '2px solid #1a1a1a', 
               paddingLeft: '1.5rem',
               cursor: 'default'
             }} onClick={(e) => e.stopPropagation()}>
-              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>
-                {navbarKitchenInfo.split(' - ')[0]}
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1a1a1a', fontFamily: "'Syne', sans-serif" }}>
+                {navbarKitchenInfo.split(' - ')[0].toUpperCase()}
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.15rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#555', marginTop: '0.15rem', fontWeight: 700 }}>
                 {navbarKitchenInfo.split(' - ')[1]}
               </span>
             </div>
@@ -669,33 +667,36 @@ export const App: React.FC = () => {
                 setPath('/');
               }}
               style={{
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: '#1a1a1a',
+                border: '2px solid #1a1a1a',
                 color: '#fff',
                 padding: '0.4rem 1rem',
-                borderRadius: '8px',
+                borderRadius: '0px',
                 cursor: 'pointer',
-                fontWeight: 600,
+                fontWeight: 800,
                 fontSize: '0.85rem',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                fontFamily: "'Syne', sans-serif"
               }}
             >
-              ← Back to Portal
+              ← BACK TO PORTAL
             </button>
           )}
           <span style={{
             fontSize: '0.75rem',
-            color: 'var(--status-ready)',
+            color: '#1a1a1a',
             display: 'flex',
             alignItems: 'center',
             gap: '0.35rem',
-            background: 'rgba(16, 185, 129, 0.1)',
+            background: '#fff',
+            border: '2px solid #1a1a1a',
             padding: '0.35rem 0.65rem',
-            borderRadius: '20px',
-            fontWeight: 600
+            borderRadius: '0px',
+            fontWeight: 800,
+            fontFamily: "'Syne', sans-serif"
           }}>
-            <span style={{ width: '6px', height: '6px', background: 'var(--status-ready)', borderRadius: '50%', display: 'inline-block', animation: 'pulse-ring 1.5s infinite' }}></span>
-            System Live
+            <span style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', display: 'inline-block' }}></span>
+            SYSTEM LIVE
           </span>
         </div>
       </nav>
