@@ -77,19 +77,20 @@ export const Portal: React.FC = () => {
       <header style={{ marginBottom: '3rem', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
           <div style={{
-            borderLeft: '3px solid #d4af37',
-            borderRight: '3px solid #d4af37',
-            padding: '0.2rem 1rem',
-            position: 'relative'
+            background: 'var(--accent-primary)',
+            padding: '0.35rem 1.25rem',
+            border: '4px solid #1a1a1a',
+            display: 'inline-flex',
+            alignItems: 'center'
           }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', letterSpacing: '0.15em', fontFamily: "'Outfit', sans-serif" }}>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fff', letterSpacing: '0.15em', fontFamily: "'Syne', sans-serif" }}>
               SCAN
             </h1>
           </div>
         </div>
-        <p style={{ color: '#94a3b8', fontSize: '1.1rem', marginTop: '1rem' }}>Real-time synchronized hotel ordering & dispatch system</p>
+        <p style={{ color: '#555', fontSize: '1.1rem', marginTop: '1rem', fontWeight: 650 }}>
+          Real-time synchronized hotel ordering & dispatch system
+        </p>
       </header>
 
       {/* Stats Cards */}
@@ -134,26 +135,19 @@ export const Portal: React.FC = () => {
             </h2>
             <button
               onClick={handleAddTable}
+              className="btn-constructivist-primary"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.35rem',
-                background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)',
-                color: '#0f172a',
-                border: 'none',
                 padding: '0.5rem 1rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(6, 182, 212, 0.2)',
-                transition: 'all 0.2s'
+                fontSize: '0.85rem'
               }}
             >
-              Add Table <Plus size={16} />
+              ADD TABLE <Plus size={16} />
             </button>
           </div>
-          <p style={{ color: '#94a3b8', marginBottom: '2rem', fontSize: '0.95rem' }}>
+          <p style={{ color: '#555', marginBottom: '2rem', fontSize: '0.95rem', fontWeight: 600 }}>
             Open each table menu link in a separate window or device to simulate custom table orders.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem' }}>
@@ -165,27 +159,27 @@ export const Portal: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  background: '#ffffff',
+                  border: '3px solid #1a1a1a',
                   padding: '1.25rem',
-                  borderRadius: '12px',
-                  color: '#fff',
+                  borderRadius: '0px',
+                  color: '#1a1a1a',
                   cursor: 'pointer',
-                  fontWeight: 600,
+                  fontWeight: 800,
                   fontSize: '1rem',
                   textAlign: 'left',
                   transition: 'all 0.2s',
+                  boxShadow: '4px 4px 0px #1a1a1a',
+                  fontFamily: "'Syne', sans-serif"
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--accent-secondary-glow)';
-                  e.currentTarget.style.borderColor = 'var(--accent-secondary)';
+                  e.currentTarget.style.boxShadow = '6px 6px 0px var(--accent-primary)';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)';
+                  e.currentTarget.style.boxShadow = '4px 4px 0px #1a1a1a';
                 }}
               >
-                <span>Table {id}</span>
+                <span>TABLE {id}</span>
                 <ArrowUpRight size={18} />
               </button>
             ))}
@@ -193,35 +187,19 @@ export const Portal: React.FC = () => {
           
           <button
             onClick={() => openWindow('/reserve')}
+            className="btn-constructivist-secondary"
             style={{
               width: '100%',
-              background: 'rgba(6, 182, 212, 0.08)',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
-              color: '#38bdf8',
               padding: '1rem',
-              borderRadius: '12px',
-              fontWeight: 800,
-              cursor: 'pointer',
               fontSize: '1rem',
-              textAlign: 'center',
               display: 'flex',
               gap: '0.6rem',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s',
-              marginTop: '1.5rem',
-              boxShadow: '0 4px 15px rgba(6, 182, 212, 0.05)'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.15)';
-              e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.4)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.08)';
-              e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.2)';
+              marginTop: '1.5rem'
             }}
           >
-            📅 Open Customer Table Reservation Portal
+            📅 OPEN CUSTOMER TABLE RESERVATION PORTAL
           </button>
         </div>
 
@@ -241,43 +219,41 @@ export const Portal: React.FC = () => {
                 <button 
                   key={config.id}
                   onClick={() => openWindow(`/kitchen/${config.id}`)} 
+                  className="btn-constructivist-primary"
                   style={{ 
-                    background: 'rgba(99, 102, 241, 0.08)', 
-                    border: '1px solid rgba(99, 102, 241, 0.15)', 
-                    color: '#fff', 
                     padding: '0.75rem', 
-                    borderRadius: '10px', 
-                    fontWeight: 650, 
-                    cursor: 'pointer', 
                     fontSize: '0.85rem',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)';
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
-                    e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.15)';
+                    boxShadow: '2px 2px 0px #1a1a1a'
                   }}
                 >
-                  {config.name} (#{config.id})
+                  {config.name.toUpperCase()} (#{config.id})
                 </button>
               ))}
             </div>
             
             {/* Custom Kitchen ID Input */}
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.5rem', borderRadius: '10px' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', background: '#ffffff', border: '2px solid #1a1a1a', padding: '0.5rem', borderRadius: '0px' }}>
               <input 
                 type="number" 
                 min="1" 
                 value={kitchenIdInput} 
                 onChange={(e) => setKitchenIdInput(e.target.value)} 
                 placeholder="Station ID" 
-                style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', paddingLeft: '0.5rem', width: '100%', fontSize: '0.85rem' }} 
+                style={{ background: 'none', border: 'none', color: '#1a1a1a', outline: 'none', paddingLeft: '0.5rem', width: '100%', fontSize: '0.85rem' }} 
               />
-              <button onClick={() => kitchenIdInput && openWindow(`/kitchen/${kitchenIdInput}`)} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--accent-primary)', color: '#fff', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '6px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
-                Open Station <Plus size={14} />
+              <button 
+                onClick={() => kitchenIdInput && openWindow(`/kitchen/${kitchenIdInput}`)} 
+                className="btn-constructivist-secondary"
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem', 
+                  padding: '0.4rem 0.8rem', 
+                  fontSize: '0.8rem',
+                  boxShadow: 'none'
+                }}
+              >
+                OPEN STATION <Plus size={14} />
               </button>
             </div>
           </div>
@@ -290,33 +266,18 @@ export const Portal: React.FC = () => {
             
             <button 
               onClick={() => openWindow('/waiter')} 
+              className="btn-constructivist-primary"
               style={{ 
                 width: '100%',
-                background: 'rgba(14, 165, 233, 0.08)', 
-                border: '1px solid rgba(14, 165, 233, 0.15)', 
-                color: '#fff', 
                 padding: '0.9rem', 
-                borderRadius: '10px', 
-                fontWeight: 700, 
-                cursor: 'pointer', 
                 fontSize: '0.95rem',
-                textAlign: 'center',
                 display: 'flex',
                 gap: '0.5rem',
                 alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'all 0.2s'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(14, 165, 233, 0.15)';
-                e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.3)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(14, 165, 233, 0.08)';
-                e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.15)';
+                justifyContent: 'center'
               }}
             >
-              Open Waiter Dashboard
+              OPEN WAITER DASHBOARD
             </button>
           </div>
 
@@ -327,53 +288,39 @@ export const Portal: React.FC = () => {
       <div className="glass-panel" style={{ marginTop: '2rem', padding: '2rem', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <TrendingUp size={22} color="var(--accent-primary)" /> Executive Administration
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: "'Syne', sans-serif" }}>
+              <TrendingUp size={22} color="var(--accent-primary)" /> EXECUTIVE ADMINISTRATION
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            <p style={{ color: '#555', fontSize: '0.9rem', marginTop: '0.25rem', fontWeight: 600 }}>
               Access full business financial insights, profit margins, product leaderboards, and order auditing logs.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <button
               onClick={() => openWindow('/reception')}
+              className="btn-constructivist-secondary"
               style={{
-                background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)',
-                color: '#0f172a',
-                border: 'none',
                 padding: '0.75rem 1.75rem',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontWeight: 700,
                 fontSize: '0.9rem',
-                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s'
+                gap: '0.5rem'
               }}
             >
-              Open Reception Desk <ArrowUpRight size={16} />
+              OPEN RECEPTION DESK <ArrowUpRight size={16} />
             </button>
             <button
               onClick={() => openWindow('/owner')}
+              className="btn-constructivist-primary"
               style={{
-                background: 'linear-gradient(135deg, var(--accent-primary) 0%, #4f46e5 100%)',
-                color: '#fff',
-                border: 'none',
                 padding: '0.75rem 1.75rem',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                fontWeight: 700,
                 fontSize: '0.9rem',
-                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.2)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
-                transition: 'all 0.2s'
+                gap: '0.5rem'
               }}
             >
-              Launch Owner Dashboard <ArrowUpRight size={16} />
+              LAUNCH OWNER DASHBOARD <ArrowUpRight size={16} />
             </button>
           </div>
         </div>
