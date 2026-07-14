@@ -286,8 +286,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         <form onSubmit={handleLoginSubmit} className="glass-panel" style={{ padding: '2.5rem', width: '100%', maxWidth: '420px', border: '1px solid rgba(14, 165, 233, 0.2)' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🛎️</span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#fff', marginTop: '1rem', background: 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Waiter Login
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1a1a1a', marginTop: '1rem', fontFamily: "'Syne', sans-serif" }}>
+              WAITER LOGIN
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem', lineHeight: '1.4' }}>
               Please sign in as <strong style={{ color: 'var(--accent-secondary)' }}>{targetProfile ? targetProfile.name : 'Registered Waiter'}</strong> to access this dashboard
@@ -726,11 +726,12 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                   
                   return (
                     <div key={tableId} style={{
-                      padding: '1rem',
-                      borderRadius: '12px',
-                      borderLeft: `4px solid ${occ.occupied ? 'var(--status-cancelled)' : 'var(--status-ready)'}`,
-                      background: occ.occupied ? 'rgba(239, 68, 68, 0.02)' : 'rgba(16, 185, 129, 0.02)',
-                      border: isAssignedToMe ? '1.5px solid var(--accent-secondary)' : '1px solid rgba(255,255,255,0.05)'
+                      padding: '1.25rem',
+                      background: '#ffffff',
+                      border: '3px solid #1a1a1a',
+                      borderRadius: '0px',
+                      boxShadow: isAssignedToMe ? '4px 4px 0px var(--accent-primary)' : '4px 4px 0px #1a1a1a',
+                      transition: 'all 0.2s'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
                         <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
