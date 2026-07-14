@@ -196,21 +196,31 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
     <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
       
       {/* Header */}
-      <header className="glass-panel owner-header">
+      <header className="glass-panel owner-header" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '1.5rem 2rem',
+        marginBottom: '2.5rem',
+        borderLeft: '4px solid var(--accent-primary)',
+        borderColor: 'rgba(255,255,255,0.05)'
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ background: 'var(--accent-primary-glow)', padding: '0.5rem', borderRadius: '8px', color: 'var(--accent-primary)' }}>
+          <div style={{ background: 'var(--accent-primary)', padding: '0.5rem', border: '2px solid #1a1a1a', color: '#fff' }}>
             <TrendingUp size={24} />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, background: 'linear-gradient(135deg, #fff 0%, #cbd5e1 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              Executive Management Board
+            <h1 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#1a1a1a', margin: 0, fontFamily: "'Syne', sans-serif" }}>
+              EXECUTIVE MANAGEMENT BOARD
             </h1>
-            <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Real-time revenue analytics, cost analysis, and order ledger audit</p>
+            <p style={{ fontSize: '0.85rem', color: '#555', margin: '0.25rem 0 0 0', fontWeight: 600 }}>
+              Real-time revenue analytics, cost analysis, and order ledger audit
+            </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span style={{ fontSize: '0.8rem', color: '#64748b', background: 'rgba(255,255,255,0.02)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <span style={{ fontSize: '0.8rem', color: '#1a1a1a', background: 'rgba(0,0,0,0.05)', padding: '0.5rem 1rem', border: '2px solid #1a1a1a', fontWeight: 700 }}>
             Session Audit: {orders.length} total orders recorded
           </span>
           <button
@@ -219,19 +229,12 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                 onResetAllData?.();
               }
             }}
+            className="btn-constructivist-primary"
             style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              color: '#ef4444',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
               padding: '0.5rem 1rem',
-              borderRadius: '8px',
-              fontWeight: 700,
               fontSize: '0.85rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
+              boxShadow: '2px 2px 0px #1a1a1a'
             }}
-            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
           >
             RESET ALL DATA
           </button>
@@ -240,44 +243,44 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
 
       {/* System Settings */}
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <h3 style={{ fontSize: '1rem', color: '#cbd5e1', margin: 0, fontWeight: 700, textTransform: 'uppercase' }}>Secure Razorpay Integration</h3>
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
+        <h3 style={{ fontSize: '1.1rem', color: '#1a1a1a', margin: 0, fontWeight: 800, textTransform: 'uppercase', fontFamily: "'Syne', sans-serif" }}>Secure Razorpay Integration</h3>
+        <p style={{ fontSize: '0.85rem', color: '#555', margin: 0, fontWeight: 600 }}>
           Configure dynamic or static Razorpay payments. For dynamic links (locked pricing per bill), enter the <b>Key ID</b> and <b>Key Secret</b>. Alternatively, enter a <b>Static Payment/UPI Link</b> (customers will click this and manually type/confirm their amount).
         </p>
         
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Key ID</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Key ID</label>
             <input 
               type="text" 
               placeholder="rzp_live_xxxxxxxxxxxxxx" 
               value={razorpayKeyId} 
               onChange={e => setRazorpayKeyId(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
             />
           </div>
           <div style={{ flex: 1, minWidth: '200px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Key Secret (Hidden)</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Key Secret (Hidden)</label>
             <input 
               type="password" 
               placeholder="Enter new Key Secret to update" 
               value={razorpayKeySecret} 
               onChange={e => setRazorpayKeySecret(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
             />
           </div>
           <div style={{ flex: 1.5, minWidth: '250px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.25rem' }}>Static UPI / Razorpay Link (Alternative)</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#555', marginBottom: '0.25rem', fontWeight: 700 }}>Static UPI / Razorpay Link (Alternative)</label>
             <input 
               type="text" 
               placeholder="https://rzp.io/i/xxxxxx or upi://pay?..." 
               value={razorpayLink} 
               onChange={e => setRazorpayLink(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(14, 165, 233, 0.3)', borderRadius: '8px', color: '#fff', outline: 'none' }} 
+              style={{ width: '100%', padding: '0.75rem 1rem', outline: 'none' }} 
             />
           </div>
           <div style={{ flex: '0 0 180px', minWidth: '150px' }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: '#fbbf24', marginBottom: '0.25rem', fontWeight: 700 }}>🪙 Reservation Advance (₹)</label>
+            <label style={{ display: 'block', fontSize: '0.8rem', color: '#d92626', marginBottom: '0.25rem', fontWeight: 800 }}>🪙 Reservation Advance (₹)</label>
             <input 
               type="number" 
               min="0"
@@ -285,14 +288,15 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
               placeholder="e.g. 200  (0 = free)" 
               value={reservationAdvance} 
               onChange={e => setReservationAdvance(e.target.value)} 
-              style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(251, 191, 36, 0.05)', border: '1px solid rgba(251, 191, 36, 0.4)', borderRadius: '8px', color: '#fbbf24', outline: 'none', fontWeight: 700 }} 
+              style={{ width: '100%', padding: '0.75rem 1rem', border: '2px solid #1a1a1a', borderRadius: '0px', color: '#1a1a1a', outline: 'none', fontWeight: 800 }} 
             />
-            <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#64748b' }}>Charged via Razorpay before reservation is confirmed</p>
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.72rem', color: '#555', fontWeight: 600 }}>Charged via Razorpay before reservation is confirmed</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button
               onClick={handleSaveKeys}
-              style={{ padding: '0.75rem 1.5rem', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+              className="btn-constructivist-secondary"
+              style={{ padding: '0.75rem 1.5rem', fontSize: '0.9rem', boxShadow: '2px 2px 0px #1a1a1a' }}
             >
               Save Settings
             </button>
