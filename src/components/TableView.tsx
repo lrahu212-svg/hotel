@@ -558,14 +558,14 @@ export const TableView: React.FC<TableViewProps> = ({
         <button
           onClick={() => setActiveTab('menu')}
           style={{
-            background: activeTab === 'menu' ? 'var(--accent-primary-glow)' : 'transparent',
-            color: activeTab === 'menu' ? '#fff' : '#94a3b8',
-            border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)'}`,
+            background: activeTab === 'menu' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'menu' ? '#ffffff' : '#64748b',
+            border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
             padding: '0.75rem 1.5rem',
-            borderRadius: '10px',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontWeight: 600,
-            transition: 'all 0.2s'
+            transition: 'all 0.15s ease-in-out'
           }}
         >
           🍴 Browse Menu
@@ -573,17 +573,17 @@ export const TableView: React.FC<TableViewProps> = ({
         <button
           onClick={() => setActiveTab('history')}
           style={{
-            background: activeTab === 'history' ? 'var(--accent-primary-glow)' : 'transparent',
-            color: activeTab === 'history' ? '#fff' : '#94a3b8',
-            border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)'}`,
+            background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent',
+            color: activeTab === 'history' ? '#ffffff' : '#64748b',
+            border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
             padding: '0.75rem 1.5rem',
-            borderRadius: '10px',
+            borderRadius: '8px',
             cursor: 'pointer',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            transition: 'all 0.2s'
+            transition: 'all 0.15s ease-in-out'
           }}
         >
           <ClipboardList size={18} />
@@ -594,8 +594,8 @@ export const TableView: React.FC<TableViewProps> = ({
       {activeTab === 'menu' ? (
         <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
           {/* Cart Panel */}
-          <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+          <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid var(--border-glass)' }}>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)' }}>
               <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
             </h2>
 

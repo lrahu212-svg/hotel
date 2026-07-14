@@ -45,6 +45,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(distPath));
 
+// Get current system state endpoint (fallback / initialization)
+app.get('/api/state', (req, res) => {
+  const { serverSecrets, ...safeState } = state;
+  res.json(safeState);
+});
+
 // Server-Sent Events Endpoint
 app.get('/events', (req, res) => {
   res.writeHead(200, {

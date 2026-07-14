@@ -254,6 +254,20 @@ export const App: React.FC = () => {
       }
     };
 
+    // Fetch initial fresh state from the REST API immediately on load
+    const fetchFreshState = async () => {
+      try {
+        const res = await fetch('/api/state');
+        if (res.ok) {
+          const freshState = await res.json();
+          handleIncoming({ type: 'SYNC_STATE', ...freshState });
+        }
+      } catch (err) {
+        console.error('Failed to fetch initial state:', err);
+      }
+    };
+    fetchFreshState();
+
     // Connect to Node.js SSE Sync Server
     const eventSource = new EventSource(`/events`);
 
@@ -283,9 +297,13 @@ export const App: React.FC = () => {
       }
     };
 
+    // Polling fallback to keep tabs synchronized in case of browser concurrent connection limits
+    const pollInterval = setInterval(fetchFreshState, 4000);
+
     return () => {
       eventSource.close();
       localChannel.close();
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -622,7 +640,7 @@ export const App: React.FC = () => {
         position: 'sticky',
         top: '1rem',
         zIndex: 100,
-        boxShadow: '4px 4px 0px #1a1a1a'
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
       }}>
         <div 
           onClick={() => {
@@ -641,7 +659,7 @@ export const App: React.FC = () => {
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1.5px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
             <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '1.5px', background: 'linear-gradient(90deg, #d4af37 15%, transparent 15%, transparent 85%, #d4af37 85%)' }}></div>
-            <span style={{ fontWeight: 800, letterSpacing: '0.1em', color: '#fff', fontSize: '1.15rem', fontFamily: "'Outfit', sans-serif" }}>
+            <span style={{ fontWeight: 800, letterSpacing: '0.1em', color: 'var(--accent-secondary)', fontSize: '1.15rem', fontFamily: "'Outfit', sans-serif" }}>
               SCAN
             </span>
           </div>
@@ -650,14 +668,14 @@ export const App: React.FC = () => {
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              borderLeft: '2px solid #1a1a1a', 
+              borderLeft: '2px solid var(--border-glass)', 
               paddingLeft: '1.5rem',
               cursor: 'default'
             }} onClick={(e) => e.stopPropagation()}>
-              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1a1a1a', fontFamily: "'Syne', sans-serif" }}>
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-secondary)', fontFamily: "'Outfit', sans-serif" }}>
                 {navbarKitchenInfo.split(' - ')[0].toUpperCase()}
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#555', marginTop: '0.15rem', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 600 }}>
                 {navbarKitchenInfo.split(' - ')[1]}
               </span>
             </div>
@@ -672,36 +690,36 @@ export const App: React.FC = () => {
                 setPath('/');
               }}
               style={{
-                background: '#1a1a1a',
-                border: '2px solid #1a1a1a',
-                color: '#fff',
-                padding: '0.4rem 1rem',
-                borderRadius: '0px',
+                background: '#ffffff',
+                border: '1px solid var(--border-glass)',
+                color: 'var(--accent-secondary)',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                fontWeight: 800,
+                fontWeight: 600,
                 fontSize: '0.85rem',
-                transition: 'all 0.2s',
-                fontFamily: "'Syne', sans-serif"
+                transition: 'all 0.15s ease-in-out',
+                fontFamily: "'Outfit', sans-serif"
               }}
             >
-              ← BACK TO PORTAL
+              ← Back to Portal
             </button>
           )}
           <span style={{
             fontSize: '0.75rem',
-            color: '#1a1a1a',
+            color: '#10b981',
             display: 'flex',
             alignItems: 'center',
             gap: '0.35rem',
-            background: '#fff',
-            border: '2px solid #1a1a1a',
-            padding: '0.35rem 0.65rem',
-            borderRadius: '0px',
-            fontWeight: 800,
-            fontFamily: "'Syne', sans-serif"
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            padding: '0.4rem 0.75rem',
+            borderRadius: '8px',
+            fontWeight: 600,
+            fontFamily: "'Outfit', sans-serif"
           }}>
-            <span style={{ width: '6px', height: '6px', background: 'var(--accent-primary)', display: 'inline-block' }}></span>
-            SYSTEM LIVE
+            <span style={{ width: '6px', height: '6px', background: '#10b981', borderRadius: '50%', display: 'inline-block' }}></span>
+            System Live
           </span>
         </div>
       </nav>
@@ -726,7 +744,7 @@ export const App: React.FC = () => {
         }}>
           <span style={{ fontSize: '0.65rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 700 }}>Powered By</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-            <span style={{ fontWeight: 800, fontSize: '1.6rem', letterSpacing: '0.18em', color: '#fff', display: 'flex', alignItems: 'center', fontFamily: "'Outfit', sans-serif" }}>
+            <span style={{ fontWeight: 800, fontSize: '1.6rem', letterSpacing: '0.18em', color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', fontFamily: "'Outfit', sans-serif" }}>
               VOLC
               <span style={{ display: 'inline-flex', alignSelf: 'center', margin: '0 0.15rem' }}>
                 <svg viewBox="0 0 100 100" width="24" height="24" style={{ overflow: 'visible' }}>
