@@ -347,6 +347,63 @@ body {
   box-shadow: 6px 6px 0px 0px #1a1a1a;
 }
 
+/* Global Constructivist Text & Input overrides (Ensures high contrast black text on cream/white blocks) */
+h1, h2, h3, h4, h5, h6, p, span, label, strong, td, th, div {
+  color: #1a1a1a;
+}
+
+/* Specific exclusions or overrides for dark buttons/containers */
+.glass-panel h1, 
+.glass-panel h2, 
+.glass-panel h3, 
+.glass-panel h4, 
+.glass-panel h5, 
+.glass-panel h6, 
+.glass-panel p, 
+.glass-panel span, 
+.glass-panel label, 
+.glass-panel div,
+.glass-panel strong,
+.glass-panel td,
+.glass-panel th {
+  color: #1a1a1a !important;
+}
+
+/* Forms & inputs contrast styling */
+.glass-panel input,
+.glass-panel select,
+.glass-panel textarea,
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  color: #1a1a1a !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  border: 2px solid #1a1a1a !important;
+  border-radius: 0px !important;
+  padding: 0.65rem !important;
+}
+
+.glass-panel input::placeholder,
+input::placeholder {
+  color: #777777 !important;
+}
+
+/* Explicit button typography overrides to maintain dark-button white-text contrast */
+.btn-constructivist-primary,
+.btn-constructivist-primary *,
+.btn-constructivist-secondary,
+.btn-constructivist-secondary * {
+  color: #ffffff !important;
+}
+
+.btn-constructivist-primary:hover,
+.btn-constructivist-primary:hover *,
+.btn-constructivist-secondary:hover,
+.btn-constructivist-secondary:hover * {
+  color: #1a1a1a !important;
+}
+
 @media print {
   /* Reset html/body to prevent thermal printer spooling */
   html, body {
