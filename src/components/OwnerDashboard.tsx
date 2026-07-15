@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Order, TableOccupancy } from '../types';
 import { useMenu } from '../data/menu';
-import { TrendingUp, DollarSign, Layers, FileText, Search, Filter } from 'lucide-react';
+import { TrendingUp, DollarSign, Layers, FileText, Search, Filter, Percent, Clock, Activity, Award } from 'lucide-react';
 
 interface OwnerDashboardProps {
   orders: Order[];
@@ -15,6 +15,8 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [ownerTablesCount, setOwnerTablesCount] = useState<number>(parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
+  const [chartMode, setChartMode] = useState<'cumulative' | 'hourly'>('cumulative');
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   // Active waiters state
   const [activeWaitersState, setActiveWaitersState] = useState<string[]>(() => {
@@ -72,6 +74,30 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   }, 0);
 
   const netProfit = totalRevenue - totalCost;
+
+  // New Briefing & KPI Calculations
+  const averageOrderValue = servedOrders.length > 0 ? totalRevenue / servedOrders.length : 0;
+  const profitMarginPercent = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+  const hourlyRevenues: { [hour: number]: number } = {};
+  servedOrders.forEach(o => {
+    const hr = new Date(o.timestamp).getHours();
+    hourlyRevenues[hr] = (hourlyRevenues[hr] || 0) + o.totalAmount;
+  });
+  let peakHourStr = 'N/A';
+  let maxHrRev = 0;
+  Object.entries(hourlyRevenues).forEach(([hr, rev]) => {
+    if (rev > maxHrRev) {
+      maxHrRev = rev;
+      const hourNum = parseInt(hr, 10);
+      const ampm = hourNum >= 12 ? 'PM' : 'AM';
+      const displayHour = hourNum % 12 || 12;
+      peakHourStr = `${displayHour} ${ampm}`;
+    }
+  });
+
+  const occupiedTables = Object.values(tablesOccupancy).filter(t => t.occupied).length;
+  const occupancyRate = ownerTablesCount > 0 ? (occupiedTables / ownerTablesCount) * 100 : 0;
 
   // Category sales distribution
   const categorySales: { [cat: string]: number } = { 
@@ -131,6 +157,92 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
     return order.totalAmount - cost;
   };
 
+  // Generate chart data points based on mode
+  const getChartPoints = () => {
+    if (chartMode === 'cumulative') {
+      const sorted = [...servedOrders].sort((a, b) => a.timestamp - b.timestamp);
+      let currentRev = 0;
+      let currentCost = 0;
+      let currentProfit = 0;
+      return sorted.map((order) => {
+        const cost = order.items.reduce((sum, item) => {
+          const menuItem = MENU_ITEMS.find(m => m.id === item.menuItemId);
+          const unitCost = menuItem ? menuItem.costPrice : item.price * 0.4;
+          return sum + (unitCost * item.quantity);
+        }, 0);
+        currentRev += order.totalAmount;
+        currentCost += cost;
+        currentProfit += (order.totalAmount - cost);
+
+        return {
+          label: `Order #${order.id.slice(-4).toUpperCase()}`,
+          time: new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          revenue: currentRev,
+          cost: currentCost,
+          profit: currentProfit
+        };
+      });
+    } else {
+      // Hourly trend
+      const sortedHours = Object.keys(hourlyRevenues).map(Number).sort((a, b) => a - b);
+      return sortedHours.map(hr => {
+        const hrOrders = servedOrders.filter(o => new Date(o.timestamp).getHours() === hr);
+        const rev = hrOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+        const cost = hrOrders.reduce((sum, o) => {
+          return sum + o.items.reduce((itemSum, item) => {
+            const menuItem = MENU_ITEMS.find(m => m.id === item.menuItemId);
+            const unitCost = menuItem ? menuItem.costPrice : item.price * 0.4;
+            return itemSum + (unitCost * item.quantity);
+          }, 0);
+        }, 0);
+        return {
+          label: `${hr % 12 || 12} ${hr >= 12 ? 'PM' : 'AM'}`,
+          time: `${hr}:00`,
+          revenue: rev,
+          cost: cost,
+          profit: rev - cost
+        };
+      });
+    }
+  };
+
+  const chartPoints = getChartPoints();
+
+  // SVG Chart Config
+  const svgWidth = 800;
+  const svgHeight = 240;
+  const paddingLeft = 50;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+
+  const chartWidth = svgWidth - paddingLeft - paddingRight;
+  const chartHeight = svgHeight - paddingTop - paddingBottom;
+
+  const maxVal = chartPoints.length > 0 
+    ? Math.max(...chartPoints.map(p => Math.max(p.revenue, p.cost, p.profit)), 100) * 1.15
+    : 100;
+
+  const getX = (idx: number) => {
+    if (chartPoints.length <= 1) return paddingLeft + chartWidth / 2;
+    return paddingLeft + (idx / (chartPoints.length - 1)) * chartWidth;
+  };
+
+  const getY = (val: number) => {
+    return paddingTop + chartHeight - (val / maxVal) * chartHeight;
+  };
+
+  const getLinePath = (key: 'revenue' | 'cost' | 'profit') => {
+    if (chartPoints.length === 0) return '';
+    return chartPoints.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${getX(idx)} ${getY(p[key])}`).join(' ');
+  };
+
+  const getAreaPath = (key: 'revenue' | 'cost' | 'profit') => {
+    if (chartPoints.length === 0) return '';
+    const linePath = getLinePath(key);
+    return `${linePath} L ${getX(chartPoints.length - 1)} ${getY(0)} L ${getX(0)} ${getY(0)} Z`;
+  };
+
   return (
     <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
       
@@ -180,40 +292,315 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         </div>
       </header>
 
-
-
-      {/* Financial Overview Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+      {/* Financial Overview & KPI Briefing Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
         
         {/* Revenue */}
         <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', right: '-10px', bottom: '-10px', opacity: 0.04, color: '#fff' }}>
             <DollarSign size={100} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--status-ready)', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Gross Revenue</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Gross Revenue</span>
             <DollarSign size={20} />
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b' }}>₹{totalRevenue.toFixed(2)}</h3>
-          <p style={{ fontSize: '0.75rem', color: 'var(--status-ready)', marginTop: '0.25rem' }}>
-            From {servedOrders.length} completed transactions
+          <p style={{ fontSize: '0.75rem', color: 'var(--status-ready)', marginTop: '0.25rem', fontWeight: 600 }}>
+            From {servedOrders.length} served orders
+          </p>
+        </div>
+
+        {/* Cost of Ingredients */}
+        <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Cost of Sales</span>
+            <Activity size={20} style={{ color: '#ef4444' }} />
+          </div>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444' }}>₹{totalCost.toFixed(2)}</h3>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            Total ingredient expense
           </p>
         </div>
 
         {/* Net Profit */}
         <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '3px solid var(--status-ready)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--status-ready)', marginBottom: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Net Profit</span>
-            <TrendingUp size={20} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Net Profit</span>
+            <TrendingUp size={20} style={{ color: 'var(--status-ready)' }} />
           </div>
           <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--status-ready)' }}>₹{netProfit.toFixed(2)}</h3>
           <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-            Net earnings after ingredients
+            Earnings after ingredients
           </p>
         </div>
 
+        {/* Average Order Value */}
+        <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Avg Order Value</span>
+            <Award size={20} style={{ color: 'var(--accent-primary)' }} />
+          </div>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#1e293b' }}>₹{averageOrderValue.toFixed(2)}</h3>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            AOV across ticket sizes
+          </p>
+        </div>
 
+        {/* Profit Margin */}
+        <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Profit Margin</span>
+            <Percent size={20} style={{ color: '#06b6d4' }} />
+          </div>
+          <h3 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#06b6d4' }}>{profitMarginPercent.toFixed(1)}%</h3>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            Net profit ratio
+          </p>
+        </div>
 
+        {/* Peak Hour & Occupancy */}
+        <div className="glass-panel" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginBottom: '0.75rem' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Peak Hour</span>
+            <Clock size={20} style={{ color: '#f59e0b' }} />
+          </div>
+          <h3 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#f59e0b' }}>{peakHourStr}</h3>
+          <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+            Occupancy Rate: {occupancyRate.toFixed(0)}%
+          </p>
+        </div>
+
+      </div>
+
+      {/* Business Performance SVG Graph */}
+      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+              Business Performance Trend
+            </h2>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0.25rem 0 0 0' }}>
+              Comparing development of gross income, ingredients cost, and net profit
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.05)', padding: '0.25rem', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.05)' }}>
+            <button 
+              onClick={() => setChartMode('cumulative')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                border: 'none',
+                background: chartMode === 'cumulative' ? '#fff' : 'transparent',
+                color: chartMode === 'cumulative' ? '#0f172a' : '#64748b',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: chartMode === 'cumulative' ? '0 1px 3px 0 rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              Cumulative Growth
+            </button>
+            <button 
+              onClick={() => setChartMode('hourly')}
+              style={{
+                padding: '0.4rem 0.8rem',
+                border: 'none',
+                background: chartMode === 'hourly' ? '#fff' : 'transparent',
+                color: chartMode === 'hourly' ? '#0f172a' : '#64748b',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: chartMode === 'hourly' ? '0 1px 3px 0 rgba(0,0,0,0.1)' : 'none'
+              }}
+            >
+              Hourly Sales
+            </button>
+          </div>
+        </div>
+
+        {chartPoints.length === 0 ? (
+          <div style={{ height: '240px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}>
+            <TrendingUp size={48} style={{ opacity: 0.2, marginBottom: '0.75rem' }} />
+            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 650 }}>No served orders recorded to visualize trend.</p>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', opacity: 0.7 }}>Complete and serve customer orders to generate dashboard metrics.</p>
+          </div>
+        ) : (
+          <div style={{ position: 'relative', width: '100%' }}>
+            {/* SVG Render */}
+            <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="240px">
+              <defs>
+                <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.15" />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="gradCost" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.1" />
+                  <stop offset="100%" stopColor="#ef4444" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="gradProfit" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+                const yVal = paddingTop + ratio * chartHeight;
+                const priceVal = maxVal * (1 - ratio);
+                return (
+                  <g key={i}>
+                    <line 
+                      x1={paddingLeft} 
+                      y1={yVal} 
+                      x2={svgWidth - paddingRight} 
+                      y2={yVal} 
+                      stroke="rgba(0,0,0,0.06)" 
+                      strokeDasharray="4 4"
+                    />
+                    <text 
+                      x={paddingLeft - 8} 
+                      y={yVal + 4} 
+                      fill="#64748b" 
+                      fontSize="9px" 
+                      textAnchor="end"
+                      fontWeight="600"
+                    >
+                      ₹{priceVal.toFixed(0)}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* X Axis labels */}
+              {chartPoints.map((p, idx) => {
+                // Show subset of labels if too many points
+                const interval = Math.max(1, Math.floor(chartPoints.length / 8));
+                if (idx % interval !== 0 && idx !== chartPoints.length - 1) return null;
+                return (
+                  <text
+                    key={idx}
+                    x={getX(idx)}
+                    y={svgHeight - 10}
+                    fill="#64748b"
+                    fontSize="9px"
+                    textAnchor="middle"
+                    fontWeight="600"
+                  >
+                    {p.label}
+                  </text>
+                );
+              })}
+
+              {/* Gradient Areas */}
+              <path d={getAreaPath('revenue')} fill="url(#gradRevenue)" />
+              <path d={getAreaPath('cost')} fill="url(#gradCost)" />
+              <path d={getAreaPath('profit')} fill="url(#gradProfit)" />
+
+              {/* Lines */}
+              <path d={getLinePath('revenue')} fill="none" stroke="#6366f1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={getLinePath('cost')} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d={getLinePath('profit')} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* Dots */}
+              {chartPoints.map((p, idx) => (
+                <g key={idx}>
+                  <circle cx={getX(idx)} cy={getY(p.revenue)} r={hoveredIndex === idx ? 5 : 3} fill="#6366f1" stroke="#fff" strokeWidth={hoveredIndex === idx ? 2 : 1} />
+                  <circle cx={getX(idx)} cy={getY(p.cost)} r={hoveredIndex === idx ? 4 : 2} fill="#ef4444" stroke="#fff" strokeWidth={1} />
+                  <circle cx={getX(idx)} cy={getY(p.profit)} r={hoveredIndex === idx ? 5 : 3} fill="#10b981" stroke="#fff" strokeWidth={hoveredIndex === idx ? 2 : 1} />
+                </g>
+              ))}
+
+              {/* Vertical Guide Line */}
+              {hoveredIndex !== null && (
+                <line 
+                  x1={getX(hoveredIndex)} 
+                  y1={paddingTop} 
+                  x2={getX(hoveredIndex)} 
+                  y2={paddingTop + chartHeight} 
+                  stroke="#94a3b8" 
+                  strokeDasharray="4 4" 
+                  strokeWidth="1.5" 
+                />
+              )}
+
+              {/* Interactive Columns for Tooltip trigger */}
+              {chartPoints.map((_, idx) => {
+                const x = getX(idx);
+                const colWidth = chartPoints.length > 1 ? chartWidth / (chartPoints.length - 1) : chartWidth;
+                return (
+                  <rect
+                    key={idx}
+                    x={x - colWidth / 2}
+                    y={paddingTop}
+                    width={colWidth}
+                    height={chartHeight}
+                    fill="transparent"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredIndex(idx)}
+                    onMouseLeave={() => setHoveredIndex(null)}
+                  />
+                );
+              })}
+            </svg>
+
+            {/* Hover Tooltip Overlay */}
+            {hoveredIndex !== null && chartPoints[hoveredIndex] && (
+              <div style={{
+                position: 'absolute',
+                top: '0.75rem',
+                right: '0.75rem',
+                background: 'rgba(15, 23, 42, 0.95)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                padding: '0.75rem',
+                color: '#fff',
+                fontSize: '0.8rem',
+                pointerEvents: 'none',
+                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+                zIndex: 10
+              }}>
+                <div style={{ fontWeight: 700, marginBottom: '0.4rem', color: '#94a3b8', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.25rem' }}>
+                  {chartPoints[hoveredIndex].label} ({chartPoints[hoveredIndex].time})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem' }}>
+                    <span style={{ color: '#a5b4fc', fontWeight: 600 }}>Revenue:</span>
+                    <strong>₹{chartPoints[hoveredIndex].revenue.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem' }}>
+                    <span style={{ color: '#fca5a5', fontWeight: 600 }}>Cost:</span>
+                    <strong>₹{chartPoints[hoveredIndex].cost.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2rem' }}>
+                    <span style={{ color: '#6ee7b7', fontWeight: 600 }}>Net Profit:</span>
+                    <strong style={{ color: '#34d399' }}>₹{chartPoints[hoveredIndex].profit.toFixed(2)}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Chart Legend */}
+            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginTop: '1rem', fontSize: '0.8rem', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#6366f1' }} />
+                <span style={{ color: '#475569' }}>Gross Revenue</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#ef4444' }} />
+                <span style={{ color: '#475569' }}>Ingredients Cost</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#10b981' }} />
+                <span style={{ color: '#475569' }}>Net Profit</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '2.5rem', flexWrap: 'wrap' }}>
@@ -409,7 +796,126 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         </div>
       </div>
 
+      {/* Staff & Menu Insights Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', marginBottom: '2.5rem' }}>
+        
+        {/* Staff Performance Leaderboard */}
+        <div className="glass-panel" style={{ padding: '2rem' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            💼 Staff Performance Leaderboard
+          </h2>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>
+            Tracking orders handled, total sales, and guests served per active waiter.
+          </p>
 
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)', color: '#64748b' }}>
+                  <th style={{ padding: '0.5rem 0.25rem' }}>Staff Name</th>
+                  <th style={{ padding: '0.5rem 0.25rem', textAlign: 'center' }}>Orders Served</th>
+                  <th style={{ padding: '0.5rem 0.25rem', textAlign: 'right' }}>Total Sales</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const waiterStats: { [name: string]: { ordersCount: number; revenue: number } } = {};
+                  servedOrders.forEach(o => {
+                    const waiterName = o.servedBy || 'Self / Checkout';
+                    if (!waiterStats[waiterName]) {
+                      waiterStats[waiterName] = { ordersCount: 0, revenue: 0 };
+                    }
+                    waiterStats[waiterName].ordersCount += 1;
+                    waiterStats[waiterName].revenue += o.totalAmount;
+                  });
+
+                  const sortedWaiters = Object.entries(waiterStats).sort((a, b) => b[1].revenue - a[1].revenue);
+
+                  if (sortedWaiters.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={3} style={{ textAlign: 'center', padding: '1.5rem', color: '#64748b' }}>
+                          No waiter data available yet.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return sortedWaiters.map(([name, stats]) => (
+                    <tr key={name} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                      <td style={{ padding: '0.75rem 0.25rem', fontWeight: 600 }}>{name}</td>
+                      <td style={{ padding: '0.75rem 0.25rem', textAlign: 'center' }}>{stats.ordersCount}</td>
+                      <td style={{ padding: '0.75rem 0.25rem', textAlign: 'right', fontWeight: 700, color: 'var(--status-ready)' }}>
+                        ₹{stats.revenue.toFixed(2)}
+                      </td>
+                    </tr>
+                  ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Menu Pricing & Margin Optimizer Advisor */}
+        <div className="glass-panel" style={{ padding: '2rem' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ⚡ Menu Profit & Margin Optimizer
+          </h2>
+          <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1.25rem' }}>
+            Flagging low-margin dishes (below 50%) and suggesting price optimization.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto' }}>
+            {(() => {
+              const lowMarginItems = MENU_ITEMS.map(item => {
+                const marginAmount = item.price - item.costPrice;
+                const marginPercent = item.price > 0 ? (marginAmount / item.price) * 100 : 0;
+                // Suggest price aiming for a healthy 60% profit margin
+                const suggestedPrice = Math.ceil((item.costPrice / 0.4) / 5) * 5;
+                return { ...item, marginPercent, suggestedPrice };
+              }).filter(item => item.marginPercent < 50).sort((a, b) => a.marginPercent - b.marginPercent);
+
+              if (lowMarginItems.length === 0) {
+                return (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.1)', borderRadius: '8px', color: 'var(--status-ready)', fontSize: '0.85rem', fontWeight: 600 }}>
+                    🎉 Excellent! All active menu items satisfy healthy profit targets (≥50%).
+                  </div>
+                );
+              }
+
+              return lowMarginItems.map(item => (
+                <div key={item.id} style={{
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  background: 'rgba(239,68,68,0.02)',
+                  border: '1px solid rgba(239,68,68,0.08)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.85rem'
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#1e293b' }}>{item.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.15rem' }}>
+                      Cost: ₹{item.costPrice} | Margin: <span style={{ color: '#ef4444', fontWeight: 700 }}>{item.marginPercent.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Suggested Price</div>
+                    <div style={{ fontWeight: 700, color: 'var(--status-ready)', fontSize: '0.95rem' }}>
+                      ₹{item.suggestedPrice}
+                      <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 500, marginLeft: '0.2rem' }}>
+                        (was ₹{item.price})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+
+      </div>
 
       {/* System Configurations (N Tables settings) */}
       <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>

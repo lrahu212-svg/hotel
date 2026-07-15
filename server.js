@@ -60,7 +60,7 @@ app.use(express.static(distPath));
 
 // Get current system state endpoint (fallback / initialization)
 app.get('/api/state', (req, res) => {
-  const { serverSecrets, ...safeState } = state;
+  const { serverSecrets: _serverSecrets, ...safeState } = state;
   res.json(safeState);
 });
 
@@ -73,7 +73,7 @@ app.get('/events', (req, res) => {
   });
 
   // Send initial sync state to client (but strip secrets!)
-  const { serverSecrets, ...safeState } = state;
+  const { serverSecrets: _serverSecrets, ...safeState } = state;
   res.write(`data: ${JSON.stringify({ type: 'SYNC_STATE', ...safeState })}\n\n`);
 
   clients.push(res);
@@ -291,7 +291,7 @@ app.post('/api/create-payment-link', (req, res) => {
             console.error('Razorpay Error:', parsed);
             res.status(400).json({ error: parsed.error?.description || 'Failed to generate link' });
           }
-        } catch (e) {
+        } catch {
           res.status(500).json({ error: 'Invalid response from Razorpay' });
         }
       });
@@ -345,13 +345,13 @@ app.get('/api/check-payment-status', (req, res) => {
           } else {
             res.status(400).json({ error: parsed.error?.description || 'Failed to check status' });
           }
-        } catch (e) {
+        } catch {
           res.status(500).json({ error: 'Invalid response from Razorpay' });
         }
       });
     });
 
-    razorpayReq.on('error', (e) => {
+    razorpayReq.on('error', (_e) => {
       res.status(500).json({ error: 'Network error checking payment status' });
     });
 

@@ -32,20 +32,27 @@ export const TableView: React.FC<TableViewProps> = ({
 }) => {
   const MENU_ITEMS = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [dietaryFilter, setDietaryFilter] = useState<'all' | 'vegetarian' | 'spicy' | 'protein' | 'junk'>('all');
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
   const [activeTab, setActiveTab] = useState<'menu' | 'history'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
-  
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [billEmail, setBillEmail] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'Cash' | null>(null);
-  const [razorpayLink, setRazorpayLink] = useState<string | null>(null);
   const [razorpayLinkId, setRazorpayLinkId] = useState<string | null>(null);
-  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
-  const [paymentLinkError, setPaymentLinkError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showCheckOutSuccess, setShowCheckOutSuccess] = useState(false);
   const [sessionActive, setSessionActive] = useState<boolean>(() => !!sessionStorage.getItem(`table_session_active_${tableId}`));
+
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
+  const [showMobileCart, setShowMobileCart] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-verify payment by polling in the background
   useEffect(() => {
@@ -57,12 +64,11 @@ export const TableView: React.FC<TableViewProps> = ({
         const data = await res.json();
         if (res.ok && data.status === 'paid') {
           setPaymentSuccess(true);
-          setPaymentLinkError(null);
           onCallWaiter('UPI Payment Completed');
         } else if (res.ok && data.status === 'failed') {
-          setPaymentLinkError('Payment Failed. Please try again.');
+          // payment failed
         }
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
@@ -81,16 +87,14 @@ export const TableView: React.FC<TableViewProps> = ({
       setShowCheckOutSuccess(true);
       // Check out immediately with UPI to trigger the bill print on reception
       onCheckOut('UPI');
-      
+
       const timer = setTimeout(() => {
         // Reset all local session states to ensure the next customer starts completely fresh
         setCart({});
-        setRazorpayLink(null);
         setRazorpayLinkId(null);
         setPaymentSuccess(false);
         setShowCheckOutSuccess(false);
-        setPaymentLinkError(null);
-        
+
         sessionStorage.removeItem(`table_session_active_${tableId}`);
         setSessionActive(false);
       }, 5000);
@@ -111,8 +115,20 @@ export const TableView: React.FC<TableViewProps> = ({
   const filteredMenu = MENU_ITEMS.filter(item => {
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
-                          item.description.toLowerCase().includes(menuSearch.toLowerCase());
-    return matchesCategory && matchesSearch;
+      item.description.toLowerCase().includes(menuSearch.toLowerCase());
+
+    let matchesDietary = true;
+    if (dietaryFilter === 'vegetarian') {
+      matchesDietary = !!item.vegetarian;
+    } else if (dietaryFilter === 'spicy') {
+      matchesDietary = !!item.spicy;
+    } else if (dietaryFilter === 'protein') {
+      matchesDietary = !!item.isProteinRich;
+    } else if (dietaryFilter === 'junk') {
+      matchesDietary = !!item.isJunk;
+    }
+
+    return matchesCategory && matchesSearch && matchesDietary;
   });
 
   // Cart operations
@@ -153,6 +169,19 @@ export const TableView: React.FC<TableViewProps> = ({
       const item = MENU_ITEMS.find(m => m.id === itemId);
       return total + (item ? item.price * data.quantity : 0);
     }, 0);
+  };
+
+  const getCartNutrition = () => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    Object.entries(cart).forEach(([itemId, data]) => {
+      const item = MENU_ITEMS.find(m => m.id === itemId);
+      if (item) {
+        totalCalories += (item.calories || 0) * data.quantity;
+        totalProtein += (item.protein || 0) * data.quantity;
+      }
+    });
+    return { calories: totalCalories, protein: totalProtein };
   };
 
   const getCartItemCount = () => {
@@ -225,8 +254,6 @@ export const TableView: React.FC<TableViewProps> = ({
         setPaymentMethod(null);
         setPaymentSuccess(false);
         setShowCheckOutSuccess(false);
-        setPaymentLinkError(null);
-        setRazorpayLink(null);
         setRazorpayLinkId(null);
         setActiveTab('menu');
         setMenuSearch('');
@@ -309,7 +336,7 @@ export const TableView: React.FC<TableViewProps> = ({
     }
 
     onCheckIn(custName, 1, 'Customer', phone.trim());
-    
+
     // Track session in tab-specific storage
     sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
     setSessionActive(true);
@@ -359,85 +386,85 @@ export const TableView: React.FC<TableViewProps> = ({
           </div>
         )}
         <div className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '1rem' }}>
-        <form onSubmit={handleLoginSubmit} className="glass-panel glass-panel-login" style={{ border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem' }}>🛎️</span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
-              Welcome to Dash Hotel
-            </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Dining at Table {tableId} - Please check in to unlock the menu</p>
-          </div>
-
-          {activeRes && (
-            <div style={{
-              background: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.3)',
-              color: '#f59e0b',
-              padding: '0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.8rem',
-              textAlign: 'center',
-              marginBottom: '1.5rem',
-              fontWeight: 600
-            }}>
-              ⚠️ This table is reserved. Only the customer with the registered reservation (Name & Phone) can check in.
+          <form onSubmit={handleLoginSubmit} className="glass-panel glass-panel-login" style={{ border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <span style={{ fontSize: '3rem' }}>🛎️</span>
+              <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
+                Welcome to Dash Hotel
+              </h2>
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Dining at Table {tableId} - Please check in to unlock the menu</p>
             </div>
-          )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
-            {/* Name Input */}
-            <div>
-              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Your Name
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
-                <User size={16} color="var(--accent-secondary)" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. John Doe"
-                  value={custName}
-                  onChange={(e) => setCustName(e.target.value)}
-                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
-                />
+            {activeRes && (
+              <div style={{
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                color: '#f59e0b',
+                padding: '0.75rem',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                textAlign: 'center',
+                marginBottom: '1.5rem',
+                fontWeight: 600
+              }}>
+                ⚠️ This table is reserved. Only the customer with the registered reservation (Name & Phone) can check in.
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
+              {/* Name Input */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Your Name
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+                  <User size={16} color="var(--accent-secondary)" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    value={custName}
+                    onChange={(e) => setCustName(e.target.value)}
+                    style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number Input */}
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Phone Number
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+                  <Users size={16} color="var(--accent-secondary)" />
+                  <input
+                    type="tel"
+                    required
+                    placeholder="e.g. +1 (555) 019-2834"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
+                  />
+                </div>
+                <span style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginTop: '0.4rem', fontStyle: 'italic', paddingLeft: '0.2rem' }}>
+                  * Must include country code prefix (e.g., +91 for India, +1 for US) to receive text.
+                </span>
               </div>
             </div>
 
-            {/* Phone Number Input */}
-            <div>
-              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Phone Number
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
-                <Users size={16} color="var(--accent-secondary)" />
-                <input
-                  type="tel"
-                  required
-                  placeholder="e.g. +1 (555) 019-2834"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
-                />
-              </div>
-              <span style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginTop: '0.4rem', fontStyle: 'italic', paddingLeft: '0.2rem' }}>
-                * Must include country code prefix (e.g., +91 for India, +1 for US) to receive text.
-              </span>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="btn-constructivist-primary"
-            style={{
-              width: '100%',
-              padding: '0.9rem',
-              fontSize: '1rem'
-            }}
-          >
-            CHECK IN & ORDER
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              className="btn-constructivist-primary"
+              style={{
+                width: '100%',
+                padding: '0.9rem',
+                fontSize: '1rem'
+              }}
+            >
+              CHECK IN & ORDER
+            </button>
+          </form>
+        </div>
       </>
     );
   }
@@ -445,388 +472,489 @@ export const TableView: React.FC<TableViewProps> = ({
   return (
     <>
       <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem', paddingBottom: '5rem' }}>
-      {/* Toast Notification */}
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid var(--accent-secondary)',
-          color: '#fff',
-          padding: '1rem 2rem',
-          borderRadius: '12px',
-          boxShadow: '0 10px 25px -5px rgba(14, 165, 233, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          fontWeight: 600,
-          animation: 'fadeIn 0.2s ease-out'
-        }}>
-          <Info size={18} color="var(--accent-secondary)" />
-          {notification}
-        </div>
-      )}
-
-
-
-      {/* Header Bar */}
-      <header className="glass-panel customer-header">
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Table {tableId}</h1>
-          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
-        </div>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-          {!isWaiterMode && (
-            <>
-              <button
-                onClick={() => handleServiceClick('Call Waiter')}
-                disabled={activeTableRequest?.type === 'Call Waiter'}
-                style={{
-                  background: activeTableRequest?.type === 'Call Waiter' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(245, 158, 11, 0.1)',
-                  color: activeTableRequest?.type === 'Call Waiter' ? '#64748b' : 'var(--status-pending)',
-                  border: `1px solid ${activeTableRequest?.type === 'Call Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(245, 158, 11, 0.3)'}`,
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '10px',
-                  cursor: activeTableRequest?.type === 'Call Waiter' ? 'default' : 'pointer',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Bell size={16} />
-                {activeTableRequest?.type === 'Call Waiter' ? 'Waiter Called' : 'Call Waiter'}
-              </button>
-              
-              <button
-                onClick={() => handleServiceClick('Request Bill')}
-                disabled={activeTableRequest?.type === 'Request Bill'}
-                style={{
-                  background: activeTableRequest?.type === 'Request Bill' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(16, 185, 129, 0.1)',
-                  color: activeTableRequest?.type === 'Request Bill' ? '#64748b' : 'var(--status-ready)',
-                  border: `1px solid ${activeTableRequest?.type === 'Request Bill' ? 'rgba(255,255,255,0.05)' : 'rgba(16, 185, 129, 0.3)'}`,
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '10px',
-                  cursor: activeTableRequest?.type === 'Request Bill' ? 'default' : 'pointer',
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Send size={16} />
-                {activeTableRequest?.type === 'Request Bill' ? 'Bill Requested' : 'Get Bill'}
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {/* Occupancy Indicator Panel */}
-      <div className="glass-panel occupancy-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
-          <span style={{ width: '8px', height: '8px', background: 'var(--status-ready)', borderRadius: '50%', display: 'inline-block' }}></span>
-          <span>Welcome to <strong>Dash Hotel</strong> | Checked In: <strong>{occupancy.customerName}</strong></span>
-        </div>
-        {!isWaiterMode && (
-          <button
-            onClick={handleCheckOut}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#ef4444',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              fontSize: '0.8rem'
-            }}
-          >
-            <LogOut size={14} /> Check Out
-          </button>
-        )}
-      </div>
-
-      {/* Nav Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button
-          onClick={() => setActiveTab('menu')}
-          style={{
-            background: activeTab === 'menu' ? 'var(--accent-primary)' : 'transparent',
-            color: activeTab === 'menu' ? '#ffffff' : '#64748b',
-            border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
-            padding: '0.75rem 1.5rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.15s ease-in-out'
-          }}
-        >
-          🍴 Browse Menu
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          style={{
-            background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent',
-            color: activeTab === 'history' ? '#ffffff' : '#64748b',
-            border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
-            padding: '0.75rem 1.5rem',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 600,
+        {/* Toast Notification */}
+        {notification && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            background: 'rgba(15, 23, 42, 0.95)',
+            border: '1px solid var(--accent-secondary)',
+            color: '#fff',
+            padding: '1rem 2rem',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px -5px rgba(14, 165, 233, 0.3)',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
-            transition: 'all 0.15s ease-in-out'
-          }}
-        >
-          <ClipboardList size={18} />
-          Your Orders ({tableOrders.length})
-        </button>
-      </div>
+            gap: '0.75rem',
+            fontWeight: 600,
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <Info size={18} color="var(--accent-secondary)" />
+            {notification}
+          </div>
+        )}
 
-      {activeTab === 'menu' ? (
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          {/* Cart Panel */}
-          <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid var(--border-glass)' }}>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)' }}>
-              <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
-            </h2>
 
-            {getCartItemCount() === 0 ? (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                <ShoppingCart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
-                <p>Your cart is empty. Add some delicious dishes!</p>
-              </div>
-            ) : (
+
+        {/* Header Bar */}
+        <header className="glass-panel customer-header">
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Table {tableId}</h1>
+            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {!isWaiterMode && (
               <>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.5rem' }}>
-                  {Object.entries(cart).map(([itemId, data]) => {
-                    const item = MENU_ITEMS.find(m => m.id === itemId)!;
-                    return (
-                      <div key={itemId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
-                          }}
-                          style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.05)' }} 
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name} <span style={{ color: 'var(--accent-primary)' }}>x{data.quantity}</span></span>
-                            <span style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * data.quantity).toFixed(2)}</span>
-                          </div>
-                          <input
-                            type="text"
-                            placeholder="Add special instructions..."
-                            value={data.notes}
-                            onChange={(e) => updateCartNotes(itemId, e.target.value)}
-                            style={{
-                              width: '100%',
-                              background: 'rgba(0,0,0,0.2)',
-                              border: '1px solid rgba(255,255,255,0.05)',
-                              borderRadius: '6px',
-                              padding: '0.3rem 0.5rem',
-                              color: '#e2e8f0',
-                              fontSize: '0.75rem',
-                              marginTop: '0.15rem',
-                              outline: 'none'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
-                    <span>Items Total:</span>
-                    <span>{getCartItemCount()} items</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
-                    <span>Total Amount:</span>
-                    <span style={{ color: 'var(--accent-secondary)' }}>₹{getCartTotal().toFixed(2)}</span>
-                  </div>
-                </div>
-
                 <button
-                  onClick={handleCheckout}
-                  className="btn-constructivist-primary"
+                  onClick={() => handleServiceClick('Call Waiter')}
+                  disabled={activeTableRequest?.type === 'Call Waiter'}
                   style={{
-                    width: '100%',
-                    padding: '0.9rem',
-                    fontSize: '1rem'
+                    background: activeTableRequest?.type === 'Call Waiter' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(245, 158, 11, 0.1)',
+                    color: activeTableRequest?.type === 'Call Waiter' ? '#64748b' : 'var(--status-pending)',
+                    border: `1px solid ${activeTableRequest?.type === 'Call Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(245, 158, 11, 0.3)'}`,
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '10px',
+                    cursor: activeTableRequest?.type === 'Call Waiter' ? 'default' : 'pointer',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s'
                   }}
                 >
-                  CONFIRM & PLACE ORDER
+                  <Bell size={16} />
+                  {activeTableRequest?.type === 'Call Waiter' ? 'Waiter Called' : 'Call Waiter'}
+                </button>
+
+                <button
+                  onClick={() => handleServiceClick('Request Bill')}
+                  disabled={activeTableRequest?.type === 'Request Bill'}
+                  style={{
+                    background: activeTableRequest?.type === 'Request Bill' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(16, 185, 129, 0.1)',
+                    color: activeTableRequest?.type === 'Request Bill' ? '#64748b' : 'var(--status-ready)',
+                    border: `1px solid ${activeTableRequest?.type === 'Request Bill' ? 'rgba(255,255,255,0.05)' : 'rgba(16, 185, 129, 0.3)'}`,
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '10px',
+                    cursor: activeTableRequest?.type === 'Request Bill' ? 'default' : 'pointer',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <Send size={16} />
+                  {activeTableRequest?.type === 'Request Bill' ? 'Bill Requested' : 'Get Bill'}
                 </button>
               </>
             )}
           </div>
+        </header>
 
-          {/* Menu area */}
-          <div style={{ flex: '2 1 500px' }}>
-            {/* Category Filters */}
-            <div className="category-scroll-container">
-              {['All', 'Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className="category-btn"
-                  style={{
-                    background: selectedCategory === cat ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    border: '1px solid',
-                    borderColor: selectedCategory === cat ? 'var(--accent-secondary)' : 'rgba(255,255,255,0.05)',
-                    color: selectedCategory === cat ? '#fff' : '#94a3b8',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '20px',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    fontWeight: 550,
-                    whiteSpace: 'nowrap',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Menu Search Bar */}
-            <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.65rem 1rem', borderRadius: '10px', marginBottom: '1.5rem', width: '100%', maxWidth: '350px', alignItems: 'center' }}>
-              <Search size={18} color="#64748b" style={{ flexShrink: 0 }} />
-              <input
-                type="text"
-                placeholder="Search coffee, bakery..."
-                value={menuSearch}
-                onChange={(e) => setMenuSearch(e.target.value)}
-                style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.85rem', width: '100%' }}
-              />
-            </div>
-
-            {/* Menu Items Grid */}
-            <div className="menu-items-grid">
-              {filteredMenu.map((item) => {
-                const cartItem = cart[item.id];
-                return (
-                  <div key={item.id} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
-                    <div>
-                      <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem' }}>
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
-                          }}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} 
-                          className="menu-item-image" 
-                        />
-                        <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.25rem', zIndex: 2 }}>
-                          {item.vegetarian && <span title="Vegetarian" style={{ color: 'var(--status-ready)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(16, 185, 129, 0.4)', backdropFilter: 'blur(4px)' }}><Leaf size={14} /></span>}
-                          {item.spicy && <span title="Spicy" style={{ color: 'var(--status-cancelled)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(239, 68, 68, 0.4)', backdropFilter: 'blur(4px)' }}><Flame size={14} /></span>}
-                        </div>
-                      </div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: 650, color: '#fff', marginBottom: '0.25rem' }}>{item.name}</h3>
-                      <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '1rem', minHeight: '40px' }}>{item.description}</p>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>₹{item.price.toFixed(2)}</span>
-                      
-                      {cartItem ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-                          <button
-                            onClick={() => updateCartQuantity(item.id, -1)}
-                            style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >-</button>
-                          <span style={{ minWidth: '16px', textAlign: 'center', fontWeight: 600 }}>{cartItem.quantity}</span>
-                          <button
-                            onClick={() => updateCartQuantity(item.id, 1)}
-                            style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                          >+</button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => updateCartQuantity(item.id, 1)}
-                          className="btn-constructivist-primary"
-                          style={{
-                            padding: '0.5rem 1rem',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ADD TO CART
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {/* Occupancy Indicator Panel */}
+        <div className="glass-panel occupancy-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#1e293b' }}>
+            <span style={{ width: '8px', height: '8px', background: 'var(--status-ready)', borderRadius: '50%', display: 'inline-block' }}></span>
+            <span>Welcome to <strong>Dash Hotel</strong> | Checked In: <strong>{occupancy.customerName}</strong></span>
           </div>
-        </div>
-      ) : (
-        /* Order History View */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {tableOrders.length === 0 ? (
-            <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-              <ClipboardList size={48} style={{ opacity: 0.15, marginBottom: '1rem' }} />
-              <p>No orders placed yet from this table in this session.</p>
-            </div>
-          ) : (
-            tableOrders.map((order) => (
-              <div key={order.id} className="glass-panel" style={{ padding: '1.5rem', borderLeft: `4px solid var(--status-${order.status.toLowerCase()})` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                  <div>
-                    <span style={{ fontWeight: 700, color: '#fff' }}>Order #{order.id.slice(-4).toUpperCase()}</span>
-                    <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>
-                      {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <span style={{
-                    background: `var(--status-${order.status.toLowerCase()})`,
-                    color: '#fff',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '12px',
-                    textTransform: 'uppercase'
-                  }}>
-                    {order.status}
-                  </span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {order.items.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                      <span>
-                        <strong style={{ color: 'var(--accent-secondary)' }}>{item.quantity}x</strong> {item.name}
-                        {item.notes && <span style={{ color: 'var(--status-pending)', fontSize: '0.75rem', display: 'block', fontStyle: 'italic' }}>Note: {item.notes}</span>}
-                      </span>
-                      <span>₹{(item.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem', fontWeight: 700 }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Total paid/to-pay:</span>
-                  <span style={{ color: '#fff' }}>₹{order.totalAmount.toFixed(2)}</span>
-                </div>
-              </div>
-            ))
+          {!isWaiterMode && (
+            <button
+              onClick={handleCheckOut}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#ef4444',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                fontSize: '0.8rem'
+              }}
+            >
+              <LogOut size={14} /> Check Out
+            </button>
           )}
         </div>
-      )}
-    </div>
-      
+
+        {/* Nav Tabs */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+          <button
+            onClick={() => setActiveTab('menu')}
+            style={{
+              background: activeTab === 'menu' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'menu' ? '#ffffff' : '#64748b',
+              border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              transition: 'all 0.15s ease-in-out'
+            }}
+          >
+            🍴 Browse Menu
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            style={{
+              background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'history' ? '#ffffff' : '#64748b',
+              border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+              padding: '0.75rem 1.5rem',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.15s ease-in-out'
+            }}
+          >
+            <ClipboardList size={18} />
+            Your Orders ({tableOrders.length})
+          </button>
+        </div>
+
+        {activeTab === 'menu' ? (
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            {/* Cart Panel */}
+            {!isMobile && (
+              <div className="glass-panel" style={{ flex: '1 1 320px', padding: '1.5rem', height: 'fit-content', border: '1px solid var(--border-glass)' }}>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)' }}>
+                  <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
+                </h2>
+
+                {getCartItemCount() === 0 ? (
+                  <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                    <ShoppingCart size={40} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                    <p>Your cart is empty. Add some delicious dishes!</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.5rem' }}>
+                      {Object.entries(cart).map(([itemId, data]) => {
+                        const item = MENU_ITEMS.find(m => m.id === itemId)!;
+                        return (
+                          <div key={itemId} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+                              }}
+                              style={{ width: '45px', height: '45px', borderRadius: '8px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.05)' }}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name} <span style={{ color: 'var(--accent-primary)' }}>x{data.quantity}</span></span>
+                                <span style={{ fontWeight: 600, color: '#f8fafc' }}>₹{(item.price * data.quantity).toFixed(2)}</span>
+                              </div>
+                              <input
+                                type="text"
+                                placeholder="Add special instructions..."
+                                value={data.notes}
+                                onChange={(e) => updateCartNotes(itemId, e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  background: 'rgba(0,0,0,0.2)',
+                                  border: '1px solid rgba(255,255,255,0.05)',
+                                  borderRadius: '6px',
+                                  padding: '0.3rem 0.5rem',
+                                  color: '#e2e8f0',
+                                  fontSize: '0.75rem',
+                                  marginTop: '0.15rem',
+                                  outline: 'none'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#94a3b8' }}>
+                        <span>Items Total:</span>
+                        <span>{getCartItemCount()} items</span>
+                      </div>
+                      {(() => {
+                        const nutr = getCartNutrition();
+                        return (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                              <span>Total Calories:</span>
+                              <span style={{ color: '#e2e8f0', fontWeight: 550 }}>🔥 {nutr.calories} kcal</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.8rem', color: '#94a3b8' }}>
+                              <span>Total Protein:</span>
+                              <span style={{ color: '#10b981', fontWeight: 650 }}>💪 {nutr.protein}g</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
+                        <span>Total Amount:</span>
+                        <span style={{ color: 'var(--accent-secondary)' }}>₹{getCartTotal().toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleCheckout}
+                      className="btn-constructivist-primary"
+                      style={{
+                        width: '100%',
+                        padding: '0.9rem',
+                        fontSize: '1rem'
+                      }}
+                    >
+                      CONFIRM & PLACE ORDER
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Menu area */}
+            <div style={{ flex: '2 1 500px' }}>
+              {/* Category Filters */}
+              <div className="category-scroll-container" style={{ marginBottom: '1rem' }}>
+                {['All', 'Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'].map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className="category-btn"
+                    style={{
+                      background: selectedCategory === cat ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                      border: '1px solid',
+                      borderColor: selectedCategory === cat ? 'var(--accent-secondary)' : 'rgba(0,0,0,0.1)',
+                      color: selectedCategory === cat ? 'var(--accent-primary)' : '#334155',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '20px',
+                      cursor: 'pointer',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* Dietary & Health Toggles */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                {[
+                  { id: 'all', label: 'All Dishes', icon: '🍽️' },
+                  { id: 'vegetarian', label: 'Vegetarian Only', icon: '🌱' },
+                  { id: 'spicy', label: 'Spicy Only', icon: '🔥' },
+                  { id: 'protein', label: 'High Protein (≥15g)', icon: '💪' },
+                  { id: 'junk', label: 'Cheat Meals', icon: '🍩' }
+                ].map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setDietaryFilter(filter.id as any)}
+                    style={{
+                      background: dietaryFilter === filter.id ? 'rgba(99, 102, 241, 0.12)' : 'rgba(0,0,0,0.03)',
+                      border: '1px solid',
+                      borderColor: dietaryFilter === filter.id ? 'var(--accent-secondary)' : 'rgba(0,0,0,0.08)',
+                      color: dietaryFilter === filter.id ? 'var(--accent-primary)' : '#334155',
+                      padding: '0.4rem 0.8rem',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <span>{filter.icon}</span>
+                    <span>{filter.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Menu Search Bar */}
+              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.65rem 1rem', borderRadius: '10px', marginBottom: '1.5rem', width: '100%', maxWidth: '350px', alignItems: 'center' }}>
+                <Search size={18} color="#64748b" style={{ flexShrink: 0 }} />
+                <input
+                  type="text"
+                  placeholder="Search coffee, bakery..."
+                  value={menuSearch}
+                  onChange={(e) => setMenuSearch(e.target.value)}
+                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.85rem', width: '100%' }}
+                />
+              </div>
+
+              {/* Menu Items Grid */}
+              <div className="menu-items-grid">
+                {filteredMenu.map((item) => {
+                  const cartItem = cart[item.id];
+                  return (
+                    <div key={item.id} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                      <div>
+                        <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem' }}>
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+                            }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                            className="menu-item-image"
+                          />
+                          <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.25rem', zIndex: 2 }}>
+                            {item.vegetarian && <span title="Vegetarian" style={{ color: 'var(--status-ready)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(16, 185, 129, 0.4)', backdropFilter: 'blur(4px)' }}><Leaf size={14} /></span>}
+                            {item.spicy && <span title="Spicy" style={{ color: 'var(--status-cancelled)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(239, 68, 68, 0.4)', backdropFilter: 'blur(4px)' }}><Flame size={14} /></span>}
+                          </div>
+                        </div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 650, color: '#fff', marginBottom: '0.25rem' }}>{item.name}</h3>
+                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.75rem', minHeight: '40px' }}>{item.description}</p>
+
+                        {/* Calories & Protein badges */}
+                        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontSize: '0.65rem',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            color: '#cbd5e1',
+                            padding: '0.15rem 0.4rem',
+                            borderRadius: '4px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem'
+                          }}>
+                            🔥 {item.calories || 0} kcal
+                          </span>
+                          <span style={{
+                            fontSize: '0.65rem',
+                            background: item.isProteinRich ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${item.isProteinRich ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                            color: item.isProteinRich ? '#10b981' : '#cbd5e1',
+                            padding: '0.15rem 0.4rem',
+                            borderRadius: '4px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            fontWeight: item.isProteinRich ? 700 : 500
+                          }}>
+                            💪 {item.protein || 0}g protein
+                          </span>
+                          {item.isJunk && (
+                            <span style={{
+                              fontSize: '0.65rem',
+                              background: 'rgba(245,158,11,0.06)',
+                              border: '1px solid rgba(245,158,11,0.15)',
+                              color: '#f59e0b',
+                              padding: '0.15rem 0.4rem',
+                              borderRadius: '4px',
+                              fontWeight: 600
+                            }}>
+                              🍩 Cheat Meal
+                            </span>
+                          )}
+                        </div>
+
+                        {item.ingredients && item.ingredients.length > 0 && (
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', lineHeight: '1.3' }}>
+                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>Ingredients:</span> {item.ingredients.join(', ')}
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                        <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>₹{item.price.toFixed(2)}</span>
+
+                        {cartItem ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                            <button
+                              onClick={() => updateCartQuantity(item.id, -1)}
+                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >-</button>
+                            <span style={{ minWidth: '16px', textAlign: 'center', fontWeight: 600 }}>{cartItem.quantity}</span>
+                            <button
+                              onClick={() => updateCartQuantity(item.id, 1)}
+                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >+</button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => updateCartQuantity(item.id, 1)}
+                            className="btn-constructivist-primary"
+                            style={{
+                              padding: '0.5rem 1rem',
+                              fontSize: '0.85rem'
+                            }}
+                          >
+                            ADD TO CART
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Order History View */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {tableOrders.length === 0 ? (
+              <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                <ClipboardList size={48} style={{ opacity: 0.15, marginBottom: '1rem' }} />
+                <p>No orders placed yet from this table in this session.</p>
+              </div>
+            ) : (
+              tableOrders.map((order) => (
+                <div key={order.id} className="glass-panel" style={{ padding: '1.5rem', borderLeft: `4px solid var(--status-${order.status.toLowerCase()})` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#fff' }}>Order #{order.id.slice(-4).toUpperCase()}</span>
+                      <span style={{ color: '#64748b', fontSize: '0.8rem', marginLeft: '0.75rem' }}>
+                        {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <span style={{
+                      background: `var(--status-${order.status.toLowerCase()})`,
+                      color: '#fff',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px',
+                      textTransform: 'uppercase'
+                    }}>
+                      {order.status}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                    {order.items.map((item, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+                        <span>
+                          <strong style={{ color: 'var(--accent-secondary)' }}>{item.quantity}x</strong> {item.name}
+                          {item.notes && <span style={{ color: 'var(--status-pending)', fontSize: '0.75rem', display: 'block', fontStyle: 'italic' }}>Note: {item.notes}</span>}
+                        </span>
+                        <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '0.75rem', fontWeight: 700 }}>
+                    <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Total paid/to-pay:</span>
+                    <span style={{ color: '#fff' }}>₹{order.totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Payment Modal */}
       {showPaymentModal && (
         <div style={{
@@ -841,14 +969,14 @@ export const TableView: React.FC<TableViewProps> = ({
           padding: '1rem'
         }}>
           <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '450px', position: 'relative' }}>
-            <button 
+            <button
               onClick={() => setShowPaymentModal(false)}
               style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer' }}
             >
               &times;
             </button>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', textAlign: 'center', color: '#fff' }}>Generate Bill</h2>
-            
+
             <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center' }}>
               <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Total Amount Due</span>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', margin: '0.5rem 0' }}>
@@ -858,8 +986,8 @@ export const TableView: React.FC<TableViewProps> = ({
 
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem' }}>Email for PDF Bill (Optional)</label>
-              <input 
-                type="email" 
+              <input
+                type="email"
                 placeholder="Enter your email address"
                 value={billEmail}
                 onChange={e => setBillEmail(e.target.value)}
@@ -887,14 +1015,14 @@ export const TableView: React.FC<TableViewProps> = ({
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <button 
+                <button
                   onClick={() => setPaymentMethod('UPI')}
                   style={{ background: '#000', color: '#fff', border: '1px solid #000', padding: '1rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Outfit', sans-serif" }}
                 >
                   <span style={{ fontSize: '1.5rem' }}>📱</span>
                   PAY WITH UPI
                 </button>
-                <button 
+                <button
                   onClick={() => handlePayment('Cash')}
                   style={{ background: '#000', color: '#fff', border: '1px solid #000', padding: '1rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', fontFamily: "'Outfit', sans-serif" }}
                 >
@@ -902,6 +1030,192 @@ export const TableView: React.FC<TableViewProps> = ({
                   PAY WITH CASH
                 </button>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Floating Cart Banner */}
+      {isMobile && getCartItemCount() > 0 && (
+        <div style={{
+          position: 'fixed',
+          bottom: '16px',
+          left: '16px',
+          right: '16px',
+          background: 'var(--accent-primary)',
+          color: '#fff',
+          padding: '0.85rem 1.25rem',
+          borderRadius: '12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          boxShadow: '0 10px 25px -5px rgba(37, 99, 235, 0.4)',
+          cursor: 'pointer',
+          zIndex: 100
+        }}
+        onClick={() => setShowMobileCart(true)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+            <ShoppingCart size={20} color="#fff" />
+            <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.9rem' }}>{getCartItemCount()} {getCartItemCount() === 1 ? 'item' : 'items'}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}>
+            <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem' }}>₹{getCartTotal().toFixed(2)}</span>
+            <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>View Cart →</span>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Cart Bottom Sheet Modal */}
+      {isMobile && showMobileCart && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center'
+        }}
+        onClick={() => setShowMobileCart(false)}
+        >
+          <div style={{
+            background: 'var(--bg-glass)',
+            width: '100%',
+            maxHeight: '85vh',
+            borderTopLeftRadius: '24px',
+            borderTopRightRadius: '24px',
+            padding: '1.5rem',
+            overflowY: 'auto',
+            borderTop: '1px solid var(--border-glass)',
+            boxShadow: '0 -10px 25px rgba(0,0,0,0.1)'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* Grab handle */}
+            <div style={{ width: '40px', height: '4px', background: 'rgba(0,0,0,0.1)', borderRadius: '2px', margin: '0 auto 1.25rem auto' }} />
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-secondary)' }}>
+                <ShoppingCart size={20} color="var(--accent-primary)" /> Your Cart
+              </h2>
+              <button 
+                onClick={() => setShowMobileCart(false)} 
+                style={{ background: 'rgba(0,0,0,0.05)', border: 'none', padding: '0.4rem 0.8rem', borderRadius: '20px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
+              >
+                Close
+              </button>
+            </div>
+
+            {getCartItemCount() === 0 ? (
+              <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                <ShoppingCart size={50} style={{ opacity: 0.2, marginBottom: '1rem' }} />
+                <p>Your cart is empty.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                  {Object.entries(cart).map(([itemId, data]) => {
+                    const item = MENU_ITEMS.find(m => m.id === itemId)!;
+                    return (
+                      <div key={itemId} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '0.75rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+                          }}
+                          style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.95rem' }}>{item.name}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--accent-secondary)' }}>₹{(item.price * data.quantity).toFixed(2)}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.35rem' }}>
+                            {/* Quantity Controls */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(0,0,0,0.04)', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.08)' }}>
+                              <button
+                                onClick={() => updateCartQuantity(itemId, -1)}
+                                style={{ background: 'none', border: 'none', color: '#000', fontSize: '1rem', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                -
+                              </button>
+                              <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{data.quantity}</span>
+                              <button
+                                onClick={() => updateCartQuantity(itemId, 1)}
+                                style={{ background: 'none', border: 'none', color: '#000', fontSize: '1rem', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <input
+                              type="text"
+                              placeholder="Instructions..."
+                              value={data.notes}
+                              onChange={(e) => updateCartNotes(itemId, e.target.value)}
+                              style={{
+                                width: '60%',
+                                background: '#fff',
+                                border: '1px solid rgba(0,0,0,0.1)',
+                                borderRadius: '6px',
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                outline: 'none'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Nutrition Summaries */}
+                <div style={{ background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
+                  {(() => {
+                    const nutr = getCartNutrition();
+                    return (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', fontSize: '0.8rem', color: '#475569' }}>
+                          <span>Total Calories:</span>
+                          <span style={{ color: '#1e293b', fontWeight: 600 }}>🔥 {nutr.calories} kcal</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.8rem', color: '#475569' }}>
+                          <span>Total Protein:</span>
+                          <span style={{ color: '#065f46', fontWeight: 700 }}>💪 {nutr.protein}g</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: 800 }}>
+                    <span>Total Amount:</span>
+                    <span style={{ color: 'var(--accent-primary)' }}>₹{getCartTotal().toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    handleCheckout();
+                    setShowMobileCart(false);
+                  }}
+                  className="btn-constructivist-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.9rem',
+                    fontSize: '1rem',
+                    borderRadius: '12px'
+                  }}
+                >
+                  CONFIRM & PLACE ORDER
+                </button>
+              </>
             )}
           </div>
         </div>

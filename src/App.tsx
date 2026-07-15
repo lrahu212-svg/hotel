@@ -289,7 +289,7 @@ export const App: React.FC = () => {
           const channel = new BroadcastChannel('hotel_ordering_system');
           channel.postMessage(msg);
           channel.close();
-        } catch (bcErr) {
+        } catch {
           // ignore
         }
       } catch (err) {
@@ -322,7 +322,7 @@ export const App: React.FC = () => {
       const channel = new BroadcastChannel('hotel_ordering_system');
       channel.postMessage(event);
       channel.close();
-    } catch (bcErr) {
+    } catch {
       // ignore
     }
 

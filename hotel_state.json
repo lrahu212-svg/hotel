@@ -1,8 +1,8 @@
 {
   "orders": [
     {
-      "id": "ord_duo8iemwj",
-      "tableId": "1_archived_1784019555339",
+      "id": "ord_7ot7obs6o",
+      "tableId": "1_archived_1784117094495",
       "items": [
         {
           "menuItemId": "c1",
@@ -11,67 +11,6 @@
           "name": "Espresso",
           "price": 3,
           "status": "Served"
-        }
-      ],
-      "status": "Served",
-      "timestamp": 1783931658799,
-      "totalAmount": 3,
-      "customerName": "r",
-      "servedBy": "rahul"
-    },
-    {
-      "id": "ord_zt28vgx8c",
-      "tableId": "1_archived_1784037129605",
-      "items": [
-        {
-          "menuItemId": "c1",
-          "quantity": 1,
-          "notes": "",
-          "name": "Espresso",
-          "price": 3,
-          "status": "Ready"
-        }
-      ],
-      "status": "Served",
-      "timestamp": 1784036384800,
-      "totalAmount": 3,
-      "customerName": "hanual"
-    },
-    {
-      "id": "ord_qllvufn0c",
-      "tableId": "2_archived_1784037130363",
-      "items": [
-        {
-          "menuItemId": "c1",
-          "quantity": 1,
-          "notes": "",
-          "name": "Espresso",
-          "price": 3,
-          "status": "Ready"
-        },
-        {
-          "menuItemId": "c2",
-          "quantity": 1,
-          "notes": "",
-          "name": "Double Espresso",
-          "price": 3.75,
-          "status": "Ready"
-        },
-        {
-          "menuItemId": "c3",
-          "quantity": 1,
-          "notes": "",
-          "name": "Americano",
-          "price": 3.5,
-          "status": "Ready"
-        },
-        {
-          "menuItemId": "c4",
-          "quantity": 1,
-          "notes": "",
-          "name": "Macchiato",
-          "price": 3.75,
-          "status": "Ready"
         },
         {
           "menuItemId": "c5",
@@ -79,39 +18,39 @@
           "notes": "",
           "name": "Cortado",
           "price": 4,
-          "status": "Ready"
-        }
-      ],
-      "status": "Served",
-      "timestamp": 1784036585587,
-      "totalAmount": 18,
-      "customerName": "John Doe"
-    },
-    {
-      "id": "ord_lfxv8g3am",
-      "tableId": "1_archived_1784038464168",
-      "items": [
+          "status": "Served"
+        },
         {
-          "menuItemId": "c1",
+          "menuItemId": "c6",
           "quantity": 1,
           "notes": "",
-          "name": "Espresso",
-          "price": 3
+          "name": "Cappuccino",
+          "price": 4.5,
+          "status": "Served"
         }
       ],
       "status": "Served",
-      "timestamp": 1784038442889,
-      "totalAmount": 3,
-      "customerName": "jolla"
+      "timestamp": 1784116929430,
+      "totalAmount": 11.5,
+      "customerName": "r",
+      "servedBy": "r"
     }
   ],
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "Test User",
+      "guestsCount": 1,
+      "checkInTime": 1784118575530,
+      "openedBy": "Customer"
     },
     "2": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "r",
+      "guestsCount": 1,
+      "checkInTime": 1784118001734,
+      "openedBy": "Customer"
     },
     "3": {
       "occupied": false
@@ -126,12 +65,43 @@
       "occupied": false
     }
   },
-  "settings": {
-    "razorpayLink": ""
-  },
+  "settings": {},
   "reservations": [],
-  "serverSecrets": {
-    "razorpayKeyId": "",
-    "razorpayKeySecret": "RbvUTv4bWEo6axBoQx5A4d7I"
-  }
+  "inventory": [
+    {
+      "id": "inv_1",
+      "name": "Coffee Beans",
+      "quantity": 1955,
+      "unit": "g",
+      "threshold": 500
+    },
+    {
+      "id": "inv_2",
+      "name": "Milk",
+      "quantity": 4650,
+      "unit": "ml",
+      "threshold": 1000
+    },
+    {
+      "id": "inv_3",
+      "name": "Flour",
+      "quantity": 3000,
+      "unit": "g",
+      "threshold": 1000
+    },
+    {
+      "id": "inv_4",
+      "name": "Sugar",
+      "quantity": 1500,
+      "unit": "g",
+      "threshold": 300
+    },
+    {
+      "id": "inv_5",
+      "name": "Water",
+      "quantity": 9850,
+      "unit": "ml",
+      "threshold": 2000
+    }
+  ]
 }

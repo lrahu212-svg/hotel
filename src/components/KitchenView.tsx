@@ -108,7 +108,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
         enqueuePrint(ordersToPrint);
       }
     }
-  }, [orders, soundEnabled, stationOrders]);
+  }, [orders, soundEnabled, stationOrders, enqueuePrint]);
 
   // Keyboard shortcut to select orders / navigate main display
   useEffect(() => {
@@ -175,7 +175,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [displayOrders, focusedOrderIndex, focusedItemIndex, isNavigatingItems, openedViaNumber, onUpdateStatus, onUpdateItemStatus]);
+  }, [displayOrders, focusedOrderIndex, focusedItemIndex, isNavigatingItems, openedViaNumber, onUpdateStatus, onUpdateItemStatus, markAllComplete]);
 
   const playChime = () => {
     try {
@@ -224,16 +224,16 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     }
   };
 
-  const markAllComplete = (order: typeof stationOrders[0]) => {
+  function markAllComplete(order: typeof stationOrders[0]) {
     if (onUpdateStatus) {
       onUpdateStatus(order.id, 'Ready');
     }
-  };
+  }
 
-  const enqueuePrint = (ordersToPrint: typeof stationOrders) => {
+  function enqueuePrint(ordersToPrint: typeof stationOrders) {
     printQueue.current.push(...ordersToPrint);
     processPrintQueue();
-  };
+  }
 
   const processPrintQueue = () => {
     if (isPrinting.current || printQueue.current.length === 0) return;

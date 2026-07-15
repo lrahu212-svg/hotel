@@ -23,10 +23,11 @@ export interface Order {
 export interface ServiceRequest {
   id: string;
   tableId: string;
-  type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed';
+  type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed' | 'Warning';
   status: 'Pending' | 'Resolved';
   timestamp: number;
   resolvedBy?: string;
+  text?: string;
 }
 
 export interface TableOccupancy {

@@ -8,6 +8,11 @@ export interface MenuItem {
   spicy?: boolean;
   vegetarian?: boolean;
   image: string; // Unique Unsplash photo URL
+  calories?: number;
+  protein?: number;
+  isProteinRich?: boolean;
+  isJunk?: boolean;
+  ingredients?: string[];
 }
 
 export const MENU_ITEMS: MenuItem[] = [
@@ -501,10 +506,136 @@ export const MENU_ITEMS: MenuItem[] = [
 
 import { useState, useEffect } from 'react';
 
+const enrichMenuItem = (item: MenuItem): MenuItem => {
+  let calories = item.calories;
+  let protein = item.protein;
+  let isProteinRich = item.isProteinRich;
+  let isJunk = item.isJunk;
+  let ingredients = item.ingredients;
+
+  if (calories === undefined) {
+    if (item.category === 'Coffee & Espresso') {
+      const lower = item.name.toLowerCase();
+      if (lower.includes('latte') || lower.includes('mocha') || lower.includes('macchiato')) {
+        calories = 180;
+        protein = 7;
+      } else if (lower.includes('cappuccino') || lower.includes('flat white')) {
+        calories = 120;
+        protein = 6;
+      } else {
+        calories = 10;
+        protein = 0;
+      }
+    } else if (item.category === 'Teas & Infusions') {
+      calories = 80;
+      protein = 1;
+    } else if (item.category === 'Cold Beverages') {
+      const lower = item.name.toLowerCase();
+      if (lower.includes('shake') || lower.includes('smoothie')) {
+        calories = 360;
+        protein = 8;
+        isJunk = true;
+      } else {
+        calories = 140;
+        protein = 0;
+      }
+    } else if (item.category === 'Breakfast & Bakery') {
+      calories = 310;
+      protein = 5;
+      isJunk = true; // High-carb bakery treat
+    } else if (item.category === 'Sandwiches & Salads') {
+      const lower = item.name.toLowerCase();
+      if (lower.includes('chicken') || lower.includes('turkey') || lower.includes('club') || lower.includes('beef') || lower.includes('tuna')) {
+        calories = 440;
+        protein = 26;
+        isProteinRich = true;
+      } else {
+        calories = 310;
+        protein = 11;
+      }
+    } else {
+      calories = 200;
+      protein = 4;
+    }
+  }
+
+  if (protein && protein >= 15) {
+    isProteinRich = true;
+  }
+
+  if (!ingredients) {
+    const nameLower = item.name.toLowerCase();
+    if (item.category === 'Coffee & Espresso') {
+      if (nameLower.includes('latte')) {
+        ingredients = ['Espresso', 'Steamed Milk', 'Milk Microfoam'];
+      } else if (nameLower.includes('mocha')) {
+        ingredients = ['Espresso', 'Dark Chocolate Sauce', 'Steamed Milk', 'Whipped Cream'];
+      } else if (nameLower.includes('cappuccino')) {
+        ingredients = ['Espresso', 'Steamed Milk', 'Velvety Milk Foam'];
+      } else if (nameLower.includes('macchiato')) {
+        ingredients = ['Espresso', 'Steamed Milk Foam', 'Caramel Drizzle'];
+      } else if (nameLower.includes('flat white')) {
+        ingredients = ['Double Ristretto Espresso', 'Velvety Microfoam'];
+      } else if (nameLower.includes('cortado')) {
+        ingredients = ['Espresso', 'Warm Steamed Milk'];
+      } else if (nameLower.includes('americano')) {
+        ingredients = ['Espresso', 'Hot Water'];
+      } else {
+        ingredients = ['Freshly Ground Roasted Coffee Beans', 'Hot Water'];
+      }
+    } else if (item.category === 'Teas & Infusions') {
+      if (nameLower.includes('chai') || nameLower.includes('latte')) {
+        ingredients = ['Black Tea leaves', 'Steamed Milk', 'Chai Spices', 'Sugar'];
+      } else if (nameLower.includes('matcha')) {
+        ingredients = ['Stone-ground Matcha Green Tea', 'Steamed Milk', 'Vanilla Syrup'];
+      } else {
+        ingredients = ['Premium Tea Leaves', 'Hot Water'];
+      }
+    } else if (item.category === 'Cold Beverages') {
+      if (nameLower.includes('shake') || nameLower.includes('frapp')) {
+        ingredients = ['Milk', 'Ice Cream Base', 'Flavored Syrup', 'Whipped Cream'];
+      } else if (nameLower.includes('iced')) {
+        ingredients = ['Espresso / Tea', 'Ice', 'Water / Milk'];
+      } else {
+        ingredients = ['Filtered Water', 'Fruit Extract', 'Sugar Syrup', 'Ice'];
+      }
+    } else if (item.category === 'Breakfast & Bakery') {
+      if (nameLower.includes('croissant')) {
+        ingredients = ['Laminated Yeast Dough', 'French Butter', 'Egg Wash'];
+      } else if (nameLower.includes('muffin')) {
+        ingredients = ['Wheat Flour', 'Sugar', 'Butter', 'Blueberries / Cocoa', 'Eggs'];
+      } else {
+        ingredients = ['Flour', 'Butter', 'Sugar', 'Eggs', 'Yeast'];
+      }
+    } else if (item.category === 'Sandwiches & Salads') {
+      if (nameLower.includes('chicken')) {
+        ingredients = ['Grilled Chicken Breast', 'Artisanal Bread', 'Lettuce', 'Tomato', 'Mayo'];
+      } else if (nameLower.includes('turkey') || nameLower.includes('club')) {
+        ingredients = ['Smoked Turkey Breast', 'Toasted White Bread', 'Crisp Bacon', 'Lettuce', 'Mayo'];
+      } else if (nameLower.includes('tuna')) {
+        ingredients = ['Tuna Flakes', 'Whole Wheat Bread', 'Celery', 'Mayo', 'Lettuce'];
+      } else {
+        ingredients = ['Artisanal Bread', 'Swiss / Cheddar Cheese', 'Lettuce', 'Tomato', 'Olive Oil'];
+      }
+    } else {
+      ingredients = ['Fresh Local Ingredients'];
+    }
+  }
+
+  return {
+    ...item,
+    calories,
+    protein,
+    isProteinRich: !!isProteinRich,
+    isJunk: !!isJunk,
+    ingredients
+  };
+};
+
 export const getMenuItems = (): MenuItem[] => {
   const saved = localStorage.getItem('hotel_dynamic_menu');
-  if (saved) return JSON.parse(saved);
-  return MENU_ITEMS; // default seed
+  const items: MenuItem[] = saved ? JSON.parse(saved) : MENU_ITEMS;
+  return items.map(enrichMenuItem);
 };
 
 export const saveMenuItems = (items: MenuItem[]) => {

@@ -451,7 +451,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     return () => {
       window.removeEventListener('TABLE_SETTLED', handleSettled);
     };
-  }, [orders]);
+  }, [orders, enqueueBillPrint]);
 
   const [kitchenConfigs, setKitchenConfigs] = useState<KitchenConfig[]>(() => {
     const saved = localStorage.getItem('hotel_kitchen_configs');

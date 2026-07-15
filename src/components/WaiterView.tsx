@@ -189,7 +189,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     };
     window.addEventListener('storage', syncWaiters);
     return () => window.removeEventListener('storage', syncWaiters);
-  }, [loggedInWaiter, waiterId]);
+  }, [loggedInWaiter, waiterId, handleLogout]);
 
   const waiterName = loggedInWaiter ? loggedInWaiter.name : '';
 
@@ -214,7 +214,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
       currentStatus[id] = data.occupied;
     });
     setPrevOccupancy(currentStatus);
-  }, [tablesOccupancy, soundEnabled]);
+  }, [tablesOccupancy, soundEnabled, prevOccupancy]);
 
   // Alert when Food is Ready
   useEffect(() => {
