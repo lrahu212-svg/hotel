@@ -681,14 +681,14 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
       </div>
 
       {/* Comprehensive Dish Sales Report */}
-      <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2.5rem' }}>
+      <div className="glass-panel owner-card">
         <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <TrendingUp size={18} color="var(--accent-primary)" /> Comprehensive Dish Sales Ledger
         </h2>
         {allSortedDishes.length === 0 ? (
           <p style={{ color: '#64748b', fontSize: '0.9rem', textAlign: 'center', padding: '2rem' }}>No orders served yet to compile list.</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 285px), 1fr))', gap: '1rem' }}>
             {allSortedDishes.map(([name, stat]) => (
               <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(0,0,0,0.06)' }}>
                 <img 

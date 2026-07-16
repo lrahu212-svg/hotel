@@ -521,6 +521,18 @@ input::placeholder {
   }
 }
 
+.owner-card {
+  padding: 2rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 640px) {
+  .owner-card {
+    padding: 1rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
 @media print {
   /* Reset html/body to prevent thermal printer spooling */
   html, body {
