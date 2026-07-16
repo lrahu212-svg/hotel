@@ -715,7 +715,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
             <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Layers size={18} color="var(--accent-primary)" /> Table Map
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '0.75rem' }}>
               {assignedTables.length === 0 ? (
                 <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
                   <Layers size={36} style={{ opacity: 0.15, marginBottom: '0.75rem' }} />
