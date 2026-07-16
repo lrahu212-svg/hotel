@@ -716,7 +716,7 @@ export const TableView: React.FC<TableViewProps> = ({
             )}
 
             {/* Menu area */}
-            <div style={{ flex: '2 1 500px' }}>
+            <div style={{ flex: '1 1 auto', minWidth: '0px', width: '100%' }}>
               {/* Category Filters */}
               <div className="category-scroll-container" style={{ marginBottom: '1rem' }}>
                 {['All', 'Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'].map((cat) => (
