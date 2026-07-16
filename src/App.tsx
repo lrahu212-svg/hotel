@@ -644,23 +644,13 @@ export const App: React.FC = () => {
   return (
     <div>
       {/* Top Navbar */}
-      <nav className="glass-panel" style={{
-        margin: '1rem',
-        padding: '0.75rem 2rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        position: 'sticky',
-        top: '1rem',
-        zIndex: 100,
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02)'
-      }}>
+      <nav className="glass-panel main-navbar">
         <div 
           onClick={() => {
             window.history.pushState({}, '', '/');
             setPath('/');
           }}
-          style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', cursor: 'pointer' }}
+          className="navbar-brand"
         >
           {/* Logo SCAN with Gold brackets */}
           <div style={{
@@ -695,7 +685,7 @@ export const App: React.FC = () => {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div className="navbar-actions">
           {!isPortal && (
             <button
               onClick={() => {

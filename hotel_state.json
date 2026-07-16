@@ -40,17 +40,13 @@
   "tablesOccupancy": {
     "1": {
       "occupied": true,
-      "customerName": "Test User",
+      "customerName": "hanual",
       "guestsCount": 1,
-      "checkInTime": 1784118575530,
+      "checkInTime": 1784214081873,
       "openedBy": "Customer"
     },
     "2": {
-      "occupied": true,
-      "customerName": "r",
-      "guestsCount": 1,
-      "checkInTime": 1784118001734,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "3": {
       "occupied": false

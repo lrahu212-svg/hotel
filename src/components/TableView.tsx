@@ -417,7 +417,7 @@ export const TableView: React.FC<TableViewProps> = ({
                 <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Your Name
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+                <div className="input-field-wrapper">
                   <User size={16} color="var(--accent-secondary)" />
                   <input
                     type="text"
@@ -425,7 +425,6 @@ export const TableView: React.FC<TableViewProps> = ({
                     placeholder="e.g. John Doe"
                     value={custName}
                     onChange={(e) => setCustName(e.target.value)}
-                    style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
                   />
                 </div>
               </div>
@@ -435,7 +434,7 @@ export const TableView: React.FC<TableViewProps> = ({
                 <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Phone Number
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+                <div className="input-field-wrapper">
                   <Users size={16} color="var(--accent-secondary)" />
                   <input
                     type="tel"
@@ -443,7 +442,6 @@ export const TableView: React.FC<TableViewProps> = ({
                     placeholder="e.g. +1 (555) 019-2834"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
                   />
                 </div>
                 <span style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginTop: '0.4rem', fontStyle: 'italic', paddingLeft: '0.2rem' }}>
@@ -581,7 +579,7 @@ export const TableView: React.FC<TableViewProps> = ({
         </div>
 
         {/* Nav Tabs */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div className="nav-tabs-container">
           <button
             onClick={() => setActiveTab('menu')}
             style={{
@@ -780,14 +778,13 @@ export const TableView: React.FC<TableViewProps> = ({
               </div>
 
               {/* Menu Search Bar */}
-              <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.65rem 1rem', borderRadius: '10px', marginBottom: '1.5rem', width: '100%', maxWidth: '350px', alignItems: 'center' }}>
-                <Search size={18} color="#64748b" style={{ flexShrink: 0 }} />
+              <div className="input-field-wrapper" style={{ marginBottom: '1.5rem', maxWidth: '350px' }}>
+                <Search size={18} color="#64748b" />
                 <input
                   type="text"
                   placeholder="Search coffee, bakery..."
                   value={menuSearch}
                   onChange={(e) => setMenuSearch(e.target.value)}
-                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.85rem', width: '100%' }}
                 />
               </div>
 

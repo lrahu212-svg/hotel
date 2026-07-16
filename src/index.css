@@ -381,12 +381,12 @@ input[type="text"],
 input[type="number"],
 select,
 textarea {
-  color: #1e293b !important;
-  background: #ffffff !important;
-  border: 1px solid #d1d5db !important;
-  border-radius: 6px !important;
-  padding: 0.65rem !important;
-  font-family: 'Inter', sans-serif !important;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.65rem;
+  font-family: 'Inter', sans-serif;
   transition: border-color 0.15s ease-in-out;
 }
 
@@ -401,10 +401,124 @@ input::placeholder {
   color: #94a3b8 !important;
 }
 
-/* Explicit button typography overrides to maintain dark-button white-text contrast */
-.btn-constructivist-primary *,
-.btn-constructivist-secondary * {
-  color: inherit !important;
+/* Responsive Navbar */
+.main-navbar {
+  margin: 1rem;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 1rem;
+  z-index: 100;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  cursor: pointer;
+}
+
+.navbar-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Responsive Input Wrapper for premium feel */
+.input-field-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffffff !important;
+  border: 1px solid var(--border-glass) !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 10px !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  width: 100%;
+}
+
+.input-field-wrapper:focus-within {
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 0 3px var(--accent-primary-glow) !important;
+}
+
+.input-field-wrapper input {
+  background: transparent !important;
+  border: none !important;
+  color: var(--accent-secondary) !important;
+  outline: none !important;
+  font-size: 0.9rem !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.input-field-wrapper svg {
+  flex-shrink: 0;
+}
+
+/* Responsive Nav Tabs */
+.nav-tabs-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .main-navbar {
+    margin: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .navbar-brand {
+    gap: 0.75rem;
+  }
+  
+  .navbar-brand > div:last-child {
+    display: none; /* Hide kitchen info on extra small if needed, or keep it compact */
+  }
+
+  .navbar-actions {
+    gap: 0.5rem;
+  }
+
+  .nav-tabs-container {
+    gap: 0.5rem;
+  }
+  
+  .nav-tabs-container button {
+    flex: 1;
+    padding: 0.6rem 0.5rem !important;
+    font-size: 0.8rem !important;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .occupancy-panel {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch !important;
+    padding: 1rem;
+  }
+  
+  .occupancy-panel > div {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.35rem !important;
+  }
+  
+  .occupancy-panel button {
+    align-self: flex-start;
+    padding: 0.25rem 0;
+  }
 }
 
 @media print {
