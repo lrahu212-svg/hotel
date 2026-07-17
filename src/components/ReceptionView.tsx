@@ -77,6 +77,7 @@ const MenuManagement: React.FC = () => {
   const [category, setCategory] = useState<MenuItem['category']>('Coffee & Espresso');
   const [isVeg, setIsVeg] = useState(false);
   const [isSpicy, setIsSpicy] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,7 +91,7 @@ const MenuManagement: React.FC = () => {
       description: desc,
       vegetarian: isVeg,
       spicy: isSpicy,
-      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
+      image: imageUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
     };
     addMenuItem(item);
     setName('');
@@ -98,6 +99,7 @@ const MenuManagement: React.FC = () => {
     setDesc('');
     setIsVeg(false);
     setIsSpicy(false);
+    setImageUrl('');
   };
 
   return (
@@ -124,6 +126,10 @@ const MenuManagement: React.FC = () => {
               <option value="Breakfast & Bakery">Breakfast & Bakery</option>
               <option value="Sandwiches & Salads">Sandwiches & Salads</option>
             </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Image URL</label>
+            <input type="text" placeholder="e.g. https://images.unsplash.com/... (optional)" value={imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Description</label>
