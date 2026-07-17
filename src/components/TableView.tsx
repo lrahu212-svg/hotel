@@ -1028,27 +1028,27 @@ export const TableView: React.FC<TableViewProps> = ({
           <div className="glass-panel" style={{ padding: '2rem', width: '100%', maxWidth: '450px', position: 'relative' }}>
             <button
               onClick={() => setShowPaymentModal(false)}
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'transparent', border: 'none', color: '#64748b', fontSize: '1.5rem', cursor: 'pointer' }}
             >
               &times;
             </button>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', textAlign: 'center', color: '#fff' }}>Generate Bill</h2>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', textAlign: 'center', color: '#0f172a' }}>Generate Bill</h2>
 
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>Total Amount Due</span>
+            <div style={{ background: 'rgba(0,0,0,0.02)', padding: '1.5rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid rgba(0,0,0,0.05)', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.9rem', color: '#475569' }}>Total Amount Due</span>
               <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#10b981', margin: '0.5rem 0' }}>
                 ₹{tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0).toFixed(2)}
               </div>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem' }}>Email for PDF Bill (Optional)</label>
+              <label style={{ fontSize: '0.85rem', color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Email for PDF Bill (Optional)</label>
               <input
                 type="email"
                 placeholder="Enter your email address"
                 value={billEmail}
                 onChange={e => setBillEmail(e.target.value)}
-                style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', outline: 'none' }}
+                style={{ width: '100%', padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', outline: 'none' }}
               />
             </div>
 
@@ -1056,7 +1056,7 @@ export const TableView: React.FC<TableViewProps> = ({
               <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                 <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
                 <h3 style={{ color: '#10b981', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Payment Successful!</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Please wait for the Waiter to confirm and check out your table.</p>
+                <p style={{ color: '#475569', fontSize: '0.9rem' }}>Please wait for the Waiter to confirm and check out your table.</p>
               </div>
             ) : paymentMethod === 'UPI' ? (
               <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
@@ -1066,9 +1066,9 @@ export const TableView: React.FC<TableViewProps> = ({
                 <button onClick={() => setPaymentMethod(null)} style={{ background: '#000', color: '#fff', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>Back</button>
               </div>
             ) : paymentMethod === 'Cash' ? (
-              <div style={{ textAlign: 'center', padding: '2rem' }}>
-                <h3 style={{ color: '#fff', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Waiter Notified</h3>
-                <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Please wait for the Waiter to collect cash and settle your table.</p>
+              <div style={{ textAlign: 'center', padding: '2rem', background: 'rgba(6, 182, 212, 0.05)', borderRadius: '12px', border: '1px solid rgba(6, 182, 212, 0.15)' }}>
+                <h3 style={{ color: '#0f172a', fontSize: '1.25rem', marginBottom: '0.5rem' }}>Waiter Notified</h3>
+                <p style={{ color: '#475569', fontSize: '0.9rem' }}>Please wait for the Waiter to collect cash and settle your table.</p>
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
