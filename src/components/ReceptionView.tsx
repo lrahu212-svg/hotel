@@ -120,21 +120,21 @@ const MenuManagement: React.FC = () => {
   return (
     <div className="reception-layout-grid">
       <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Plus size={20} color="var(--accent-secondary)" /> Add Food Item
         </h2>
         <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Item Name</label>
-            <input type="text" required value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff' }} />
+            <input type="text" required value={name} onChange={e => setName(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Price (₹)</label>
-            <input type="number" step="0.01" required value={price} onChange={e => setPrice(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff' }} />
+            <input type="number" step="0.01" required value={price} onChange={e => setPrice(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }} />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Category</label>
-            <select value={category} onChange={e => setCategory(e.target.value as any)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff' }}>
+            <select value={category} onChange={e => setCategory(e.target.value as any)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }}>
               <option value="Coffee & Espresso">Coffee & Espresso</option>
               <option value="Teas & Infusions">Teas & Infusions</option>
               <option value="Cold Beverages">Cold Beverages</option>
@@ -149,26 +149,26 @@ const MenuManagement: React.FC = () => {
               accept="image/*" 
               ref={fileInputRef}
               onChange={handleImageFileChange} 
-              style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', fontSize: '0.85rem' }} 
+              style={{ width: '100%', padding: '0.5rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', fontSize: '0.85rem' }} 
             />
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Or Image URL</label>
-            <input type="text" placeholder="e.g. https://images.unsplash.com/... (optional)" value={imageUrl.startsWith('data:image/') ? '' : imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff' }} />
+            <input type="text" placeholder="e.g. https://images.unsplash.com/... (optional)" value={imageUrl.startsWith('data:image/') ? '' : imageUrl} onChange={e => setImageUrl(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }} />
             {imageUrl && imageUrl.startsWith('data:image/') && (
               <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <img src={imageUrl} alt="preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                <img src={imageUrl} alt="preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)' }} />
                 <span style={{ fontSize: '0.75rem', color: 'var(--status-ready)' }}>✓ Image file selected successfully</span>
               </div>
             )}
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Description</label>
-            <textarea value={desc} onChange={e => setDesc(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', minHeight: '60px' }} />
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', minHeight: '60px' }} />
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}><input type="checkbox" checked={isVeg} onChange={e => setIsVeg(e.target.checked)} /> Vegetarian 🥬</label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fff' }}><input type="checkbox" checked={isSpicy} onChange={e => setIsSpicy(e.target.checked)} /> Spicy 🌶️</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}><input type="checkbox" checked={isVeg} onChange={e => setIsVeg(e.target.checked)} /> Vegetarian 🥬</label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}><input type="checkbox" checked={isSpicy} onChange={e => setIsSpicy(e.target.checked)} /> Spicy 🌶️</label>
           </div>
           <button type="submit" style={{ background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)', color: '#fff', border: 'none', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Add Item</button>
         </form>
