@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMenu } from '../data/menu';
+import { useMenu, type MenuItem } from '../data/menu';
 import type { Order, OrderItem, ServiceRequest, TableOccupancy, Reservation } from '../types';
 import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search } from 'lucide-react';
 
@@ -46,6 +46,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
   const [showMobileCart, setShowMobileCart] = useState<boolean>(false);
+  const [selectedItemDetails, setSelectedItemDetails] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -765,8 +766,9 @@ export const TableView: React.FC<TableViewProps> = ({
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
                             }}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease', cursor: 'pointer' }}
                             className="menu-item-image"
+                            onClick={() => setSelectedItemDetails(item)}
                           />
                           {!isMobile && (
                             <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.25rem', zIndex: 2 }}>
@@ -1414,6 +1416,138 @@ export const TableView: React.FC<TableViewProps> = ({
           </div>
         </div>
       )}
+      {selectedItemDetails && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: isMobile ? 'flex-end' : 'center',
+          justifyContent: 'center',
+          padding: isMobile ? '0' : '1.5rem'
+        }}
+        onClick={() => setSelectedItemDetails(null)}
+        >
+          <div style={{
+            background: '#0f172a',
+            width: '100%',
+            maxWidth: isMobile ? '100%' : '500px',
+            maxHeight: '90vh',
+            borderTopLeftRadius: '24px',
+            borderTopRightRadius: '24px',
+            borderBottomLeftRadius: isMobile ? '0' : '24px',
+            borderBottomRightRadius: isMobile ? '0' : '24px',
+            padding: '1.75rem',
+            overflowY: 'auto',
+            border: '1px solid rgba(255,255,255,0.08)',
+            boxShadow: '0 -10px 25px rgba(0,0,0,0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.25rem',
+            animation: isMobile ? 'slideUp 0.3s ease-out' : 'fadeIn 0.2s ease-out'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {isMobile && <div style={{ width: '45px', height: '5px', background: 'rgba(255,255,255,0.15)', borderRadius: '2.5px', margin: '0 auto' }} />}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase' }}>
+                  {selectedItemDetails.category}
+                </span>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginTop: '0.4rem', marginBottom: 0 }}>{selectedItemDetails.name}</h2>
+              </div>
+              <button 
+                onClick={() => setSelectedItemDetails(null)}
+                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', fontSize: '1.25rem', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <img 
+              src={selectedItemDetails.image} 
+              alt={selectedItemDetails.name}
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
+              }}
+              style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }} 
+            />
+
+            {selectedItemDetails.description && (
+              <div>
+                <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>Description</h4>
+                <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>{selectedItemDetails.description}</p>
+              </div>
+            )}
+
+            <div>
+              <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>🥣 Key Ingredients</h4>
+              <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
+                {selectedItemDetails.ingredients && selectedItemDetails.ingredients.length > 0 
+                  ? selectedItemDetails.ingredients.join(', ') 
+                  : 'Fresh local ingredients, hand-selected spices, and kitchen-fresh herbs.'}
+              </p>
+            </div>
+
+            <div style={{ background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.15)', padding: '1rem', borderRadius: '12px' }}>
+              <h4 style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                🌱 Health & Nutritional Advantages
+              </h4>
+              <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
+                {getFoodAdvantages(selectedItemDetails)}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+              {selectedItemDetails.calories && <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🔥 {selectedItemDetails.calories} kcal</span>}
+              {selectedItemDetails.protein && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 700 }}>💪 {selectedItemDetails.protein}g protein</span>}
+              {selectedItemDetails.vegetarian && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🥬 Vegetarian</span>}
+              {selectedItemDetails.spicy && <span style={{ fontSize: '0.7rem', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🌶️ Spicy</span>}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
+};
+
+const getFoodAdvantages = (item: MenuItem): string => {
+  const name = item.name.toLowerCase();
+  
+  if (name.includes('avocado')) {
+    return '🥑 Rich in heart-healthy monounsaturated fats, dietary fiber, and loaded with potassium and essential vitamins (C, E, K, B6). Boosts skin glow and supports overall heart function.';
+  }
+  if (name.includes('salad') || name.includes('greek') || name.includes('caesar')) {
+    return '🥗 Exceptionally high in dietary fiber, raw vitamins, and antioxidants. Aids digestion, supports weight management, and strengthens natural immunity.';
+  }
+  if (name.includes('protein') || item.isProteinRich) {
+    return '💪 High-quality lean protein source. Crucial for muscle repair, tissue growth, keeping you full longer, and stabilizing blood sugar levels.';
+  }
+  if (name.includes('croissant') || name.includes('muffin') || name.includes('roll')) {
+    return '🥐 High energy density. Quick carbohydrates that supply instantaneous energy for brain function and muscle work, perfect for a morning boost.';
+  }
+  if (name.includes('matcha') || name.includes('green tea')) {
+    return '🍵 Packed with L-theanine and powerful EGCG catechins. Enhances focus and calmness, speeds up metabolism, and guards against cellular damage.';
+  }
+  if (name.includes('espresso') || name.includes('coffee') || name.includes('latte') || name.includes('americano')) {
+    return '⚡ High caffeine content. Boosts cognitive focus, improves reaction times, increases metabolic rate for fat-burning, and provides rich antioxidants.';
+  }
+  
+  switch (item.category) {
+    case 'Coffee & Espresso':
+      return '⚡ Enhances focus, increases alertness, boosts physical activity endurance, and contains essential antioxidants that reduce oxidative stress.';
+    case 'Teas & Infusions':
+      return '🍃 Promotes relaxation, supports gut health, is naturally hydrating, and helps fight inflammation with rich polyphenols.';
+    case 'Cold Beverages':
+      return '💧 Instantly rehydrates, replenishes essential electrolytes, and provides a quick, cooling nutrient boost to keep you refreshed.';
+    case 'Breakfast & Bakery':
+      return '🌾 Provides fast-releasing carbohydrates to fuel early morning physical tasks and brain activity.';
+    case 'Sandwiches & Salads':
+      return '🥦 High nutritional yield. Delivers balanced macronutrients, dietary fiber, essential vitamins, and supports digestive health.';
+    default:
+      return '🥗 Provides balanced energy, clean nutrients, and satisfies appetite while maintaining steady cellular vitality.';
+  }
 };
