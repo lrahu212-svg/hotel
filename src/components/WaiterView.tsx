@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Order, ServiceRequest, TableOccupancy, OrderItem, OrderStatus, Reservation } from '../types';
-import { ConciergeBell, Check, Award, Layers, Users, Volume2, VolumeX, LogOut, Info, User } from 'lucide-react';
+import { ConciergeBell, Check, Award, Layers, Users, Volume2, VolumeX, LogOut, Info, User, Menu, X } from 'lucide-react';
 import { TableView } from './TableView';
 
 interface Waiter {
@@ -48,6 +48,18 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
   const [checkInPrompt, setCheckInPrompt] = useState<string | null>(null);
   const [tempName, setTempName] = useState<string>('Walk-in Guest');
   const [lastReadyCount, setLastReadyCount] = useState<number>(0);
+
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 768);
+  const [activeTab, setActiveTab] = useState<'tasks' | 'tables' | 'history'>('tasks');
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Waiter login session states
   const [loggedInWaiter, setLoggedInWaiter] = useState<Waiter | null>(() => {
@@ -417,6 +429,522 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
   const servedOrders = orders
     .filter(o => o.status === 'Served' && assignedTables.includes(o.tableId))
     .sort((a, b) => b.timestamp - a.timestamp);
+
+  if (isMobile) {
+    return (
+      <div className="animate-fade-in" style={{ padding: '1rem', minHeight: '100vh', background: '#f8fafc', paddingBottom: '5rem', position: 'relative' }}>
+        {/* Toast Alert */}
+        {toastAlert && (
+          <div style={{
+            position: 'fixed',
+            top: '12px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            background: 'rgba(239, 68, 68, 0.95)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            color: '#fff',
+            padding: '0.75rem 1.25rem',
+            borderRadius: '10px',
+            boxShadow: '0 8px 20px rgba(239, 68, 68, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontWeight: 700,
+            fontSize: '0.85rem'
+          }}>
+            <Info size={16} />
+            {toastAlert}
+          </div>
+        )}
+
+        {/* Mobile Header */}
+        <header className="glass-panel" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1rem',
+          marginBottom: '1.25rem',
+          position: 'sticky',
+          top: '0',
+          zIndex: 40,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid var(--border-glass)',
+          borderRadius: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button 
+              onClick={() => setMenuOpen(true)}
+              style={{
+                background: 'rgba(0,0,0,0.05)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.5rem',
+                borderRadius: '8px'
+              }}
+            >
+              <Menu size={22} color="#1e293b" />
+            </button>
+            <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
+              {activeTab === 'tasks' && 'Active Tasks'}
+              {activeTab === 'tables' && 'Table Map'}
+              {activeTab === 'history' && 'History Log'}
+            </h1>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              {soundEnabled ? <Volume2 size={20} color="var(--accent-primary)" /> : <VolumeX size={20} color="#64748b" />}
+            </button>
+            <span style={{ fontSize: '0.65rem', background: 'var(--accent-secondary-glow)', color: 'var(--accent-secondary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+              {waiterName.split(' ')[0]}
+            </span>
+          </div>
+        </header>
+
+        {/* Side Drawer Navigation Menu */}
+        {menuOpen && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100,
+            display: 'flex',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{
+              width: '280px',
+              height: '100%',
+              background: '#ffffff',
+              padding: '1.5rem',
+              boxShadow: '4px 0 25px rgba(0,0,0,0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative'
+            }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <div>
+                    <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', fontFamily: "'Outfit', sans-serif" }}>
+                      Waiter Menu
+                    </span>
+                    <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>{waiterName}</p>
+                  </div>
+                  <button 
+                    onClick={() => setMenuOpen(false)} 
+                    style={{ background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer', padding: '0.35rem', borderRadius: '50%' }}
+                  >
+                    <X size={18} color="#64748b" />
+                  </button>
+                </div>
+
+                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    onClick={() => { setActiveTab('tasks'); setMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: activeTab === 'tasks' ? 'var(--accent-secondary-glow)' : 'transparent',
+                      color: activeTab === 'tasks' ? 'var(--accent-secondary)' : '#475569',
+                      fontWeight: activeTab === 'tasks' ? 700 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <ConciergeBell size={18} />
+                    Active Tasks ({activeWaiterOrders.length + activeRequests.length})
+                  </button>
+                  
+                  <button
+                    onClick={() => { setActiveTab('tables'); setMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: activeTab === 'tables' ? 'var(--accent-secondary-glow)' : 'transparent',
+                      color: activeTab === 'tables' ? 'var(--accent-secondary)' : '#475569',
+                      fontWeight: activeTab === 'tables' ? 700 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <Layers size={18} />
+                    Table Map ({assignedTables.length})
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab('history'); setMenuOpen(false); }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.85rem 1rem',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: activeTab === 'history' ? 'var(--accent-secondary-glow)' : 'transparent',
+                      color: activeTab === 'history' ? 'var(--accent-secondary)' : '#475569',
+                      fontWeight: activeTab === 'history' ? 700 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      fontSize: '0.9rem'
+                    }}
+                  >
+                    <Award size={18} />
+                    History Log
+                  </button>
+                </nav>
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className="btn-constructivist-secondary"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: 'none'
+                  }}
+                >
+                  {soundEnabled ? <Volume2 size={16} color="var(--accent-primary)" /> : <VolumeX size={16} color="#64748b" />}
+                  Sound: {soundEnabled ? 'ON' : 'OFF'}
+                </button>
+                
+                <button
+                  onClick={() => { handleLogout(); setMenuOpen(false); }}
+                  className="btn-constructivist-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '0.85rem',
+                    boxShadow: 'none'
+                  }}
+                >
+                  LOGOUT
+                </button>
+              </div>
+            </div>
+            {/* Backdrop click closer */}
+            <div style={{ flex: 1 }} onClick={() => setMenuOpen(false)} />
+          </div>
+        )}
+
+        {/* Mobile View Panel Contents */}
+        {activeTab === 'tasks' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Active Orders Section */}
+            <div className="glass-panel" style={{ padding: '1.25rem', minHeight: '180px' }}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--status-ready)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                🍽️ Orders to Serve ({activeWaiterOrders.length})
+              </h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {activeWaiterOrders.length === 0 ? (
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', padding: '2.5rem' }}>No pending orders.</p>
+                ) : (
+                  activeWaiterOrders.map(order => (
+                    <div key={order.id} style={{ background: 'rgba(14, 165, 233, 0.03)', border: '1px solid rgba(14, 165, 233, 0.1)', padding: '0.85rem', borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.95rem', color: 'var(--accent-primary)' }}>Table {order.tableId}</strong>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: '0.4rem' }}>
+                            {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {order.status === 'Ready' && (
+                          <button
+                            onClick={() => onServeOrder(order.id, waiterName)}
+                            style={{ background: '#0f172a', border: 'none', color: '#fff', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            Serve All
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div style={{ background: '#ffffff', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border-glass)' }}>
+                        {order.items.map((item, index) => {
+                          const isServed = item.status === 'Served' || order.status === 'Served';
+                          const isReady = item.status === 'Ready' || order.status === 'Ready';
+                          return (
+                            <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.2rem 0', fontSize: '0.8rem' }}>
+                              <span style={{ color: '#1e293b', textDecoration: isServed ? 'line-through' : 'none', opacity: isServed ? 0.5 : 1 }}>
+                                <strong>{item.quantity}x</strong> {item.name}
+                              </span>
+                              {isReady && !isServed && (
+                                <button
+                                  onClick={() => onUpdateItemStatus?.(order.id, index, 'Served')}
+                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: 'none', color: '#10b981', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}
+                                >
+                                  Serve
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Active Requests Section */}
+            <div className="glass-panel" style={{ padding: '1.25rem', minHeight: '180px' }}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--status-pending)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                🛎️ Customer Calls ({activeRequests.length})
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {activeRequests.length === 0 ? (
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', textAlign: 'center', padding: '2.5rem' }}>No requests.</p>
+                ) : (
+                  activeRequests.map(req => {
+                    const isBill = req.type === 'Request Bill';
+                    return (
+                      <div key={req.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.85rem',
+                        borderRadius: '10px',
+                        background: isBill ? 'rgba(16, 185, 129, 0.05)' : 'rgba(245, 158, 11, 0.05)',
+                        border: `1px solid ${isBill ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`
+                      }}>
+                        <div>
+                          <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Table {req.tableId}</strong>
+                          <span style={{ fontSize: '0.75rem', display: 'block', color: '#475569', marginTop: '0.15rem' }}>{req.type}</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            onResolveRequest(req.id, waiterName);
+                            if (req.type === 'Cash Payment Collection' || req.type === 'UPI Payment Completed') {
+                              onCheckOutTable(req.tableId);
+                            }
+                          }}
+                          style={{ background: '#0f172a', border: 'none', color: '#fff', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          Resolve
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tables' && (
+          <div className="glass-panel" style={{ padding: '1.25rem' }}>
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Layers size={16} /> Table Overview
+            </h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              {assignedTables.map(tableId => {
+                const occ = tablesOccupancy[tableId] || { occupied: false };
+                const isAssignedToMe = currentWaiterAssignedTables.includes(tableId);
+
+                return (
+                  <div key={tableId} style={{
+                    padding: '0.85rem',
+                    background: '#ffffff',
+                    border: isAssignedToMe ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                    borderRadius: '10px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Table {tableId}</span>
+                      <span style={{
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        padding: '0.1rem 0.35rem',
+                        borderRadius: '4px',
+                        color: occ.occupied ? 'var(--status-cancelled)' : 'var(--status-ready)',
+                        background: occ.occupied ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                      }}>{occ.occupied ? 'OCC' : 'VAC'}</span>
+                    </div>
+
+                    {occ.occupied ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          👤 {occ.customerName}
+                        </span>
+                        
+                        <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                          {!paymentStep[tableId] && (
+                            <>
+                              <button
+                                onClick={() => setOrderingForTable(tableId)}
+                                disabled={occ.openedBy !== 'Waiter'}
+                                style={{ background: 'rgba(14, 165, 233, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem 0.35rem', fontSize: '0.65rem', fontWeight: 600, flex: 1 }}
+                              >
+                                Order
+                              </button>
+                              <button
+                                onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
+                                style={{ background: 'rgba(16, 185, 129, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem 0.35rem', fontSize: '0.65rem', fontWeight: 600, flex: 1 }}
+                              >
+                                Settle
+                              </button>
+                            </>
+                          )}
+
+                          {paymentStep[tableId] === 'SELECT' && (
+                            <div style={{ display: 'flex', gap: '0.2rem', width: '100%' }}>
+                              <button onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'CASH_CONFIRM' }))} style={{ background: 'rgba(16, 185, 129, 0.15)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem', fontSize: '0.6rem', flex: 1 }}>Cash</button>
+                              <button onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'UPI_CONFIRM' }))} style={{ background: 'rgba(56, 189, 248, 0.15)', border: 'none', borderRadius: '4px', color: '#38bdf8', padding: '0.2rem', fontSize: '0.6rem', flex: 1 }}>UPI</button>
+                            </div>
+                          )}
+
+                          {paymentStep[tableId] === 'CASH_CONFIRM' && (
+                            <button onClick={() => { onCheckOutTable(tableId, 'Cash'); setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; }); }} style={{ background: 'rgba(16, 185, 129, 0.2)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem', fontSize: '0.6rem', width: '100%', fontWeight: 700 }}>Confirm Cash</button>
+                          )}
+
+                          {paymentStep[tableId] === 'UPI_CONFIRM' && (
+                            <button onClick={() => { onCheckOutTable(tableId, 'UPI'); setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; }); }} style={{ background: 'rgba(56, 189, 248, 0.2)', border: 'none', borderRadius: '4px', color: '#38bdf8', padding: '0.2rem', fontSize: '0.6rem', width: '100%', fontWeight: 700 }}>Confirm UPI</button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '0.4rem' }}>
+                        {checkInPrompt === tableId ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            placeholder="Guest Name"
+                            value={tempName}
+                            onChange={(e) => setTempName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && tempName.trim()) {
+                                onTableCheckIn(tableId, tempName.trim(), 1, 'Waiter');
+                                setOrderingForTable(tableId);
+                                setCheckInPrompt(null);
+                              }
+                            }}
+                            style={{ width: '100%', padding: '0.2rem 0.4rem', fontSize: '0.7rem', borderRadius: '4px' }}
+                          />
+                        ) : (
+                          <button
+                            onClick={() => { setTempName(''); setCheckInPrompt(tableId); }}
+                            style={{ background: 'rgba(14, 165, 233, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.3rem', fontSize: '0.7rem', width: '100%', fontWeight: 700 }}
+                          >
+                            + New Order
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--status-served)', marginBottom: '1rem' }}>
+                Recently Served ({servedOrders.length})
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {servedOrders.slice(0, 10).map(order => (
+                  <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(0,0,0,0.04)', fontSize: '0.75rem' }}>
+                    <span>Table {order.tableId} ({order.items.length} items)</span>
+                    <span style={{ fontWeight: 700, color: 'var(--status-ready)' }}>₹{order.totalAmount.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#64748b', marginBottom: '1rem' }}>
+                Resolved Calls ({resolvedRequests.length})
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {resolvedRequests.slice(0, 10).map(req => (
+                  <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(0,0,0,0.04)', fontSize: '0.75rem', color: '#64748b' }}>
+                    <span>Table {req.tableId} ({req.type})</span>
+                    <span>Done</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Embedded Ordering Modal for Waiters */}
+        {orderingForTable && (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'var(--bg-primary)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto'
+          }}>
+            <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '0.85rem', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>Table {orderingForTable} Order</h2>
+              <button 
+                onClick={() => setOrderingForTable(null)}
+                style={{ background: 'rgba(14, 165, 233, 0.15)', border: 'none', color: '#38bdf8', borderRadius: '6px', padding: '0.35rem 0.75rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}
+              >
+                ← Back
+              </button>
+            </div>
+            <div style={{ flex: 1 }}>
+              <TableView 
+                tableId={orderingForTable}
+                occupancy={tablesOccupancy[orderingForTable] || { occupied: false }}
+                orders={orders}
+                requests={requests}
+                isWaiterMode={true}
+                onCheckIn={(name, guests, openedBy) => onTableCheckIn(orderingForTable, name, guests, openedBy || 'Waiter')}
+                onCheckOut={() => onCheckOutTable(orderingForTable)}
+                onPlaceOrder={(items) => {
+                  onPlaceOrder(orderingForTable, items);
+                  setOrderingForTable(null);
+                }}
+                onCallWaiter={(type) => onCallWaiter(orderingForTable, type)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto', paddingBottom: '6rem' }}>

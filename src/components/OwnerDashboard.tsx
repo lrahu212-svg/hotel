@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Order, TableOccupancy } from '../types';
 import { useMenu } from '../data/menu';
-import { TrendingUp, DollarSign, Layers, FileText, Search, Filter, Percent, Clock, Activity, Award } from 'lucide-react';
+import { TrendingUp, DollarSign, Layers, FileText, Search, Filter, Percent, Clock, Activity, Award, Menu, X, Settings } from 'lucide-react';
 
 interface OwnerDashboardProps {
   orders: Order[];
@@ -17,6 +17,18 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
   const [ownerTablesCount, setOwnerTablesCount] = useState<number>(parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
   const [chartMode, setChartMode] = useState<'cumulative' | 'hourly'>('cumulative');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth <= 768);
+  const [activeTab, setActiveTab] = useState<'analytics' | 'tables' | 'menu_staff' | 'ledger' | 'settings'>('analytics');
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Active waiters state
   const [activeWaitersState, setActiveWaitersState] = useState<string[]>(() => {
@@ -242,6 +254,480 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
     const linePath = getLinePath(key);
     return `${linePath} L ${getX(chartPoints.length - 1)} ${getY(0)} L ${getX(0)} ${getY(0)} Z`;
   };
+
+  if (isMobile) {
+    return (
+      <div className="animate-fade-in" style={{ padding: '1rem', minHeight: '100vh', background: '#f8fafc', paddingBottom: '5rem', position: 'relative' }}>
+        {/* Mobile Top Nav Header */}
+        <header className="glass-panel" style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1rem',
+          marginBottom: '1.25rem',
+          position: 'sticky',
+          top: '0',
+          zIndex: 40,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid var(--border-glass)',
+          borderRadius: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <button 
+              onClick={() => setMenuOpen(true)}
+              style={{
+                background: 'rgba(0,0,0,0.05)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.5rem',
+                borderRadius: '8px'
+              }}
+            >
+              <Menu size={22} color="#1e293b" />
+            </button>
+            <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
+              {activeTab === 'analytics' && 'Analytics'}
+              {activeTab === 'tables' && 'Table Map'}
+              {activeTab === 'menu_staff' && 'Menu & Staff'}
+              {activeTab === 'ledger' && 'Order Ledger'}
+              {activeTab === 'settings' && 'System Settings'}
+            </h1>
+          </div>
+          <span style={{ fontSize: '0.7rem', color: '#fff', background: 'var(--accent-primary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+            {orders.length} orders
+          </span>
+        </header>
+
+        {/* Mobile Side Drawer Navigation */}
+        {menuOpen && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100,
+            display: 'flex',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{
+              width: '280px',
+              height: '100%',
+              background: '#ffffff',
+              padding: '1.5rem',
+              boxShadow: '4px 0 25px rgba(0,0,0,0.15)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative'
+            }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', fontFamily: "'Outfit', sans-serif" }}>
+                    Executive Menu
+                  </span>
+                  <button 
+                    onClick={() => setMenuOpen(false)} 
+                    style={{ background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer', padding: '0.35rem', borderRadius: '50%' }}
+                  >
+                    <X size={18} color="#64748b" />
+                  </button>
+                </div>
+
+                <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[
+                    { id: 'analytics', label: 'Analytics & Revenue', icon: <TrendingUp size={18} /> },
+                    { id: 'tables', label: 'Table Map', icon: <Layers size={18} /> },
+                    { id: 'menu_staff', label: 'Menu & Staff', icon: <Award size={18} /> },
+                    { id: 'ledger', label: 'Order Ledger', icon: <FileText size={18} /> },
+                    { id: 'settings', label: 'System Settings', icon: <Settings size={18} /> }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => { setActiveTab(tab.id as any); setMenuOpen(false); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.85rem 1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: activeTab === tab.id ? 'var(--accent-primary-glow)' : 'transparent',
+                        color: activeTab === tab.id ? 'var(--accent-primary)' : '#475569',
+                        fontWeight: activeTab === tab.id ? 700 : 500,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '0.9rem',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '1rem' }}>
+                <button
+                  onClick={() => {
+                    if (window.confirm('Are you absolutely sure you want to completely clear all data? This will erase all orders, requests, and revenue history. This action cannot be undone!')) {
+                      onResetAllData?.();
+                      setMenuOpen(false);
+                    }
+                  }}
+                  className="btn-constructivist-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '0.85rem',
+                    background: '#ef4444',
+                    borderColor: '#ef4444',
+                    boxShadow: 'none'
+                  }}
+                >
+                  RESET ALL DATA
+                </button>
+              </div>
+            </div>
+            {/* Clickable Backdrop to close */}
+            <div style={{ flex: 1 }} onClick={() => setMenuOpen(false)} />
+          </div>
+        )}
+
+        {/* Tab Contents */}
+        {activeTab === 'analytics' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* KPI Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <div className="glass-panel" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Gross Revenue</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#1e293b', margin: '0.2rem 0 0 0' }}>₹{totalRevenue.toFixed(0)}</h3>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Net Profit</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--status-ready)', margin: '0.2rem 0 0 0' }}>₹{netProfit.toFixed(0)}</h3>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Cost of Sales</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ef4444', margin: '0.2rem 0 0 0' }}>₹{totalCost.toFixed(0)}</h3>
+              </div>
+              <div className="glass-panel" style={{ padding: '1rem' }}>
+                <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Margin Ratio</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#06b6d4', margin: '0.2rem 0 0 0' }}>{profitMarginPercent.toFixed(1)}%</h3>
+              </div>
+            </div>
+
+            {/* Performance Trend */}
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Sales Trend</h3>
+                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.05)', padding: '0.2rem', borderRadius: '6px' }}>
+                  <button 
+                    onClick={() => setChartMode('cumulative')}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: 'none',
+                      background: chartMode === 'cumulative' ? '#fff' : 'transparent',
+                      color: chartMode === 'cumulative' ? '#0f172a' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '0.65rem',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    Cumul
+                  </button>
+                  <button 
+                    onClick={() => setChartMode('hourly')}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      border: 'none',
+                      background: chartMode === 'hourly' ? '#fff' : 'transparent',
+                      color: chartMode === 'hourly' ? '#0f172a' : '#64748b',
+                      fontWeight: 700,
+                      fontSize: '0.65rem',
+                      borderRadius: '4px'
+                    }}
+                  >
+                    Hourly
+                  </button>
+                </div>
+              </div>
+
+              {chartPoints.length === 0 ? (
+                <div style={{ height: '180px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 650 }}>No served orders recorded yet.</p>
+                </div>
+              ) : (
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width="100%" height="160px">
+                    <defs>
+                      <linearGradient id="mGradRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity="0.0" />
+                      </linearGradient>
+                      <linearGradient id="mGradProfit" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity="0.15" />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <path d={getAreaPath('revenue')} fill="url(#mGradRev)" />
+                    <path d={getAreaPath('profit')} fill="url(#mGradProfit)" />
+                    <path d={getLinePath('revenue')} fill="none" stroke="#6366f1" strokeWidth="3" />
+                    <path d={getLinePath('profit')} fill="none" stroke="#10b981" strokeWidth="3" />
+                  </svg>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.5rem', fontSize: '0.7rem', fontWeight: 600 }}>
+                    <span style={{ color: '#6366f1' }}>● Revenue</span>
+                    <span style={{ color: '#10b981' }}>● Profit</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Category Distribution */}
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Category Distribution</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                {Object.entries(categorySales).map(([category, value]) => {
+                  const percentage = maxCategorySales > 0 ? (value / maxCategorySales) * 100 : 0;
+                  return (
+                    <div key={category}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 550 }}>{category}</span>
+                        <span style={{ fontWeight: 700 }}>₹{value.toFixed(0)}</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', background: 'rgba(0,0,0,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${percentage}%`, height: '100%', background: 'var(--accent-primary)', borderRadius: '3px' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tables' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Dining Tables ({occupiedTables}/{ownerTablesCount})</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                {allTables.map((tableId) => {
+                  const occ = tablesOccupancy[tableId] || { occupied: false };
+                  const assignedWaiter = distributedWaiters.find(w => w.assignedTables.includes(tableId));
+                  return (
+                    <div key={tableId} style={{
+                      padding: '0.85rem',
+                      borderRadius: '10px',
+                      background: occ.occupied ? 'rgba(239, 68, 68, 0.03)' : 'rgba(16, 185, 129, 0.03)',
+                      border: `1px solid ${occ.occupied ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)'}`
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>T-{tableId}</span>
+                        <span style={{
+                          fontSize: '0.6rem',
+                          fontWeight: 700,
+                          padding: '0.1rem 0.3rem',
+                          borderRadius: '4px',
+                          color: occ.occupied ? '#ef4444' : '#10b981',
+                          background: occ.occupied ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                        }}>{occ.occupied ? 'OCC' : 'VAC'}</span>
+                      </div>
+                      <p style={{ margin: '0.2rem 0', fontSize: '0.65rem', color: '#64748b' }}>
+                        {assignedWaiter ? assignedWaiter.name : 'Unassigned'}
+                      </p>
+                      {occ.occupied && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
+                          <span style={{ fontSize: '0.7rem', color: '#1e293b', maxWidth: '70px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            👤 {occ.customerName}
+                          </span>
+                          <button
+                            onClick={() => onCheckOutTable(tableId)}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: 'none',
+                              color: '#ef4444',
+                              padding: '0.2rem 0.4rem',
+                              borderRadius: '4px',
+                              fontSize: '0.65rem',
+                              fontWeight: 700
+                            }}
+                          >
+                            Settle
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'menu_staff' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {/* Top dishes */}
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Top Dishes</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {sortedDishes.slice(0, 3).map(([name, stat]) => (
+                  <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img src={stat.image} alt={name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                        <span style={{ fontWeight: 600 }}>{name}</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{stat.qty} units</span>
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Rev: ₹{stat.revenue.toFixed(0)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Staff leaderboard */}
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Staff Performance</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {(() => {
+                  const waiterStats: { [name: string]: { ordersCount: number; revenue: number } } = {};
+                  servedOrders.forEach(o => {
+                    const waiterName = o.servedBy || 'Self / Checkout';
+                    if (!waiterStats[waiterName]) waiterStats[waiterName] = { ordersCount: 0, revenue: 0 };
+                    waiterStats[waiterName].ordersCount += 1;
+                    waiterStats[waiterName].revenue += o.totalAmount;
+                  });
+                  return Object.entries(waiterStats).map(([name, stats]) => (
+                    <div key={name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                      <span style={{ fontWeight: 600 }}>{name}</span>
+                      <span style={{ color: 'var(--status-ready)', fontWeight: 700 }}>₹{stats.revenue.toFixed(0)} ({stats.ordersCount} served)</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            {/* Menu pricing optimizer */}
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>Margin Optimizer</h3>
+              <p style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.85rem' }}>Flagging dishes below 50% margin</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: '180px', overflowY: 'auto' }}>
+                {(() => {
+                  const lowMarginItems = MENU_ITEMS.map(item => {
+                    const marginPercent = item.price > 0 ? ((item.price - item.costPrice) / item.price) * 100 : 0;
+                    const suggestedPrice = Math.ceil((item.costPrice / 0.4) / 5) * 5;
+                    return { ...item, marginPercent, suggestedPrice };
+                  }).filter(item => item.marginPercent < 50).slice(0, 4);
+
+                  return lowMarginItems.map(item => (
+                    <div key={item.id} style={{ padding: '0.5rem', background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.08)', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                      <div>
+                        <span style={{ fontWeight: 600 }}>{item.name}</span>
+                        <div style={{ fontSize: '0.65rem', color: '#ef4444' }}>Margin: {item.marginPercent.toFixed(0)}%</div>
+                      </div>
+                      <div style={{ textAlign: 'right', fontWeight: 700, color: 'var(--status-ready)' }}>
+                        ₹{item.suggestedPrice} <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 400 }}>(was ₹{item.price})</span>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'ledger' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Order Ledger</h3>
+                <input
+                  type="text"
+                  placeholder="Search table/ID..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ padding: '0.35rem 0.5rem', fontSize: '0.75rem', borderRadius: '6px', border: '1px solid rgba(0,0,0,0.1)' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto' }}>
+                {filteredOrders.slice(0, 10).map(order => {
+                  const profit = getOrderProfit(order);
+                  return (
+                    <div key={order.id} style={{ padding: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)', fontSize: '0.8rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                        <span>T-{order.tableId.split('_archived_')[0]} (#{order.id.slice(-4).toUpperCase()})</span>
+                        <span>₹{order.totalAmount.toFixed(0)}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem' }}>
+                        <span>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span style={{ color: 'var(--status-ready)' }}>+₹{profit.toFixed(0)} Profit</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem' }}>Loyal Guests</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {(() => {
+                  const customerMap: { [name: string]: { visits: number; spend: number } } = {};
+                  orders.forEach(o => {
+                    if (o.customerName && o.customerName.trim()) {
+                      const name = o.customerName.trim();
+                      if (!customerMap[name]) customerMap[name] = { visits: 1, spend: 0 };
+                      customerMap[name].spend += o.totalAmount;
+                    }
+                  });
+                  return Object.entries(customerMap).sort((a,b) => b[1].visits - a[1].visits).slice(0, 4).map(([name, stats]) => (
+                    <div key={name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', paddingBottom: '0.35rem', borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                      <span style={{ fontWeight: 600 }}>{name}</span>
+                      <span style={{ fontWeight: 700 }}>₹{stats.spend.toFixed(0)} ({stats.visits} visits)</span>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <div className="glass-panel" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>Capacity Settings</h3>
+              <p style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '1rem' }}>Set total dining tables in service</p>
+              
+              <label style={{ display: 'block', fontSize: '0.7rem', color: '#64748b', marginBottom: '0.3rem', fontWeight: 700 }}>TOTAL TABLES</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={ownerTablesCount}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10) || 4;
+                  localStorage.setItem('owner_tables_count', val.toString());
+                  setOwnerTablesCount(val);
+                  const bc = new BroadcastChannel('hotel_ordering_system');
+                  bc.postMessage({ type: 'REQUEST_SYNC' });
+                  bc.close();
+                }}
+                style={{ width: '100%', padding: '0.5rem', fontSize: '0.85rem' }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
