@@ -1478,14 +1478,14 @@ export const TableView: React.FC<TableViewProps> = ({
 
             {selectedItemDetails.description && (
               <div>
-                <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>Description</h4>
-                <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>{selectedItemDetails.description}</p>
+                <h4 style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>Description</h4>
+                <p style={{ fontSize: '0.85rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>{selectedItemDetails.description}</p>
               </div>
             )}
 
             <div>
-              <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>🥣 Key Ingredients</h4>
-              <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
+              <h4 style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>🥣 Key Ingredients</h4>
+              <p style={{ fontSize: '0.85rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>
                 {selectedItemDetails.ingredients && selectedItemDetails.ingredients.length > 0 
                   ? selectedItemDetails.ingredients.join(', ') 
                   : 'Fresh local ingredients, hand-selected spices, and kitchen-fresh herbs.'}
@@ -1496,13 +1496,13 @@ export const TableView: React.FC<TableViewProps> = ({
               <h4 style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                 🌱 Health & Nutritional Advantages
               </h4>
-              <p style={{ fontSize: '0.82rem', color: '#cbd5e1', margin: 0, lineHeight: '1.4' }}>
+              <p style={{ fontSize: '0.82rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>
                 {getFoodAdvantages(selectedItemDetails)}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-              {selectedItemDetails.calories && <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: '#cbd5e1', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🔥 {selectedItemDetails.calories} kcal</span>}
+              {selectedItemDetails.calories && <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🔥 {selectedItemDetails.calories} kcal</span>}
               {selectedItemDetails.protein && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 700 }}>💪 {selectedItemDetails.protein}g protein</span>}
               {selectedItemDetails.vegetarian && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🥬 Vegetarian</span>}
               {selectedItemDetails.spicy && <span style={{ fontSize: '0.7rem', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🌶️ Spicy</span>}
