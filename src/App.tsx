@@ -79,6 +79,11 @@ export const App: React.FC = () => {
           localStorage.setItem('hotel_reservations', JSON.stringify(msg.reservations || []));
           localStorage.setItem('hotel_inventory', JSON.stringify(msg.inventory || []));
           
+          if (msg.menuItems && msg.menuItems.length > 0) {
+            localStorage.setItem('hotel_dynamic_menu', JSON.stringify(msg.menuItems));
+            window.dispatchEvent(new Event('menu_updated'));
+          }
+          
           if (msg.settings) {
             if (msg.settings.kitchenMode) localStorage.setItem('hotel_kitchen_mode', msg.settings.kitchenMode);
             if (msg.settings.kitchenConfigs) localStorage.setItem('hotel_kitchen_configs', JSON.stringify(msg.settings.kitchenConfigs));
@@ -88,6 +93,13 @@ export const App: React.FC = () => {
               localStorage.removeItem('hotel_active_waiters');
               window.dispatchEvent(new StorageEvent('storage', { key: 'hotel_registered_waiters' }));
             }
+          }
+          break;
+        }
+        case 'UPDATE_MENU': {
+          if (msg.menuItems && msg.menuItems.length > 0) {
+            localStorage.setItem('hotel_dynamic_menu', JSON.stringify(msg.menuItems));
+            window.dispatchEvent(new Event('menu_updated'));
           }
           break;
         }

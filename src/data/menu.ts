@@ -645,6 +645,13 @@ export const saveMenuItems = (items: MenuItem[]) => {
   channel.close();
   // Also dispatch local event for the same tab
   window.dispatchEvent(new Event('menu_updated'));
+
+  // Sync to backend server
+  fetch('/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'UPDATE_MENU', menuItems: items })
+  }).catch(err => console.error('Failed to sync menu updates to server:', err));
 };
 
 export const addMenuItem = (item: MenuItem) => {

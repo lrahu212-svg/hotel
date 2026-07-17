@@ -18,7 +18,8 @@ let state = {
   tablesOccupancy: {},
   settings: {},
   reservations: [],
-  inventory: []
+  inventory: [],
+  menuItems: []
 };
 
 // Load state from file if exists
@@ -28,6 +29,7 @@ try {
     if (raw) {
       state = JSON.parse(raw);
       if (!state.inventory) state.inventory = [];
+      if (!state.menuItems) state.menuItems = [];
       console.log('Loaded state from hotel_state.json');
     }
   }
@@ -184,6 +186,8 @@ app.post('/event', (req, res) => {
       state.reservations = (state.reservations || []).filter(r => r.id !== event.reservationId);
     } else if (event.type === 'UPDATE_INVENTORY') {
       state.inventory = event.inventory || [];
+    } else if (event.type === 'UPDATE_MENU') {
+      state.menuItems = event.menuItems || [];
     } else if (event.type === 'ADD_TABLE') {
       state.tablesOccupancy[event.tableId] = { occupied: false };
     } else if (event.type === 'REMOVE_TABLE') {
@@ -196,6 +200,7 @@ app.post('/event', (req, res) => {
       state.tablesOccupancy = event.tablesOccupancy || {};
       state.reservations = event.reservations || [];
       state.inventory = event.inventory || [];
+      state.menuItems = event.menuItems || [];
       if (event.settings) {
         if (event.settings.resetAllSettings) {
           state.settings = {};
