@@ -52,7 +52,11 @@
       "occupied": false
     },
     "4": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "1",
+      "guestsCount": 1,
+      "checkInTime": 1784305392805,
+      "openedBy": "Customer"
     },
     "5": {
       "occupied": false
@@ -99,5 +103,6 @@
       "unit": "ml",
       "threshold": 2000
     }
-  ]
+  ],
+  "menuItems": []
 }
