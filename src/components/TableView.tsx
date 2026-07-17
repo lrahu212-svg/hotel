@@ -276,9 +276,11 @@ export const TableView: React.FC<TableViewProps> = ({
   }, [occupancy.occupied, paymentMethod, tableId]);
 
   const handleCheckOut = () => {
-    sessionStorage.removeItem(`table_session_active_${tableId}`);
-    setSessionActive(false);
-    onCheckOut();
+    if (window.confirm("Are you sure you want to logout?")) {
+      sessionStorage.removeItem(`table_session_active_${tableId}`);
+      setSessionActive(false);
+      onCheckOut();
+    }
   };
 
   const activeRes = (reservations || []).find(res => {
