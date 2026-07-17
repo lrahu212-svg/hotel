@@ -34,7 +34,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [dietaryFilter, setDietaryFilter] = useState<'all' | 'vegetarian' | 'spicy' | 'protein' | 'junk'>('all');
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
-  const [activeTab, setActiveTab] = useState<'menu' | 'history'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -504,7 +504,7 @@ export const TableView: React.FC<TableViewProps> = ({
             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {!isWaiterMode && (
+            {!isWaiterMode && !isMobile && (
               <>
                 <button
                   onClick={() => handleServiceClick('Call Waiter')}
@@ -579,42 +579,44 @@ export const TableView: React.FC<TableViewProps> = ({
         </div>
 
         {/* Nav Tabs */}
-        <div className="nav-tabs-container">
-          <button
-            onClick={() => setActiveTab('menu')}
-            style={{
-              background: activeTab === 'menu' ? 'var(--accent-primary)' : 'transparent',
-              color: activeTab === 'menu' ? '#ffffff' : '#64748b',
-              border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              transition: 'all 0.15s ease-in-out'
-            }}
-          >
-            🍴 Browse Menu
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            style={{
-              background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent',
-              color: activeTab === 'history' ? '#ffffff' : '#64748b',
-              border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
-              padding: '0.75rem 1.5rem',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.15s ease-in-out'
-            }}
-          >
-            <ClipboardList size={18} />
-            Your Orders ({tableOrders.length})
-          </button>
-        </div>
+        {!isMobile && (
+          <div className="nav-tabs-container">
+            <button
+              onClick={() => setActiveTab('menu')}
+              style={{
+                background: activeTab === 'menu' ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === 'menu' ? '#ffffff' : '#64748b',
+                border: `1px solid ${activeTab === 'menu' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                transition: 'all 0.15s ease-in-out'
+              }}
+            >
+              🍴 Browse Menu
+            </button>
+            <button
+              onClick={() => setActiveTab('history')}
+              style={{
+                background: activeTab === 'history' ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === 'history' ? '#ffffff' : '#64748b',
+                border: `1px solid ${activeTab === 'history' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.15s ease-in-out'
+              }}
+            >
+              <ClipboardList size={18} />
+              Your Orders ({tableOrders.length})
+            </button>
+          </div>
+        )}
 
         {activeTab === 'menu' ? (
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
@@ -912,7 +914,7 @@ export const TableView: React.FC<TableViewProps> = ({
               </div>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'history' ? (
           /* Order History View */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {tableOrders.length === 0 ? (
@@ -961,6 +963,87 @@ export const TableView: React.FC<TableViewProps> = ({
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        ) : (
+          /* activeTab === 'checkout' view */
+          <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', color: '#1e293b' }}>
+              💳 Table Settlement & Bill Checkout
+            </h2>
+
+            <div style={{ background: 'rgba(0,0,0,0.02)', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
+              <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Total Amount Due</span>
+              <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#10b981', margin: '0.5rem 0' }}>
+                ₹{tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0).toFixed(2)}
+              </div>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Includes all served and active orders for Table {tableId}</p>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>EMAIL RECEIPT (OPTIONAL)</label>
+              <input
+                type="email"
+                placeholder="Enter your email address"
+                value={billEmail}
+                onChange={e => setBillEmail(e.target.value)}
+                style={{ width: '100%', padding: '0.65rem', background: '#fff', border: '1px solid rgba(0,0,0,0.1)', borderRadius: '8px', color: '#1e293b', outline: 'none' }}
+              />
+            </div>
+
+            {paymentSuccess ? (
+              <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                <span style={{ fontSize: '2rem' }}>🎉</span>
+                <h3 style={{ color: '#10b981', fontSize: '1.1rem', marginTop: '0.5rem' }}>Payment Done!</h3>
+                <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.25rem 0 0 0' }}>Please wait for the Waiter to check out your table.</p>
+              </div>
+            ) : paymentMethod === 'UPI' ? (
+              <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <span style={{ fontSize: '2rem' }}>⚠️</span>
+                <h3 style={{ color: '#ef4444', fontSize: '1.1rem', marginTop: '0.5rem' }}>UPI Payment Temporarily Offline</h3>
+                <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.25rem 0 1rem 0' }}>Please settle with Cash or call waiter.</p>
+                <button onClick={() => setPaymentMethod(null)} className="btn-constructivist-secondary" style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>Change Method</button>
+              </div>
+            ) : paymentMethod === 'Cash' ? (
+              <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                <h3 style={{ color: '#f59e0b', fontSize: '1.1rem', margin: 0 }}>💵 Cash Settle Requested</h3>
+                <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.25rem' }}>A waiter has been dispatched to Table {tableId} to collect cash.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('UPI')}
+                    className="btn-constructivist-secondary"
+                    style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}
+                  >
+                    <span>📱</span>
+                    <span>Pay with UPI</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePayment('Cash')}
+                    className="btn-constructivist-secondary"
+                    style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}
+                  >
+                    <span>💵</span>
+                    <span>Pay with Cash</span>
+                  </button>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCallWaiter('Call Waiter');
+                    showToast('🔔 Waiter has been called to your table');
+                  }}
+                  className="btn-constructivist-primary"
+                  style={{ width: '100%', padding: '0.75rem', fontSize: '0.85rem' }}
+                >
+                  🛎️ CALL WAITER
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -1050,7 +1133,7 @@ export const TableView: React.FC<TableViewProps> = ({
       {isMobile && getCartItemCount() > 0 && (
         <div style={{
           position: 'fixed',
-          bottom: '16px',
+          bottom: '72px',
           left: '16px',
           right: '16px',
           background: 'var(--accent-primary)',
@@ -1074,6 +1157,125 @@ export const TableView: React.FC<TableViewProps> = ({
             <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem' }}>₹{getCartTotal().toFixed(2)}</span>
             <span style={{ background: 'rgba(255,255,255,0.2)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>View Cart →</span>
           </div>
+        </div>
+      )}
+
+      {/* Mobile Fixed Bottom Navigation Bar */}
+      {isMobile && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)',
+          borderTop: '1px solid var(--border-glass)',
+          padding: '0.65rem 0.5rem',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          zIndex: 150,
+          boxShadow: '0 -4px 12px rgba(0,0,0,0.05)'
+        }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('menu')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.2rem',
+              color: activeTab === 'menu' ? 'var(--accent-primary)' : '#64748b',
+              fontSize: '0.75rem',
+              fontWeight: activeTab === 'menu' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>🍴</span>
+            Menu
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowMobileCart(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.2rem',
+              color: getCartItemCount() > 0 ? 'var(--accent-primary)' : '#64748b',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>🛒</span>
+            Cart
+            {getCartItemCount() > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-4px',
+                right: '-6px',
+                background: '#ef4444',
+                color: '#fff',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                fontSize: '0.65rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700
+              }}>
+                {getCartItemCount()}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('history')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.2rem',
+              color: activeTab === 'history' ? 'var(--accent-primary)' : '#64748b',
+              fontSize: '0.75rem',
+              fontWeight: activeTab === 'history' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>📋</span>
+            Orders
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('checkout')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.2rem',
+              color: activeTab === 'checkout' ? 'var(--accent-primary)' : '#64748b',
+              fontSize: '0.75rem',
+              fontWeight: activeTab === 'checkout' ? 700 : 500,
+              cursor: 'pointer'
+            }}
+          >
+            <span style={{ fontSize: '1.25rem' }}>💳</span>
+            Checkout
+          </button>
         </div>
       )}
 
