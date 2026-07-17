@@ -75,8 +75,6 @@ const MenuManagement: React.FC = () => {
   const [price, setPrice] = useState('');
   const [desc, setDesc] = useState('');
   const [category, setCategory] = useState<MenuItem['category']>('Coffee & Espresso');
-  const [isVeg, setIsVeg] = useState(false);
-  const [isSpicy, setIsSpicy] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,16 +99,14 @@ const MenuManagement: React.FC = () => {
       costPrice: parseFloat(price) * 0.3, // default 30% food cost
       category,
       description: desc,
-      vegetarian: isVeg,
-      spicy: isSpicy,
+      vegetarian: false,
+      spicy: false,
       image: imageUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
     };
     addMenuItem(item);
     setName('');
     setPrice('');
     setDesc('');
-    setIsVeg(false);
-    setIsSpicy(false);
     setImageUrl('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -166,11 +162,7 @@ const MenuManagement: React.FC = () => {
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Description</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', minHeight: '60px' }} />
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}><input type="checkbox" checked={isVeg} onChange={e => setIsVeg(e.target.checked)} /> Vegetarian 🥬</label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}><input type="checkbox" checked={isSpicy} onChange={e => setIsSpicy(e.target.checked)} /> Spicy 🌶️</label>
-          </div>
-          <button type="submit" style={{ background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)', color: '#fff', border: 'none', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Add Item</button>
+           <button type="submit" style={{ background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)', color: '#fff', border: 'none', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Add Item</button>
         </form>
       </div>
 

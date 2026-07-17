@@ -32,7 +32,6 @@ export const TableView: React.FC<TableViewProps> = ({
 }) => {
   const MENU_ITEMS = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [dietaryFilter, setDietaryFilter] = useState<'all' | 'vegetarian' | 'spicy' | 'protein' | 'junk'>('all');
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
   const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
@@ -117,18 +116,7 @@ export const TableView: React.FC<TableViewProps> = ({
     const matchesSearch = item.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
       item.description.toLowerCase().includes(menuSearch.toLowerCase());
 
-    let matchesDietary = true;
-    if (dietaryFilter === 'vegetarian') {
-      matchesDietary = !!item.vegetarian;
-    } else if (dietaryFilter === 'spicy') {
-      matchesDietary = !!item.spicy;
-    } else if (dietaryFilter === 'protein') {
-      matchesDietary = !!item.isProteinRich;
-    } else if (dietaryFilter === 'junk') {
-      matchesDietary = !!item.isJunk;
-    }
-
-    return matchesCategory && matchesSearch && matchesDietary;
+    return matchesCategory && matchesSearch;
   });
 
   // Cart operations
@@ -750,41 +738,7 @@ export const TableView: React.FC<TableViewProps> = ({
                 ))}
               </div>
 
-              {/* Dietary & Health Toggles */}
-              {!isMobile && (
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                  {[
-                    { id: 'all', label: 'All Dishes', icon: '🍽️' },
-                    { id: 'vegetarian', label: 'Vegetarian Only', icon: '🌱' },
-                    { id: 'spicy', label: 'Spicy Only', icon: '🔥' },
-                    { id: 'protein', label: 'High Protein (≥15g)', icon: '💪' },
-                    { id: 'junk', label: 'Cheat Meals', icon: '🍩' }
-                  ].map((filter) => (
-                    <button
-                      key={filter.id}
-                      onClick={() => setDietaryFilter(filter.id as any)}
-                      style={{
-                        background: dietaryFilter === filter.id ? 'rgba(99, 102, 241, 0.12)' : 'rgba(0,0,0,0.03)',
-                        border: '1px solid',
-                        borderColor: dietaryFilter === filter.id ? 'var(--accent-secondary)' : 'rgba(0,0,0,0.08)',
-                        color: dietaryFilter === filter.id ? 'var(--accent-primary)' : '#334155',
-                        padding: '0.4rem 0.8rem',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <span>{filter.icon}</span>
-                      <span>{filter.label}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+
 
               {/* Menu Search Bar */}
               <div className="input-field-wrapper" style={{ marginBottom: '1.5rem', maxWidth: '350px' }}>
