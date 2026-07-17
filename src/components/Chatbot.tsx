@@ -47,14 +47,14 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
 
   const processBotResponse = (query: string) => {
     const lowerQuery = query.toLowerCase();
-    let response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu.";
+    let response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu, or for a recommendation.";
     
     // Reset suggested item if new query, unless it's a 'yes/no' to a previous suggestion
     if (!lowerQuery.includes('yes') && !lowerQuery.includes('confirm') && !lowerQuery.includes('no') && !lowerQuery.includes('cancel')) {
         setSuggestedItem(null);
     }
 
-    // Handle "yes" or "confirm" for suggested items
+    // --- Agent Logic: Handle Order Confirmation First ---
     if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it'))) {
         onPlaceOrder([{
             menuItemId: suggestedItem.id,
@@ -74,7 +74,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
         return;
     }
 
-    // Process questions from CHATBOT_QA
+    // --- Agent Logic: Process Questions from CHATBOT_QA ---
     for (const qa of CHATBOT_QA) {
       if (qa.keywords.some(keyword => lowerQuery.includes(keyword))) {
         let itemToSuggest: MenuItem | undefined;
@@ -121,13 +121,13 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
       }
     }
 
-    // Fallback for general menu item queries
+    // --- Agent Logic: Fallback for General Menu Item Queries ---
     const foundItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
     if (foundItem) {
         response = `Yes, we have ${foundItem.name} for ₹${foundItem.price.toFixed(2)} in our ${foundItem.category} category. Would you like to order it?`;
         setSuggestedItem(foundItem);
     } else {
-        response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu.";
+        response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu, or for a recommendation.";
         setSuggestedItem(null);
     }
 
