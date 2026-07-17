@@ -504,7 +504,7 @@ export const TableView: React.FC<TableViewProps> = ({
             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            {!isWaiterMode && !isMobile && (
+            {!isWaiterMode && (
               <>
                 <button
                   onClick={() => handleServiceClick('Call Waiter')}
@@ -513,40 +513,43 @@ export const TableView: React.FC<TableViewProps> = ({
                     background: activeTableRequest?.type === 'Call Waiter' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(245, 158, 11, 0.1)',
                     color: activeTableRequest?.type === 'Call Waiter' ? '#64748b' : 'var(--status-pending)',
                     border: `1px solid ${activeTableRequest?.type === 'Call Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(245, 158, 11, 0.3)'}`,
-                    padding: '0.6rem 1.2rem',
+                    padding: isMobile ? '0.4rem 0.8rem' : '0.6rem 1.2rem',
                     borderRadius: '10px',
                     cursor: activeTableRequest?.type === 'Call Waiter' ? 'default' : 'pointer',
                     fontWeight: 600,
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    fontSize: isMobile ? '0.75rem' : '0.85rem'
                   }}
                 >
                   <Bell size={16} />
                   {activeTableRequest?.type === 'Call Waiter' ? 'Waiter Called' : 'Call Waiter'}
                 </button>
 
-                <button
-                  onClick={() => handleServiceClick('Request Bill')}
-                  disabled={activeTableRequest?.type === 'Request Bill'}
-                  style={{
-                    background: activeTableRequest?.type === 'Request Bill' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(16, 185, 129, 0.1)',
-                    color: activeTableRequest?.type === 'Request Bill' ? '#64748b' : 'var(--status-ready)',
-                    border: `1px solid ${activeTableRequest?.type === 'Request Bill' ? 'rgba(255,255,255,0.05)' : 'rgba(16, 185, 129, 0.3)'}`,
-                    padding: '0.6rem 1.2rem',
-                    borderRadius: '10px',
-                    cursor: activeTableRequest?.type === 'Request Bill' ? 'default' : 'pointer',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <Send size={16} />
-                  {activeTableRequest?.type === 'Request Bill' ? 'Bill Requested' : 'Get Bill'}
-                </button>
+                {!isMobile && (
+                  <button
+                    onClick={() => handleServiceClick('Request Bill')}
+                    disabled={activeTableRequest?.type === 'Request Bill'}
+                    style={{
+                      background: activeTableRequest?.type === 'Request Bill' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(16, 185, 129, 0.1)',
+                      color: activeTableRequest?.type === 'Request Bill' ? '#64748b' : 'var(--status-ready)',
+                      border: `1px solid ${activeTableRequest?.type === 'Request Bill' ? 'rgba(255,255,255,0.05)' : 'rgba(16, 185, 129, 0.3)'}`,
+                      padding: '0.6rem 1.2rem',
+                      borderRadius: '10px',
+                      cursor: activeTableRequest?.type === 'Request Bill' ? 'default' : 'pointer',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Send size={16} />
+                    {activeTableRequest?.type === 'Request Bill' ? 'Bill Requested' : 'Get Bill'}
+                  </button>
+                )}
               </>
             )}
           </div>
