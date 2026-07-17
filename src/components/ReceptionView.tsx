@@ -769,7 +769,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         
         {/* Registration Form */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <UserPlus size={20} color="var(--accent-secondary)" /> Waiter Registration
           </h2>
           
@@ -784,7 +784,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                 placeholder="e.g. Michael Smith"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', outline: 'none', fontSize: '0.85rem' }}
               />
             </div>
 
@@ -798,7 +798,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                 placeholder="e.g. 9876543210"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', color: '#fff', outline: 'none', fontSize: '0.85rem' }}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', outline: 'none', fontSize: '0.85rem' }}
               />
             </div>
 
@@ -816,7 +816,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
               style={{
                 width: '100%',
                 background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)',
-                color: '#0f172a',
+                color: '#fff',
                 border: 'none',
                 padding: '0.75rem',
                 borderRadius: '10px',
@@ -835,7 +835,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
 
         {/* Registered Staff List */}
         <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <ClipboardList size={20} color="var(--accent-secondary)" /> Registered Waiters
           </h2>
 
@@ -989,13 +989,13 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
 
       {/* Kitchen Station Configuration Panel */}
       <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Settings size={22} color="var(--accent-secondary)" /> Kitchen Display & Category Configuration
         </h2>
         
         <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <label style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>
+            <label style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
               Kitchen Display Mode:
             </label>
             <select
@@ -1003,10 +1003,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
               onChange={(e) => setKitchenMode(e.target.value as 'monitor' | 'printer')}
               style={{
                 padding: '0.5rem',
-                background: 'rgba(0,0,0,0.2)',
-                border: '1px solid rgba(255,255,255,0.05)',
+                background: 'rgba(0,0,0,0.06)',
+                border: '1px solid rgba(0,0,0,0.08)',
                 borderRadius: '8px',
-                color: '#fff',
+                color: '#0f172a',
                 outline: 'none',
                 fontSize: '0.9rem'
               }}
@@ -1017,7 +1017,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <label style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: 600 }}>
+            <label style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
               Number of Kitchen Displays:
             </label>
           <input
@@ -1029,10 +1029,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
             style={{
               width: '80px',
               padding: '0.5rem',
-              background: 'rgba(0,0,0,0.2)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              background: 'rgba(0,0,0,0.06)',
+              border: '1px solid rgba(0,0,0,0.08)',
               borderRadius: '8px',
-              color: '#fff',
+              color: '#0f172a',
               outline: 'none',
               fontSize: '0.9rem',
               textAlign: 'center'
@@ -1044,8 +1044,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
           {kitchenConfigs.map((config, index) => (
             <div key={config.id} style={{
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.05)',
+              background: 'rgba(0,0,0,0.02)',
+              border: '1px solid rgba(0,0,0,0.05)',
               padding: '1.25rem',
               borderRadius: '12px',
               display: 'flex',
@@ -1065,10 +1065,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                   style={{
                     flex: 1,
                     padding: '0.4rem 0.65rem',
-                    background: 'rgba(0,0,0,0.2)',
-                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(0,0,0,0.06)',
+                    border: '1px solid rgba(0,0,0,0.08)',
                     borderRadius: '8px',
-                    color: '#fff',
+                    color: '#0f172a',
                     outline: 'none',
                     fontSize: '0.85rem'
                   }}
@@ -1083,7 +1083,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                   {['Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'].map(cat => {
                     const isChecked = config.categories.includes(cat);
                     return (
-                      <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#cbd5e1', fontSize: '0.85rem', cursor: 'pointer' }}>
+                      <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontSize: '0.85rem', cursor: 'pointer' }}>
                         <input
                           type="checkbox"
                           checked={isChecked}
