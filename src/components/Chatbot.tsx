@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { MenuItem } from '../data/menu'; // Added OrderItem import
 import type { OrderItem } from '../types';
 import { Bot, Send } from 'lucide-react'; // Assuming lucide-react is available
+import { CHATBOT_QA } from '../data/chatbot_qa';
 
 interface ChatbotProps {
   menuItems: MenuItem[];
