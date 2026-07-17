@@ -1420,7 +1420,7 @@ export const TableView: React.FC<TableViewProps> = ({
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
+          background: 'rgba(0,0,0,0.6)',
           backdropFilter: 'blur(8px)',
           zIndex: 2000,
           display: 'flex',
@@ -1431,7 +1431,7 @@ export const TableView: React.FC<TableViewProps> = ({
         onClick={() => setSelectedItemDetails(null)}
         >
           <div style={{
-            background: '#0f172a',
+            background: '#ffffff',
             width: '100%',
             maxWidth: isMobile ? '100%' : '500px',
             maxHeight: '90vh',
@@ -1441,8 +1441,8 @@ export const TableView: React.FC<TableViewProps> = ({
             borderBottomRightRadius: isMobile ? '0' : '24px',
             padding: '1.75rem',
             overflowY: 'auto',
-            border: '1px solid rgba(255,255,255,0.08)',
-            boxShadow: '0 -10px 25px rgba(0,0,0,0.5)',
+            border: '1px solid rgba(0,0,0,0.08)',
+            boxShadow: '0 -10px 25px rgba(0,0,0,0.15)',
             display: 'flex',
             flexDirection: 'column',
             gap: '1.25rem',
@@ -1450,18 +1450,18 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
           >
-            {isMobile && <div style={{ width: '45px', height: '5px', background: 'rgba(255,255,255,0.15)', borderRadius: '2.5px', margin: '0 auto' }} />}
+            {isMobile && <div style={{ width: '45px', height: '5px', background: 'rgba(0,0,0,0.1)', borderRadius: '2.5px', margin: '0 auto' }} />}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <span style={{ fontSize: '0.75rem', background: 'rgba(6, 182, 212, 0.1)', color: 'var(--accent-secondary)', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase' }}>
                   {selectedItemDetails.category}
                 </span>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginTop: '0.4rem', marginBottom: 0 }}>{selectedItemDetails.name}</h2>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', marginTop: '0.4rem', marginBottom: 0 }}>{selectedItemDetails.name}</h2>
               </div>
               <button 
                 onClick={() => setSelectedItemDetails(null)}
-                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#fff', fontSize: '1.25rem', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ background: 'rgba(0,0,0,0.05)', border: 'none', color: '#0f172a', fontSize: '1.25rem', cursor: 'pointer', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 &times;
               </button>
@@ -1473,39 +1473,39 @@ export const TableView: React.FC<TableViewProps> = ({
               onError={(e) => {
                 (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80';
               }}
-              style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.08)' }} 
+              style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: '14px', border: '1px solid rgba(0,0,0,0.08)' }} 
             />
 
             {selectedItemDetails.description && (
               <div>
-                <h4 style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>Description</h4>
-                <p style={{ fontSize: '0.85rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>{selectedItemDetails.description}</p>
+                <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>Description</h4>
+                <p style={{ fontSize: '0.85rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>{selectedItemDetails.description}</p>
               </div>
             )}
 
             <div>
-              <h4 style={{ fontSize: '0.75rem', color: '#fff', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>🥣 Key Ingredients</h4>
-              <p style={{ fontSize: '0.85rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>
+              <h4 style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: '0.35rem', letterSpacing: '0.05em' }}>🥣 Key Ingredients</h4>
+              <p style={{ fontSize: '0.85rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
                 {selectedItemDetails.ingredients && selectedItemDetails.ingredients.length > 0 
                   ? selectedItemDetails.ingredients.join(', ') 
                   : 'Fresh local ingredients, hand-selected spices, and kitchen-fresh herbs.'}
               </p>
             </div>
 
-            <div style={{ background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.15)', padding: '1rem', borderRadius: '12px' }}>
-              <h4 style={{ fontSize: '0.75rem', color: '#06b6d4', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <div style={{ background: 'rgba(6,182,212,0.04)', border: '1px solid rgba(6,182,212,0.12)', padding: '1rem', borderRadius: '12px' }}>
+              <h4 style={{ fontSize: '0.75rem', color: '#0891b2', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.4rem', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                 🌱 Health & Nutritional Advantages
               </h4>
-              <p style={{ fontSize: '0.82rem', color: '#f8fafc', margin: 0, lineHeight: '1.4' }}>
+              <p style={{ fontSize: '0.82rem', color: '#1e293b', margin: 0, lineHeight: '1.4' }}>
                 {getFoodAdvantages(selectedItemDetails)}
               </p>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-              {selectedItemDetails.calories && <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: '#f8fafc', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🔥 {selectedItemDetails.calories} kcal</span>}
-              {selectedItemDetails.protein && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 700 }}>💪 {selectedItemDetails.protein}g protein</span>}
-              {selectedItemDetails.vegetarian && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)', color: '#10b981', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🥬 Vegetarian</span>}
-              {selectedItemDetails.spicy && <span style={{ fontSize: '0.7rem', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', color: '#ef4444', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🌶️ Spicy</span>}
+              {selectedItemDetails.calories && <span style={{ fontSize: '0.7rem', background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.05)', color: '#475569', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🔥 {selectedItemDetails.calories} kcal</span>}
+              {selectedItemDetails.protein && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', color: '#047857', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: 700 }}>💪 {selectedItemDetails.protein}g protein</span>}
+              {selectedItemDetails.vegetarian && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)', color: '#047857', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🥬 Vegetarian</span>}
+              {selectedItemDetails.spicy && <span style={{ fontSize: '0.7rem', background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.15)', color: '#b91c1c', padding: '0.25rem 0.6rem', borderRadius: '6px' }}>🌶️ Spicy</span>}
             </div>
           </div>
         </div>
