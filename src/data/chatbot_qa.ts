@@ -18,6 +18,12 @@ export const CHATBOT_QA: ChatbotQA[] = [
     responseTemplate: () => "Our menu includes categories like Coffee & Espresso, Teas & Infusions, Cold Beverages, Breakfast & Bakery, and Sandwiches & Salads. What are you in the mood for?"
   },
   {
+    keywords: ['coffee', 'i want coffee', 'tell me about coffee', 'any coffee'],
+    responseTemplate: (item) => item ? `We have a variety of coffee options, including our popular ${item.name} for ₹${item.price.toFixed(2)}. Would you like to order it?` : "We offer a range of coffee and espresso drinks, from Espresso to Lattes and Mochas. What kind are you looking for?",
+    categoryFilter: 'Coffee & Espresso',
+    attributeFilter: undefined // No specific attribute filter, just general coffee
+  },
+  {
     keywords: ['low calorie sweet', 'healthy dessert', 'light sweet'],
     responseTemplate: (item) => item ? `For a healthier sweet option, how about our ${item.name} (${item.calories} kcal)? Would you like to order it?` : "I couldn't find any specific low-calorie sweet items. You might consider fruit-based options like our Green Detox Smoothie or Oatmeal with Fresh Berries for a healthier treat.",
     categoryFilter: 'Breakfast & Bakery',

@@ -74,13 +74,24 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
         return;
     }
 
+    // --- Agent Logic: Try to find a specific menu item first ---
+    const foundSpecificItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
+    if (foundSpecificItem) {
+        response = `Yes, we have ${foundSpecificItem.name} for ₹${foundSpecificItem.price.toFixed(2)} in our ${foundSpecificItem.category} category. Would you like to order it?`;
+        setSuggestedItem(foundSpecificItem);
+        simulateBotTyping(response);
+        return;
+    }
+
     // --- Agent Logic: Process Questions from CHATBOT_QA ---
     for (const qa of CHATBOT_QA) {
       if (qa.keywords.some(keyword => lowerQuery.includes(keyword))) {
         let itemToSuggest: MenuItem | undefined;
+        let responseItems: MenuItem[] = [];
 
         if (qa.suggestedItemId) {
             itemToSuggest = menuItems.find(item => item.id === qa.suggestedItemId);
+            if (itemToSuggest) responseItems = [itemToSuggest];
         } else if (qa.categoryFilter || qa.attributeFilter) {
             let filtered = menuItems;
             if (qa.categoryFilter) {
@@ -102,15 +113,16 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
                         break;
                 }
             }
-            if (filtered.length > 0) {
-                // Pick a random item from the filtered list
-                itemToSuggest = filtered[Math.floor(Math.random() * filtered.length)];
+            responseItems = filtered.slice(0, 3); // Suggest up to 3 items
+            if (responseItems.length > 0) {
+                itemToSuggest = responseItems[Math.floor(Math.random() * responseItems.length)]; // Pick one to "suggest" for order
             }
         }
         
-        if (itemToSuggest) {
-            setSuggestedItem(itemToSuggest);
-            response = qa.responseTemplate(itemToSuggest);
+        if (responseItems.length > 0) {
+            const itemList = responseItems.map(item => `- ${item.name} (${item.category}) priced at ₹${item.price.toFixed(2)}`).join('\n');
+            response = `${qa.responseTemplate(itemToSuggest)}\n\nSome options are:\n${itemList}\n\nWould you like to order the ${itemToSuggest?.name || 'suggested item'}?`;
+            setSuggestedItem(itemToSuggest || null);
         } else {
             response = qa.responseTemplate(); // Use template without item if none found
             setSuggestedItem(null);
@@ -121,16 +133,24 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
       }
     }
 
-    // --- Agent Logic: Fallback for General Menu Item Queries ---
-    const foundItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
-    if (foundItem) {
-        response = `Yes, we have ${foundItem.name} for ₹${foundItem.price.toFixed(2)} in our ${foundItem.category} category. Would you like to order it?`;
-        setSuggestedItem(foundItem);
-    } else {
-        response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu, or for a recommendation.";
-        setSuggestedItem(null);
+    // --- Agent Logic: Generic Category/Attribute Fallbacks ---
+    if (lowerQuery.includes('coffee') || lowerQuery.includes('espresso')) {
+        const coffeeItems = menuItems.filter(item => item.category === 'Coffee & Espresso');
+        if (coffeeItems.length > 0) {
+            const itemList = coffeeItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
+            response = `Our coffee and espresso selections include:\n${itemList}\n\nWould you like to order one?`;
+            setSuggestedItem(coffeeItems[Math.floor(Math.random() * coffeeItems.length)]); // Suggest a random one
+        } else {
+            response = "We do not have any coffee or espresso items on the menu.";
+        }
+        simulateBotTyping(response);
+        return;
     }
+    // Add similar blocks for other categories/attributes if not covered by CHATBOT_QA
 
+    // --- Final Fallback ---
+    response = "I'm sorry, I couldn't find specific information for that. Could you please rephrase or ask about specific menu items or categories?";
+    setSuggestedItem(null);
     simulateBotTyping(response);
   };
 
