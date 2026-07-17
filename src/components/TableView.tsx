@@ -793,9 +793,9 @@ export const TableView: React.FC<TableViewProps> = ({
                 {filteredMenu.map((item) => {
                   const cartItem = cart[item.id];
                   return (
-                    <div key={item.id} className="glass-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div key={item.id} className="glass-panel" style={{ padding: isMobile ? '0.4rem' : '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
                       <div>
-                        <div style={{ position: 'relative', width: '100%', height: '150px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem' }}>
+                        <div style={{ position: 'relative', width: '100%', height: isMobile ? '65px' : '150px', borderRadius: isMobile ? '6px' : '12px', overflow: 'hidden', marginBottom: isMobile ? '0.5rem' : '1rem' }}>
                           <img
                             src={item.image}
                             alt={item.name}
@@ -805,78 +805,91 @@ export const TableView: React.FC<TableViewProps> = ({
                             style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
                             className="menu-item-image"
                           />
-                          <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.25rem', zIndex: 2 }}>
-                            {item.vegetarian && <span title="Vegetarian" style={{ color: 'var(--status-ready)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(16, 185, 129, 0.4)', backdropFilter: 'blur(4px)' }}><Leaf size={14} /></span>}
-                            {item.spicy && <span title="Spicy" style={{ color: 'var(--status-cancelled)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(239, 68, 68, 0.4)', backdropFilter: 'blur(4px)' }}><Flame size={14} /></span>}
-                          </div>
-                        </div>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 650, color: '#fff', marginBottom: '0.25rem' }}>{item.name}</h3>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.75rem', minHeight: '40px' }}>{item.description}</p>
-
-                        {/* Calories & Protein badges */}
-                        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                          <span style={{
-                            fontSize: '0.65rem',
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid rgba(255,255,255,0.05)',
-                            color: '#cbd5e1',
-                            padding: '0.15rem 0.4rem',
-                            borderRadius: '4px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.2rem'
-                          }}>
-                            🔥 {item.calories || 0} kcal
-                          </span>
-                          <span style={{
-                            fontSize: '0.65rem',
-                            background: item.isProteinRich ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
-                            border: `1px solid ${item.isProteinRich ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}`,
-                            color: item.isProteinRich ? '#10b981' : '#cbd5e1',
-                            padding: '0.15rem 0.4rem',
-                            borderRadius: '4px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.2rem',
-                            fontWeight: item.isProteinRich ? 700 : 500
-                          }}>
-                            💪 {item.protein || 0}g protein
-                          </span>
-                          {item.isJunk && (
-                            <span style={{
-                              fontSize: '0.65rem',
-                              background: 'rgba(245,158,11,0.06)',
-                              border: '1px solid rgba(245,158,11,0.15)',
-                              color: '#f59e0b',
-                              padding: '0.15rem 0.4rem',
-                              borderRadius: '4px',
-                              fontWeight: 600
-                            }}>
-                              🍩 Cheat Meal
-                            </span>
+                          {!isMobile && (
+                            <div style={{ position: 'absolute', top: '8px', right: '8px', display: 'flex', gap: '0.25rem', zIndex: 2 }}>
+                              {item.vegetarian && <span title="Vegetarian" style={{ color: 'var(--status-ready)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(16, 185, 129, 0.4)', backdropFilter: 'blur(4px)' }}><Leaf size={14} /></span>}
+                              {item.spicy && <span title="Spicy" style={{ color: 'var(--status-cancelled)', background: 'rgba(11, 15, 25, 0.85)', padding: '0.35rem', borderRadius: '6px', display: 'inline-flex', border: '1px solid rgba(239, 68, 68, 0.4)', backdropFilter: 'blur(4px)' }}><Flame size={14} /></span>}
+                            </div>
                           )}
                         </div>
-
-                        {item.ingredients && item.ingredients.length > 0 && (
-                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', lineHeight: '1.3' }}>
-                            <span style={{ color: '#94a3b8', fontWeight: 600 }}>Ingredients:</span> {item.ingredients.join(', ')}
-                          </div>
+                        <h3 style={{ fontSize: isMobile ? '0.75rem' : '1.1rem', fontWeight: 650, color: '#fff', marginBottom: '0.25rem', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.name}</h3>
+                        
+                        {!isMobile && (
+                          <>
+                            <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '0.75rem', minHeight: '40px' }}>{item.description}</p>
+                            {/* Calories & Protein badges */}
+                            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                              <span style={{
+                                fontSize: '0.65rem',
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                color: '#cbd5e1',
+                                padding: '0.15rem 0.4rem',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem'
+                              }}>
+                                🔥 {item.calories || 0} kcal
+                              </span>
+                              <span style={{
+                                fontSize: '0.65rem',
+                                background: item.isProteinRich ? 'rgba(16,185,129,0.06)' : 'rgba(255,255,255,0.03)',
+                                border: `1px solid ${item.isProteinRich ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)'}`,
+                                color: item.isProteinRich ? '#10b981' : '#cbd5e1',
+                                padding: '0.15rem 0.4rem',
+                                borderRadius: '4px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                fontWeight: item.isProteinRich ? 700 : 500
+                              }}>
+                                💪 {item.protein || 0}g protein
+                              </span>
+                              {item.isJunk && (
+                                <span style={{
+                                  fontSize: '0.65rem',
+                                  background: 'rgba(245,158,11,0.06)',
+                                  border: '1px solid rgba(245,158,11,0.15)',
+                                  color: '#f59e0b',
+                                  padding: '0.15rem 0.4rem',
+                                  borderRadius: '4px',
+                                  fontWeight: 600
+                                }}>
+                                  🍩 Cheat Meal
+                                </span>
+                              )}
+                            </div>
+                            {item.ingredients && item.ingredients.length > 0 && (
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', lineHeight: '1.3' }}>
+                                <span style={{ color: '#94a3b8', fontWeight: 600 }}>Ingredients:</span> {item.ingredients.join(', ')}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
-                        <span style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>₹{item.price.toFixed(2)}</span>
+                      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginTop: '0.5rem', gap: isMobile ? '0.3rem' : '0' }}>
+                        <span style={{ fontSize: isMobile ? '0.75rem' : '1.15rem', fontWeight: 700, color: 'var(--accent-secondary)' }}>₹{item.price.toFixed(0)}</span>
 
                         {cartItem ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: isMobile ? '0.25rem' : '0.75rem', 
+                            background: 'rgba(255,255,255,0.05)', 
+                            padding: isMobile ? '0.15rem 0.35rem' : '0.25rem 0.5rem', 
+                            borderRadius: '8px', 
+                            border: '1px solid rgba(255,255,255,0.08)' 
+                          }}>
                             <button
                               onClick={() => updateCartQuantity(item.id, -1)}
-                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: isMobile ? '0.9rem' : '1.2rem', cursor: 'pointer', width: isMobile ? '16px' : '24px', height: isMobile ? '16px' : '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >-</button>
-                            <span style={{ minWidth: '16px', textAlign: 'center', fontWeight: 600 }}>{cartItem.quantity}</span>
+                            <span style={{ minWidth: isMobile ? '12px' : '16px', textAlign: 'center', fontWeight: 600, fontSize: isMobile ? '0.75rem' : '1rem' }}>{cartItem.quantity}</span>
                             <button
                               onClick={() => updateCartQuantity(item.id, 1)}
-                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ background: 'none', border: 'none', color: '#fff', fontSize: isMobile ? '0.9rem' : '1.2rem', cursor: 'pointer', width: isMobile ? '16px' : '24px', height: isMobile ? '16px' : '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                             >+</button>
                           </div>
                         ) : (
@@ -884,11 +897,12 @@ export const TableView: React.FC<TableViewProps> = ({
                             onClick={() => updateCartQuantity(item.id, 1)}
                             className="btn-constructivist-primary"
                             style={{
-                              padding: '0.5rem 1rem',
-                              fontSize: '0.85rem'
+                              padding: isMobile ? '0.25rem 0.5rem' : '0.5rem 1rem',
+                              fontSize: isMobile ? '0.7rem' : '0.85rem',
+                              width: isMobile ? '100%' : 'auto'
                             }}
                           >
-                            ADD TO CART
+                            {isMobile ? '+ Add' : 'ADD TO CART'}
                           </button>
                         )}
                       </div>

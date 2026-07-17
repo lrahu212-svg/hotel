@@ -298,7 +298,8 @@ body {
 
 @media (max-width: 640px) {
   .menu-items-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
   }
 }
 
