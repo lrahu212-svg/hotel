@@ -361,7 +361,7 @@ export const TableView: React.FC<TableViewProps> = ({
             zIndex: 1000,
             background: 'rgba(15, 23, 42, 0.95)',
             border: '1px solid var(--accent)',
-            color: 'var(--text)',
+            color: '#fff',
             padding: '1rem 2rem',
             borderRadius: '12px',
             boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
