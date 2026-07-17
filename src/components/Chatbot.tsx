@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { MenuItem } from '../data/menu';
+import type { MenuItem } from '../data/menu'; // Added OrderItem import
+import type { OrderItem } from '../types';
 import { Bot, Send } from 'lucide-react'; // Assuming lucide-react is available
-
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 interface ChatbotProps {
   menuItems: MenuItem[];
+  onPlaceOrder: (items: OrderItem[]) => void; // Added onPlaceOrder prop
 }
 
 interface ChatMessage {
@@ -13,10 +13,11 @@ interface ChatMessage {
   text: string;
 }
 
-export const Chatbot: React.FC<ChatbotProps> = ({ menuItems }) => {
+export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [suggestedItem, setSuggestedItem] = useState<MenuItem | null>(null); // To handle ordering flow
 
   const simulateBotTyping = (text: string) => {
     setIsTyping(true);
@@ -28,7 +29,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems }) => {
 
   useEffect(() => {
     if (messages.length === 0) {
-      simulateBotTyping("Hello! I'm your food assistant. Ask me anything about our menu!");
+      simulateBotTyping("Hello! I'm your food assistant. Ask me anything about our menu, or for a recommendation!");
     }
   }, [messages.length]);
 
@@ -43,56 +44,159 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems }) => {
     processBotResponse(userMessage);
   };
 
-const processBotResponse = async (query: string) => {
-  simulateBotTyping("Thinking..."); // Indicate that the bot is processing
+  const processBotResponse = (query: string) => {
+    const lowerQuery = query.toLowerCase();
+    let response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu.";
 
-  const menuItemsString = menuItems.map(item =>
-    `- ${item.name} (${item.category}, Price: $${item.price.toFixed(2)}, Calories: ${item.calories || 'N/A'}, Protein: ${item.protein || 'N/A'}g, Vegetarian: ${item.vegetarian ? 'Yes' : 'No'}, Spicy: ${item.spicy ? 'Yes' : 'No'}, Description: ${item.description})`
-  ).join('\n');
-
-  const systemMessage = `You are a helpful AI food assistant for a hotel restaurant. Your goal is to answer questions about the menu, recommend dishes, and provide information based on the available menu items.
-
-  Here is the current menu:
-  ${menuItemsString}
-
-  When asked about food, ONLY suggest items from the provided menu. If a user asks for something not on the menu, politely state that you don't have it.
-  For "low calorie" suggestions, recommend items with lower calorie counts or healthier options from the menu.
-  For "low sugar" suggestions, recommend items that are not marked as "isJunk" and are generally less sweet, or offer modifications (e.g., "unsweetened tea").
-  Keep your responses concise and helpful.`;
-
-  try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "llama3-8b-8192", // Using a common Groq model
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: query }
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Groq API error: ${response.status} ${response.statusText}`);
+    // Handle "yes" or "confirm" for suggested items
+    if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it'))) {
+        onPlaceOrder([{
+            menuItemId: suggestedItem.id,
+            quantity: 1,
+            notes: '',
+            name: suggestedItem.name,
+            price: suggestedItem.price
+        }]);
+        response = `Great! I've placed an order for one ${suggestedItem.name}. It will be prepared shortly.`;
+        setSuggestedItem(null); // Reset suggested item
+        simulateBotTyping(response);
+        return;
+    } else if (suggestedItem && (lowerQuery.includes('no') || lowerQuery.includes('cancel'))) {
+        response = `Okay, I've cancelled the suggestion for ${suggestedItem.name}. Is there anything else I can help you with?`;
+        setSuggestedItem(null);
+        simulateBotTyping(response);
+        return;
     }
 
-    const data = await response.json();
-    const botResponse = data.choices[0]?.message?.content || "I'm sorry, I couldn't get a response from the AI at this time.";
-    setMessages((prev) => [...prev, { sender: 'bot', text: botResponse }]);
 
-  } catch (error) {
-    console.error("Error communicating with Groq API:", error);
-    setMessages((prev) => [...prev, { sender: 'bot', text: "I'm sorry, I encountered an error. Please try again later." }]);
-  } finally {
-    setIsTyping(false);
-  }
-};
+    // --- Low Calorie Logic ---
+    if (lowerQuery.includes('low calorie') || lowerQuery.includes('healthy')) {
+      const lowCalorieThreshold = 300; // Define what's considered low calorie
+      const healthyItems = menuItems.filter(item =>
+        (item.calories !== undefined && item.calories <= lowCalorieThreshold && !item.isJunk) ||
+        (item.vegetarian && item.category === 'Sandwiches & Salads' && !item.isJunk) ||
+        (item.category === 'Teas & Infusions' && item.calories !== undefined && item.calories < 150) ||
+        (item.category === 'Cold Beverages' && !item.isJunk && item.calories !== undefined && item.calories < 200 && (lowerQuery.includes('juice') || lowerQuery.includes('smoothie')))
+      );
+      
+      if (lowerQuery.includes('sweet') || lowerQuery.includes('dessert')) {
+        const lowCalorieSweets = healthyItems.filter(item => 
+            (item.category === 'Breakfast & Bakery' || item.category === 'Cold Beverages') && // Consider these categories for sweets/desserts
+            (item.name.toLowerCase().includes('muffin') || item.name.toLowerCase().includes('parfait') || item.name.toLowerCase().includes('smoothie') || item.name.toLowerCase().includes('berries'))
+        );
+        if (lowCalorieSweets.length > 0) {
+            response = `Here are some healthier/low-calorie sweet options from our menu:\n${lowCalorieSweets.map(item => `- ${item.name} (${item.calories || 0} kcal)`).join('\n')}`;
+        } else {
+            response = "I couldn't find any specific low-calorie sweet items. You might consider fruit-based options like our Green Detox Smoothie or Oatmeal with Fresh Berries for a healthier treat.";
+        }
+      } else if (healthyItems.length > 0) {
+        response = `Here are some healthier/low-calorie options from our menu:\n${healthyItems.map(item => `- ${item.name} (${item.calories || 0} kcal)`).join('\n')}`;
+      } else {
+        response = "I couldn't find many low-calorie options based on your request. Most of our dishes are designed for a balanced experience, but I can help you find other types of food!";
+      }
+    } 
+    // --- Low Sugar Logic ---
+    else if (lowerQuery.includes('low sugar') || lowerQuery.includes('sugar free')) {
+        const lowSugarItems = menuItems.filter(item => !item.isJunk && (item.category === 'Teas & Infusions' || item.category === 'Sandwiches & Salads' || item.name.toLowerCase().includes('black coffee')));
+        
+        if (lowerQuery.includes('sweet')) {
+            const lowSugarSweets = lowSugarItems.filter(item => 
+                (item.name.toLowerCase().includes('berry') || item.name.toLowerCase().includes('fruit')) && (item.category === 'Breakfast & Bakery' || item.category === 'Cold Beverages')
+            );
+            if (lowSugarSweets.length > 0) {
+                response = `Here are some low-sugar sweet options:\n${lowSugarSweets.map(item => `- ${item.name}`).join('\n')}`;
+            } else {
+                response = "We don't have many explicitly low-sugar sweet items. You could try our unsweetened teas or ask for no sugar added to certain beverages.";
+            }
+        } else if (lowSugarItems.length > 0) {
+            response = `Here are some low-sugar options from our menu:\n${lowSugarItems.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "I couldn't find many explicitly low-sugar items. Our savory dishes generally have lower sugar content than desserts.";
+        }
+    }
+    // --- Vegetarian Logic ---
+    else if (lowerQuery.includes('vegetarian')) {
+      const vegetarianItems = menuItems.filter(item => item.vegetarian);
+      if (vegetarianItems.length > 0) {
+        response = `Here are our vegetarian options:\n${vegetarianItems.map(item => `- ${item.name} (${item.category})`).join('\n')}`;
+      } else {
+        response = "We currently do not have any vegetarian items on the menu.";
+      }
+    }
+    // --- Random Spicy Food Logic ---
+    else if (lowerQuery.includes('random spicy food') || lowerQuery.includes('spicy recommendation')) {
+        const spicyFoodItems = menuItems.filter(item => item.spicy);
+        if (spicyFoodItems.length > 0) {
+            const randomIndex = Math.floor(Math.random() * spicyFoodItems.length);
+            const randomSpicyItem = spicyFoodItems[randomIndex];
+            response = `How about a ${randomSpicyItem.name} (${randomSpicyItem.category})? It's priced at ₹${randomSpicyItem.price.toFixed(2)}. Would you like to order it?`;
+            setSuggestedItem(randomSpicyItem);
+        } else {
+            response = "I couldn't find any spicy food items on the menu right now.";
+            setSuggestedItem(null);
+        }
+    }
+    // --- Spicy Logic (general) ---
+    else if (lowerQuery.includes('spicy')) {
+      const spicyItems = menuItems.filter(item => item.spicy);
+      if (spicyItems.length > 0) {
+        response = `Here are our spicy options:\n${spicyItems.map(item => `- ${item.name} (${item.category})`).join('\n')}`;
+      } else {
+        response = "We currently do not have any spicy items on the menu.";
+      }
+    }
+    // --- Category Specific Questions ---
+    else if (lowerQuery.includes('coffee') || lowerQuery.includes('espresso')) {
+        const coffeeItems = menuItems.filter(item => item.category === 'Coffee & Espresso');
+        if (coffeeItems.length > 0) {
+            response = `Here are our coffee and espresso selections:\n${coffeeItems.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "We do not have any coffee or espresso items.";
+        }
+    }
+    else if (lowerQuery.includes('tea') || lowerQuery.includes('infusion')) {
+        const teaItems = menuItems.filter(item => item.category === 'Teas & Infusions');
+        if (teaItems.length > 0) {
+            response = `Here are our tea and infusion selections:\n${teaItems.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "We do not have any tea or infusion items.";
+        }
+    }
+    else if (lowerQuery.includes('cold beverage') || lowerQuery.includes('drink')) {
+        const coldDrinks = menuItems.filter(item => item.category === 'Cold Beverages');
+        if (coldDrinks.length > 0) {
+            response = `Here are our cold beverages:\n${coldDrinks.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "We do not have any cold beverages.";
+        }
+    }
+    else if (lowerQuery.includes('breakfast') || lowerQuery.includes('bakery') || lowerQuery.includes('pastry')) {
+        const breakfastItems = menuItems.filter(item => item.category === 'Breakfast & Bakery');
+        if (breakfastItems.length > 0) {
+            response = `Here are our breakfast and bakery items:\n${breakfastItems.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "We do not have any breakfast or bakery items.";
+        }
+    }
+    else if (lowerQuery.includes('sandwich') || lowerQuery.includes('salad') || lowerQuery.includes('soup')) {
+        const lunchItems = menuItems.filter(item => item.category === 'Sandwiches & Salads');
+        if (lunchItems.length > 0) {
+            response = `Here are our sandwiches, salads, and soups:\n${lunchItems.map(item => `- ${item.name}`).join('\n')}`;
+        } else {
+            response = "We do not have any sandwiches, salads, or soups.";
+        }
+    }
+    // --- Generic Food Questions ---
+    else if (lowerQuery.includes('menu') || lowerQuery.includes('food options') || lowerQuery.includes('dishes')) {
+      response = "Our menu includes categories like Coffee & Espresso, Teas & Infusions, Cold Beverages, Breakfast & Bakery, and Sandwiches & Salads. What are you in the mood for?";
+    } else if (lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
+      response = "Hello there! How can I assist you with our menu today?";
+    } else if (lowerQuery.includes('thank you') || lowerQuery.includes('thanks')) {
+      response = "You're welcome! Feel free to ask if you have more questions.";
+    }
+
+    simulateBotTyping(response);
+  };
 
   return (
     <div style={{

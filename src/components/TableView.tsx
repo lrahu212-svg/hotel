@@ -948,7 +948,7 @@ export const TableView: React.FC<TableViewProps> = ({
             )}
           </div>
         ) : activeTab === 'chatbot' ? (
-          <Chatbot menuItems={MENU_ITEMS} />
+          <Chatbot menuItems={MENU_ITEMS} onPlaceOrder={onPlaceOrder} />
         ) : (
           /* activeTab === 'checkout' view */
           <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>
