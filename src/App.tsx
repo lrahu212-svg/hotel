@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { Order, OrderItem, OrderStatus, ServiceRequest, TableOccupancy, Reservation } from './types';
 import { Portal } from './components/Portal';
 import { TableView } from './components/TableView';
@@ -8,19 +8,39 @@ import { OwnerDashboard } from './components/OwnerDashboard';
 import { ReceptionView } from './components/ReceptionView';
 import { ReservationPortal } from './components/ReservationPortal';
 
+/* Module-level helpers */
+const getTablesCount = () => parseInt(localStorage.getItem('owner_tables_count') || '4', 10);
+
+const getInitialOccupancy = () => {
+  const total = getTablesCount();
+  const occupancy: { [tableId: string]: TableOccupancy } = {};
+  for (let i = 1; i <= total; i++) {
+    occupancy[i.toString()] = { occupied: false };
+  }
+  return occupancy;
+};
+
+const generateEventId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
+
+const MAX_PROCESSED_EVENTS = 1000;
+const processedEventIds = new Set<string>();
+
+function addProcessedEventId(id: string) {
+  if (processedEventIds.has(id)) return true;
+  processedEventIds.add(id);
+  if (processedEventIds.size > MAX_PROCESSED_EVENTS) {
+    const first = processedEventIds.values().next().value;
+    processedEventIds.delete(first as string);
+  }
+  return false;
+}
+
 export const App: React.FC = () => {
-  // Helper to get table capacity configuration
-  const getTablesCount = () => parseInt(localStorage.getItem('owner_tables_count') || '4', 10);
-
-  const getInitialOccupancy = () => {
-    const total = getTablesCount();
-    const occupancy: { [tableId: string]: TableOccupancy } = {};
-    for (let i = 1; i <= total; i++) {
-      occupancy[i.toString()] = { occupied: false };
-    }
-    return occupancy;
-  };
-
   const [orders, setOrders] = useState<Order[]>([]);
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>(() => {
@@ -65,6 +85,7 @@ export const App: React.FC = () => {
     }
 
     const handleIncoming = (msg: any) => {
+      if (msg.eventId && addProcessedEventId(msg.eventId)) return;
       switch (msg.type) {
         case 'SYNC_STATE': {
           setOrders(msg.orders);
@@ -327,8 +348,12 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const postSyncEvent = async (event: any) => {
-    console.log('App: postSyncEvent sending event:', event);
+  const postSyncEvent = useCallback(async (event: any) => {
+    if (!event.eventId) {
+      event.eventId = generateEventId();
+    }
+    addProcessedEventId(event.eventId);
+
     // Broadcast locally immediately so other tabs of the same browser update in-place instantly
     try {
       const channel = new BroadcastChannel('hotel_ordering_system');
@@ -350,7 +375,7 @@ export const App: React.FC = () => {
     } catch (err) {
       console.error('Failed to post event to sync server:', err);
     }
-  };
+  }, []);
 
   // Actions
   const handlePlaceOrder = (tableId: string, items: OrderItem[]) => {

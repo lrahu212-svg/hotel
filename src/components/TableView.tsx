@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useMenu, type MenuItem } from '../data/menu';
 import type { Order, OrderItem, ServiceRequest, TableOccupancy, Reservation } from '../types';
-import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search } from 'lucide-react';
+import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search, Bot } from 'lucide-react';
+import { Chatbot } from './Chatbot';
 
 interface TableViewProps {
   tableId: string;
@@ -33,7 +34,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const MENU_ITEMS = useMenu();
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
-  const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout'>('menu');
+  const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout' | 'chatbot'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -609,6 +610,24 @@ export const TableView: React.FC<TableViewProps> = ({
               <ClipboardList size={18} />
               Your Orders ({tableOrders.length})
             </button>
+            <button
+              onClick={() => setActiveTab('chatbot')}
+              style={{
+                background: activeTab === 'chatbot' ? 'var(--accent-primary)' : 'transparent',
+                color: activeTab === 'chatbot' ? '#ffffff' : '#64748b',
+                border: `1px solid ${activeTab === 'chatbot' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+                padding: '0.75rem 1.5rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.15s ease-in-out'
+              }}
+            >
+              <Bot size={18} /> AI Assistant
+            </button>
           </div>
         )}
 
@@ -928,6 +947,8 @@ export const TableView: React.FC<TableViewProps> = ({
               ))
             )}
           </div>
+        ) : activeTab === 'chatbot' ? (
+          <Chatbot menuItems={MENU_ITEMS} />
         ) : (
           /* activeTab === 'checkout' view */
           <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>

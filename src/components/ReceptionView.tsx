@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserPlus, Trash2, Calendar, ClipboardList, ChefHat, Settings, Menu, Plus } from 'lucide-react';
 import { useMenu, addMenuItem, deleteMenuItem, type MenuItem } from '../data/menu';
 import type { Order, Reservation } from '../types';
@@ -224,10 +224,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   const printQueue = useRef<{ tableId: string; paymentMethod: string; orders: Order[] }[]>([]);
   const isPrinting = useRef(false);
 
-  const enqueueBillPrint = (tableId: string, paymentMethod: string, tableOrders: Order[]) => {
+  const enqueueBillPrint = useCallback((tableId: string, paymentMethod: string, tableOrders: Order[]) => {
     printQueue.current.push({ tableId, paymentMethod, orders: tableOrders });
     processPrintQueue();
-  };
+  }, []);
 
   const processPrintQueue = () => {
     if (isPrinting.current || printQueue.current.length === 0) return;

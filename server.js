@@ -315,9 +315,6 @@ app.post('/api/create-payment-link', (req, res) => {
   }
 });
 
-// Serve the static frontend files
-app.use(express.static(distPath));
-
 // Endpoint to check payment link status
 app.get('/api/check-payment-status', (req, res) => {
   try {

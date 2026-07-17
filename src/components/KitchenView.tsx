@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import type { Order, OrderStatus } from '../types';
 import { Clock } from 'lucide-react';
 import { useMenu } from '../data/menu';
@@ -23,6 +23,80 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   const [focusedOrderIndex, setFocusedOrderIndex] = useState<number>(0);
   const [isNavigatingItems, setIsNavigatingItems] = useState<boolean>(false);
   const [openedViaNumber, setOpenedViaNumber] = useState<boolean>(false);
+
+  const processPrintQueue = useCallback(() => { // Added useCallback
+    if (isPrinting.current || printQueue.current.length === 0) return;
+
+    isPrinting.current = true;
+    const order = printQueue.current.shift()!; // Take the first order
+
+    // Ensure ALL old print sections are completely removed so they don't pile up!
+    const oldPrints = document.querySelectorAll('#print-section');
+    oldPrints.forEach(p => p.remove());
+
+    const printDiv = document.createElement('div');
+    printDiv.id = 'print-section';
+    printDiv.style.fontFamily = 'monospace';
+    printDiv.style.color = '#000';
+    printDiv.style.padding = '0';
+    printDiv.style.background = '#fff';
+
+    printDiv.innerHTML = `
+      <div style="padding: 15px 0;">
+        <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
+        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
+        <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
+          ${new Date(order.timestamp).toLocaleString()}
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
+          <span style="width: 30px;">Qty</span>
+          <span style="flex: 1;">Item</span>
+        </div>
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        ${order.filteredItems.map(item => `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
+            <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
+            <span style="flex: 1;">${item.name}</span>
+          </div>
+          ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
+        `).join('')}
+        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
+        <div style="text-align: center; margin-top: 20px; color: #000;">
+          -- End of Ticket --
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(printDiv);
+    
+    // Slight delay to ensure DOM is updated before printing
+    setTimeout(() => {
+      window.print();
+      // Remove it after the print dialog closes
+      setTimeout(() => {
+        const prints = document.querySelectorAll('#print-section');
+        prints.forEach(p => p.remove());
+
+        // Queue next print job after 3 second delay
+        setTimeout(() => {
+          isPrinting.current = false;
+          processPrintQueue(); // Process any remaining or newly arrived items
+        }, 3000);
+      }, 1000);
+    }, 100);
+  }, []); // Added dependency array for useCallback
+
+  const markAllComplete = useCallback((order: typeof stationOrders[0]) => {
+    if (onUpdateStatus) {
+      onUpdateStatus(order.id, 'Ready');
+    }
+  }, [onUpdateStatus]);
+
+  const enqueuePrint = useCallback((ordersToPrint: typeof stationOrders) => {
+    printQueue.current.push(...ordersToPrint);
+    processPrintQueue();
+  }, [processPrintQueue]); // Added processPrintQueue to dependency array
 
   const isInitialLoad = useRef(true);
   const printQueue = useRef<typeof stationOrders>([]);
@@ -224,79 +298,11 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     }
   };
 
-  function markAllComplete(order: typeof stationOrders[0]) {
-    if (onUpdateStatus) {
-      onUpdateStatus(order.id, 'Ready');
-    }
-  }
 
-  function enqueuePrint(ordersToPrint: typeof stationOrders) {
-    printQueue.current.push(...ordersToPrint);
-    processPrintQueue();
-  }
 
-  const processPrintQueue = () => {
-    if (isPrinting.current || printQueue.current.length === 0) return;
 
-    isPrinting.current = true;
-    const order = printQueue.current.shift()!; // Take the first order
 
-    // Ensure ALL old print sections are completely removed so they don't pile up!
-    const oldPrints = document.querySelectorAll('#print-section');
-    oldPrints.forEach(p => p.remove());
 
-    const printDiv = document.createElement('div');
-    printDiv.id = 'print-section';
-    printDiv.style.fontFamily = 'monospace';
-    printDiv.style.color = '#000';
-    printDiv.style.padding = '0';
-    printDiv.style.background = '#fff';
-
-    printDiv.innerHTML = `
-      <div style="padding: 15px 0;">
-        <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
-        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
-        <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
-          ${new Date(order.timestamp).toLocaleString()}
-        </div>
-        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: bold; color: #000;">
-          <span style="width: 30px;">Qty</span>
-          <span style="flex: 1;">Item</span>
-        </div>
-        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-        ${order.filteredItems.map(item => `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #000;">
-            <span style="width: 30px; font-weight: bold;">${item.quantity}x</span>
-            <span style="flex: 1;">${item.name}</span>
-          </div>
-          ${item.notes ? `<div style="font-style: italic; font-size: 0.9em; margin-left: 30px; color: #000;">* ${item.notes}</div>` : ''}
-        `).join('')}
-        <div style="border-bottom: 1px dashed #000; margin: 10px 0;"></div>
-        <div style="text-align: center; margin-top: 20px; color: #000;">
-          -- End of Ticket --
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(printDiv);
-    
-    // Slight delay to ensure DOM is updated before printing
-    setTimeout(() => {
-      window.print();
-      // Remove it after the print dialog closes
-      setTimeout(() => {
-        const prints = document.querySelectorAll('#print-section');
-        prints.forEach(p => p.remove());
-
-        // Queue next print job after 3 second delay
-        setTimeout(() => {
-          isPrinting.current = false;
-          processPrintQueue(); // Process any remaining or newly arrived items
-        }, 3000);
-      }, 1000);
-    }, 100);
-  };
 
 
   return (

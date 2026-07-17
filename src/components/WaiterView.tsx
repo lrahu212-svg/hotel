@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import type { Order, ServiceRequest, TableOccupancy, OrderItem, OrderStatus, Reservation } from '../types';
 import { ConciergeBell, Check, Award, Layers, Users, Volume2, VolumeX, LogOut, Info, User, Menu, X } from 'lucide-react';
 import { TableView } from './TableView';
@@ -136,7 +136,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     if (loggedInWaiter) {
       const raw = localStorage.getItem('hotel_active_waiters') || '[]';
       const nextList = JSON.parse(raw).filter((id: string) => id !== loggedInWaiter.id);
@@ -153,7 +153,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     if (waiterId) {
       localStorage.removeItem(`waiter_session_${waiterId}`);
     }
-  };
+  }, [loggedInWaiter, waiterId]);
 
   // Keep active list updated when already logged in
   useEffect(() => {
