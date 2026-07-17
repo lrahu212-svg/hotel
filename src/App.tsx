@@ -34,7 +34,7 @@ export const App: React.FC = () => {
     }
     return getInitialOccupancy();
   });
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [, setInventory] = useState<any[]>([]);
 
 
   // Parse path client-side
@@ -627,8 +627,6 @@ export const App: React.FC = () => {
           orders={orders}
           reservations={reservations}
           tablesOccupancy={tablesOccupancy}
-          inventory={inventory}
-          onUpdateInventory={(inv) => postSyncEvent({ type: 'UPDATE_INVENTORY', inventory: inv })}
           onAddTable={(tableId) => postSyncEvent({ type: 'ADD_TABLE', tableId })}
           onRemoveTable={(tableId) => postSyncEvent({ type: 'REMOVE_TABLE', tableId })}
           onRemoveReservation={(reservationId) => postSyncEvent({ type: 'REMOVE_RESERVATION', reservationId })}

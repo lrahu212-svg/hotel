@@ -188,126 +188,7 @@ const MenuManagement: React.FC = () => {
   );
 };
 
-// Inventory Management sub-panel for ingredients
-const InventoryStockManager: React.FC<{ inventory: any[]; onUpdateInventory?: (inv: any[]) => void }> = ({ inventory, onUpdateInventory }) => {
-  const [ingName, setIngName] = useState('');
-  const [ingQty, setIngQty] = useState('');
-  const [ingUnit, setIngUnit] = useState('g');
-  const [ingThreshold, setIngThreshold] = useState('');
 
-  const handleAddIngredient = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!ingName || !ingQty) return;
-    const newItem = {
-      id: 'inv_' + Date.now().toString(),
-      name: ingName,
-      quantity: parseFloat(ingQty),
-      unit: ingUnit,
-      threshold: parseFloat(ingThreshold || '0')
-    };
-    onUpdateInventory?.([...inventory, newItem]);
-    setIngName('');
-    setIngQty('');
-    setIngThreshold('');
-  };
-
-  const handleUpdateStock = (id: string, newStock: number) => {
-    const updated = inventory.map(item => item.id === id ? { ...item, quantity: Math.max(0, newStock) } : item);
-    onUpdateInventory?.(updated);
-  };
-
-  const handleDeleteIngredient = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this ingredient from registry?')) {
-      onUpdateInventory?.(inventory.filter(item => item.id !== id));
-    }
-  };
-
-  return (
-    <div className="reception-layout-grid animate-fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--accent-secondary)', marginBottom: '1.5rem' }}>
-          ➕ Register New Ingredient
-        </h2>
-        <form onSubmit={handleAddIngredient} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Ingredient Name</label>
-            <input type="text" required value={ingName} onChange={e => setIngName(e.target.value)} style={{ width: '100%' }} />
-          </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Initial Stock</label>
-              <input type="number" required value={ingQty} onChange={e => setIngQty(e.target.value)} style={{ width: '100%' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Unit</label>
-              <select value={ingUnit} onChange={e => setIngUnit(e.target.value)} style={{ width: '100%', height: '38px', padding: '0.35rem' }}>
-                <option value="g">g (grams)</option>
-                <option value="ml">ml (milliliters)</option>
-                <option value="pcs">pcs (pieces)</option>
-                <option value="kg">kg (kilograms)</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Low-Stock Warning Threshold</label>
-            <input type="number" value={ingThreshold} onChange={e => setIngThreshold(e.target.value)} style={{ width: '100%' }} />
-          </div>
-          <button type="submit" className="btn-constructivist-primary" style={{ background: '#000', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', padding: '0.75rem', fontWeight: 600 }}>Register Ingredient</button>
-        </form>
-      </div>
-
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 850, color: 'var(--accent-secondary)', marginBottom: '1.5rem' }}>
-          📦 Ingredient Inventory Ledger
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-          {inventory.length === 0 ? (
-            <p style={{ color: '#64748b', fontSize: '0.9rem' }}>No ingredients registered yet.</p>
-          ) : (
-            inventory.map(item => {
-              const isLow = item.quantity < item.threshold;
-              return (
-                <div key={item.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '1rem',
-                  background: isLow ? 'rgba(239, 68, 68, 0.04)' : '#f8fafc',
-                  border: isLow ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid var(--border-glass)',
-                  borderRadius: '12px'
-                }}>
-                  <div>
-                    <strong style={{ color: isLow ? '#ef4444' : 'var(--accent-secondary)', display: 'block' }}>
-                      {item.name} {isLow && '⚠️ (Low Stock)'}
-                    </strong>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      Threshold: {item.threshold}{item.unit}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => handleUpdateStock(item.id, parseFloat(e.target.value) || 0)}
-                      style={{ width: '90px', padding: '0.35rem !important', fontSize: '0.85rem' }}
-                    />
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-secondary)', width: '30px' }}>{item.unit}</span>
-                    <button
-                      onClick={() => handleDeleteIngredient(item.id)}
-                      style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#ef4444', padding: '0.4rem', borderRadius: '6px', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 interface ReceptionViewProps {
   onUpdateSettings?: (settings: any) => void;
@@ -316,8 +197,6 @@ interface ReceptionViewProps {
   reservations?: Reservation[];
   onRemoveReservation?: (reservationId: string) => void;
   tablesOccupancy?: { [tableId: string]: any };
-  inventory?: any[];
-  onUpdateInventory?: (inventory: any[]) => void;
   onAddTable?: (tableId: string) => void;
   onRemoveTable?: (tableId: string) => void;
 }
@@ -329,12 +208,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   reservations = [], 
   onRemoveReservation,
   tablesOccupancy = {},
-  inventory = [],
-  onUpdateInventory,
   onAddTable,
   onRemoveTable
 }) => {
-  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations' | 'inventory'>('waiters');
+  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -719,22 +596,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
             Menu Management
           </button>
           
-          <button 
-            onClick={() => setActiveTab('inventory')} 
-            style={{ 
-              background: activeTab === 'inventory' ? 'var(--bg-secondary)' : 'transparent', 
-              border: activeTab === 'inventory' ? '1px solid #cbd5e1' : '1px solid transparent', 
-              color: activeTab === 'inventory' ? 'var(--accent-secondary)' : '#64748b', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '8px', 
-              cursor: 'pointer', 
-              fontWeight: 600,
-              fontFamily: "'Outfit', sans-serif",
-              fontSize: '0.75rem'
-            }}
-          >
-            Inventory Stock
-          </button>
+
           
           {onResetAllData && (
             <button 
@@ -761,8 +623,6 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         <MenuManagement />
       ) : activeTab === 'reservations' ? (
         <ReservationsList reservations={reservations} onRemove={onRemoveReservation} />
-      ) : activeTab === 'inventory' ? (
-        <InventoryStockManager inventory={inventory} onUpdateInventory={onUpdateInventory} />
       ) : (
       <>
         <div className="reception-layout-grid">
