@@ -102,6 +102,19 @@ try {
   console.error('Error loading state file:', err.message);
 }
 
+// Clear table occupancy on every restart so no tables remain occupied
+if (state.tablesOccupancy) {
+  Object.keys(state.tablesOccupancy).forEach(tableId => {
+    state.tablesOccupancy[tableId] = { occupied: false };
+  });
+  console.log('Cleared all table occupancy on startup.');
+}
+// Also clear active orders and requests on restart so state is fresh
+state.orders = [];
+state.requests = [];
+saveState();
+
+
 // Seed default inventory values if empty
 if (!state.inventory || state.inventory.length === 0) {
   state.inventory = [

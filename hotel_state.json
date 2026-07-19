@@ -54,7 +54,7 @@
     },
     {
       "id": "ord_2i7758rps",
-      "tableId": "1",
+      "tableId": "1_archived_1784469940431",
       "items": [
         {
           "menuItemId": "c1",
@@ -64,7 +64,7 @@
           "price": 3
         }
       ],
-      "status": "Pending",
+      "status": "Served",
       "timestamp": 1784463719403,
       "totalAmount": 3,
       "customerName": "h"
@@ -73,11 +73,7 @@
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": true,
-      "customerName": "h",
-      "guestsCount": 1,
-      "checkInTime": 1784461524144,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "2": {
       "occupied": false
