@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 
 // Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://adminvolcano_db_user:rahul2026@volcano.fczkc5w.mongodb.net/?appName=Volcano';
+const MONGODB_URI = process.env.MONGODB_URI;
 mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
@@ -71,6 +71,14 @@ let state = {
   menuItems: []
 };
 
+const saveState = () => {
+  try {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error saving state file:', err.message);
+  }
+};
+
 // Function to seed/sync menu from file state to MongoDB
 const syncMenuToDB = async () => {
   try {
@@ -125,14 +133,6 @@ if (!state.inventory || state.inventory.length === 0) {
     { id: 'inv_5', name: 'Water', quantity: 10000, unit: 'ml', threshold: 2000 }
   ];
 }
-
-const saveState = () => {
-  try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error saving state file:', err.message);
-  }
-};
 
 app.use(cors());
 app.use(express.json());
