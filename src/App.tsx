@@ -49,11 +49,11 @@ export const App: React.FC = () => {
   });
   const [tablesOccupancy, setTablesOccupancy] = useState<{ [tableId: string]: TableOccupancy }>(() => {
     const saved = localStorage.getItem('hotel_tables_occupancy');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return getInitialOccupancy();
-  });
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return getInitialOccupancy();
+    });
   const [, setInventory] = useState<any[]>([]);
 
 
