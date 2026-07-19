@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import type { MenuItem } from '../data/menu'; // Added OrderItem import
-import type { OrderItem } from '../types';
+import type { Order, OrderItem } from '../types';
 import { Bot, Send } from 'lucide-react'; // Assuming lucide-react is available
 import { CHATBOT_QA } from '../data/chatbot_qa';
 
 interface ChatbotProps {
   menuItems: MenuItem[];
+  orders: Order[];
   onPlaceOrder: (items: OrderItem[]) => void; // Added onPlaceOrder prop
 }
 
@@ -14,7 +15,7 @@ interface ChatMessage {
   text: string;
 }
 
-export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => {
+export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
@@ -46,6 +47,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
   };
 
   const processBotResponse = (query: string) => {
+    console.log('Processing query:', query);
     const lowerQuery = query.toLowerCase();
     let response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu, or for a recommendation.";
     
@@ -55,7 +57,9 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
     }
 
     // --- Agent Logic: Handle Order Confirmation First ---
+    console.log('Checking for order confirmation...');
     if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it'))) {
+        console.log('Order confirmation detected.');
         onPlaceOrder([{
             menuItemId: suggestedItem.id,
             quantity: 1,
@@ -68,6 +72,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
         simulateBotTyping(response);
         return;
     } else if (suggestedItem && (lowerQuery.includes('no') || lowerQuery.includes('cancel'))) {
+        console.log('Order cancellation detected.');
         response = `Okay, I've cancelled the suggestion for ${suggestedItem.name}. Is there anything else I can help you with?`;
         setSuggestedItem(null);
         simulateBotTyping(response);
@@ -75,17 +80,112 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
     }
 
     // --- Agent Logic: Try to find a specific menu item first ---
-    const foundSpecificItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
+    console.log('Checking for specific menu item...');
+    const sortedMenuItems = [...menuItems].sort((a, b) => b.name.length - a.name.length);
+    const foundSpecificItem = sortedMenuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
     if (foundSpecificItem) {
+        console.log('Specific item found:', foundSpecificItem.name);
         response = `Yes, we have ${foundSpecificItem.name} for ₹${foundSpecificItem.price.toFixed(2)} in our ${foundSpecificItem.category} category. Would you like to order it?`;
         setSuggestedItem(foundSpecificItem);
         simulateBotTyping(response);
         return;
     }
 
+    // --- Agent Logic: Food Type & Popularity-based Recommendations ---
+    console.log('Checking for food types and popularity...');
+    
+    // 1. Calculate item popularity
+    const itemPopularity: { [id: string]: number } = {};
+    orders.forEach(o => {
+      if (o.status !== 'Cancelled') {
+        o.items.forEach(it => {
+          itemPopularity[it.menuItemId] = (itemPopularity[it.menuItemId] || 0) + it.quantity;
+        });
+      }
+    });
+
+    // 2. Extract all foodType values present in the menu
+    const customTypes = new Set<string>();
+    menuItems.forEach(item => {
+      if (item.foodType) {
+        customTypes.add(item.foodType.toLowerCase());
+      }
+    });
+
+    // 3. Find if any of the food types are mentioned in the query
+    let matchedType: string | null = null;
+    const allTypesToCheck = ['spicy', 'sweet', 'sour', ...Array.from(customTypes)];
+    for (const t of allTypesToCheck) {
+      if (lowerQuery.includes(t)) {
+        matchedType = t;
+        break;
+      }
+    }
+
+    if (matchedType) {
+      const matchingItems = menuItems.filter(item => {
+        if (matchedType === 'spicy' && (item.spicy || item.foodType?.toLowerCase() === 'spicy')) {
+          return true;
+        }
+        return item.foodType?.toLowerCase() === matchedType;
+      });
+
+      if (matchingItems.length > 0) {
+        const stopWords = ['recommend', 'something', 'food', 'have', 'want', 'order', 'show', 'find', 'like', 'with', 'dish', 'dishes', 'option', 'options', 'please', 'you', 'give', 'get', 'any', 'me', 'some', 'the', 'a', 'an', 'is', 'are', 'spicy', 'sweet', 'sour', ...Array.from(customTypes)];
+        const queryWords = lowerQuery.split(/[\s,?.!]+/).filter(w => w.length > 2 && !stopWords.includes(w));
+
+        let finalMatching = matchingItems;
+        let isKeywordSearch = false;
+        if (queryWords.length > 0) {
+          const keywordMatchedItems = matchingItems.filter(item => {
+            return queryWords.some(word => 
+              item.name.toLowerCase().includes(word) || 
+              item.description.toLowerCase().includes(word) ||
+              item.category.toLowerCase().includes(word)
+            );
+          });
+          if (keywordMatchedItems.length > 0) {
+            finalMatching = keywordMatchedItems;
+            isKeywordSearch = true;
+          }
+        }
+
+        const sortedByPopularity = [...finalMatching].sort((a, b) => {
+          const popA = itemPopularity[a.id] || 0;
+          const popB = itemPopularity[b.id] || 0;
+          return popB - popA;
+        });
+
+        const bestItem = sortedByPopularity[0];
+        const bestPopularity = itemPopularity[bestItem.id] || 0;
+
+        let responseText = '';
+        const searchContext = isKeywordSearch ? `${matchedType} matching "${queryWords.join(' ')}"` : `${matchedType} food`;
+        if (bestPopularity > 0) {
+          responseText = `Our most popular option for ${searchContext} is the **${bestItem.name}** (₹${bestItem.price.toFixed(2)}), which has been ordered ${bestPopularity} times!`;
+        } else {
+          responseText = `We have **${bestItem.name}** (₹${bestItem.price.toFixed(2)}) which is a great option if you're looking for something ${searchContext}.`;
+        }
+
+        const others = sortedByPopularity.slice(1, 4);
+        if (others.length > 0) {
+          responseText += `\n\nOther matching options include:\n` + 
+            others.map(it => `- ${it.name} (₹${it.price.toFixed(2)}, ordered ${itemPopularity[it.id] || 0} times)`).join('\n');
+        }
+
+        responseText += `\n\nWould you like to order the **${bestItem.name}**?`;
+        
+        setSuggestedItem(bestItem);
+        simulateBotTyping(responseText);
+        return;
+      }
+    }
+
     // --- Agent Logic: Process Questions from CHATBOT_QA ---
+    console.log('Checking CHATBOT_QA...');
     for (const qa of CHATBOT_QA) {
       if (qa.keywords.some(keyword => lowerQuery.includes(keyword))) {
+        console.log('Matched QA keyword for:', qa.keywords);
         let itemToSuggest: MenuItem | undefined;
         let responseItems: MenuItem[] = [];
 
@@ -134,11 +234,13 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
     }
 
     // --- Agent Logic: Generic Category/Attribute Fallbacks ---
-    if (lowerQuery.includes('coffee') || lowerQuery.includes('espresso')) {
+    console.log('Checking generic category fallbacks...');
+    if (lowerQuery.includes('coffee') || lowerQuery.includes('espresso') || lowerQuery.includes('cafe')) {
+        console.log('Matched coffee/espresso generic fallback.');
         const coffeeItems = menuItems.filter(item => item.category === 'Coffee & Espresso');
         if (coffeeItems.length > 0) {
             const itemList = coffeeItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
-            response = `Our coffee and espresso selections include:\n${itemList}\n\nWould you like to order one?`;
+            response = `Our coffee and espresso selections include:\n${itemList}\n\nWould you like to order one of these?`;
             setSuggestedItem(coffeeItems[Math.floor(Math.random() * coffeeItems.length)]); // Suggest a random one
         } else {
             response = "We do not have any coffee or espresso items on the menu.";
@@ -147,8 +249,61 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, onPlaceOrder }) => 
         return;
     }
     // Add similar blocks for other categories/attributes if not covered by CHATBOT_QA
+    if (lowerQuery.includes('tea') || lowerQuery.includes('infusion')) {
+      console.log('Matched tea/infusion generic fallback.');
+      const teaItems = menuItems.filter(item => item.category === 'Teas & Infusions');
+      if (teaItems.length > 0) {
+          const itemList = teaItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
+          response = `Our tea and infusion selections include:\n${itemList}\n\nWould you like to order one of these?`;
+          setSuggestedItem(teaItems[Math.floor(Math.random() * teaItems.length)]);
+      } else {
+          response = "We do not have any tea or infusion items on the menu.";
+      }
+      simulateBotTyping(response);
+      return;
+    }
+    if (lowerQuery.includes('cold beverage') || lowerQuery.includes('drink') || lowerQuery.includes('shake') || lowerQuery.includes('smoothie')) {
+      console.log('Matched cold beverage generic fallback.');
+      const coldDrinkItems = menuItems.filter(item => item.category === 'Cold Beverages');
+      if (coldDrinkItems.length > 0) {
+          const itemList = coldDrinkItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
+          response = `Our cold beverages include:\n${itemList}\n\nWould you like to order one of these?`;
+          setSuggestedItem(coldDrinkItems[Math.floor(Math.random() * coldDrinkItems.length)]);
+      } else {
+          response = "We do not have any cold beverages on the menu.";
+      }
+      simulateBotTyping(response);
+      return;
+    }
+    if (lowerQuery.includes('breakfast') || lowerQuery.includes('bakery') || lowerQuery.includes('pastry') || lowerQuery.includes('muffin') || lowerQuery.includes('croissant')) {
+      console.log('Matched breakfast/bakery generic fallback.');
+      const breakfastItems = menuItems.filter(item => item.category === 'Breakfast & Bakery');
+      if (breakfastItems.length > 0) {
+          const itemList = breakfastItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
+          response = `Our breakfast and bakery items include:\n${itemList}\n\nWould you like to order one of these?`;
+          setSuggestedItem(breakfastItems[Math.floor(Math.random() * breakfastItems.length)]);
+      } else {
+          response = "We do not have any breakfast or bakery items on the menu.";
+      }
+      simulateBotTyping(response);
+      return;
+    }
+    if (lowerQuery.includes('sandwich') || lowerQuery.includes('salad') || lowerQuery.includes('soup') || lowerQuery.includes('lunch')) {
+      console.log('Matched sandwich/salad/soup generic fallback.');
+      const lunchItems = menuItems.filter(item => item.category === 'Sandwiches & Salads');
+      if (lunchItems.length > 0) {
+          const itemList = lunchItems.map(item => `- ${item.name} (₹${item.price.toFixed(2)})`).join('\n');
+          response = `Our sandwiches, salads, and soups include:\n${itemList}\n\nWould you like to order one of these?`;
+          setSuggestedItem(lunchItems[Math.floor(Math.random() * lunchItems.length)]);
+      } else {
+          response = "We do not have any sandwiches, salads, or soups on the menu.";
+      }
+      simulateBotTyping(response);
+      return;
+    }
 
     // --- Final Fallback ---
+    console.log('Falling back to generic response.');
     response = "I'm sorry, I couldn't find specific information for that. Could you please rephrase or ask about specific menu items or categories?";
     setSuggestedItem(null);
     simulateBotTyping(response);

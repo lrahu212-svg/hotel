@@ -281,6 +281,19 @@ export const TableView: React.FC<TableViewProps> = ({
     return now >= (resTime - 30 * 60 * 1000) && now <= (resTime + 60 * 60 * 1000);
   });
 
+  const logCustomerLogin = (nameStr: string, phoneStr: string, success: boolean) => {
+    fetch('/api/login/customer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerName: nameStr.trim(),
+        phone: phoneStr.trim(),
+        tableId: tableId,
+        success
+      })
+    }).catch(err => console.error('Failed to log login:', err));
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!custName.trim()) return;
@@ -297,8 +310,10 @@ export const TableView: React.FC<TableViewProps> = ({
         sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
         setSessionActive(true);
         showToast('👋 Welcome! Your reservation check-in is complete.');
+        logCustomerLogin(custName, phone, true);
       } else {
         showToast('❌ This table is reserved. Only the registered customer can check in.');
+        logCustomerLogin(custName, phone, false);
       }
       return;
     }
@@ -310,6 +325,7 @@ export const TableView: React.FC<TableViewProps> = ({
         sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
         setSessionActive(true);
         showToast('👋 Welcome! Your table is ready.');
+        logCustomerLogin(custName, phone, true);
         return;
       }
 
@@ -321,8 +337,10 @@ export const TableView: React.FC<TableViewProps> = ({
         sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
         setSessionActive(true);
         showToast('👋 Welcome back to your table!');
+        logCustomerLogin(custName, phone, true);
       } else {
         showToast('⚠️ Table is already occupied. Please use the exact Name and Phone you registered with, or ask a waiter.');
+        logCustomerLogin(custName, phone, false);
       }
       return;
     }
@@ -333,6 +351,7 @@ export const TableView: React.FC<TableViewProps> = ({
     sessionStorage.setItem(`table_session_active_${tableId}`, 'true');
     setSessionActive(true);
     showToast('👋 Welcome to Dash Hotel!');
+    logCustomerLogin(custName, phone, true);
   };
 
   const tableOrders = orders.filter(o => o.tableId === tableId).sort((a, b) => b.timestamp - a.timestamp);
@@ -948,7 +967,15 @@ export const TableView: React.FC<TableViewProps> = ({
             )}
           </div>
         ) : activeTab === 'chatbot' ? (
-          <Chatbot menuItems={MENU_ITEMS} onPlaceOrder={onPlaceOrder} />
+          <Chatbot
+            menuItems={MENU_ITEMS}
+            orders={orders}
+            onPlaceOrder={(items) => {
+              onPlaceOrder(items);
+              showToast('🎉 Order placed successfully!');
+              setActiveTab('history');
+            }}
+          />
         ) : (
           /* activeTab === 'checkout' view */
           <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>

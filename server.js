@@ -4,7 +4,56 @@ import fs from 'fs';
 import path from 'path';
 import https from 'https';
 import nodemailer from 'nodemailer';
+import mongoose from 'mongoose';
 
+// Connect to MongoDB
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://adminvolcano_db_user:Volcano%402026@volcano.fczkc5w.mongodb.net/volcano_db?appName=Volcano';
+mongoose.connect(MONGODB_URI)
+  .then(async () => {
+    console.log('Connected to MongoDB');
+    await syncMenuToDB();
+  })
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// MenuItem Schema
+const menuItemSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  price: { type: Number, required: true },
+  costPrice: { type: Number, required: true },
+  category: { type: String, required: true },
+  description: { type: String, required: true },
+  spicy: Boolean,
+  vegetarian: Boolean,
+  image: { type: String, required: true },
+  calories: Number,
+  protein: Number,
+  isProteinRich: Boolean,
+  isJunk: Boolean,
+  ingredients: [String],
+  foodType: String
+});
+const MenuItemModel = mongoose.model('MenuItem', menuItemSchema);
+
+// Login Log Schema
+const loginSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  role: { type: String, required: true }, // 'Waiter' or 'Customer'
+  tableId: String,
+  phone: String,
+  timestamp: { type: Date, default: Date.now },
+  success: { type: Boolean, default: true }
+});
+const LoginModel = mongoose.model('Login', loginSchema);
+
+// System Log Schema
+const logSchema = new mongoose.Schema({
+  eventType: { type: String, required: true },
+  payload: mongoose.Schema.Types.Mixed,
+  timestamp: { type: Date, default: Date.now },
+  message: String
+});
+const LogModel = mongoose.model('Log', logSchema);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +69,22 @@ let state = {
   reservations: [],
   inventory: [],
   menuItems: []
+};
+
+// Function to seed/sync menu from file state to MongoDB
+const syncMenuToDB = async () => {
+  try {
+    const count = await MenuItemModel.countDocuments();
+    if (count === 0 && state.menuItems && state.menuItems.length > 0) {
+      await MenuItemModel.insertMany(state.menuItems);
+      console.log(`Seeded ${state.menuItems.length} menu items from hotel_state.json to MongoDB.`);
+    } else if (count > 0) {
+      state.menuItems = await MenuItemModel.find().lean();
+      console.log(`Loaded ${state.menuItems.length} menu items from MongoDB.`);
+    }
+  } catch (err) {
+    console.error('Error syncing menu to MongoDB:', err.message);
+  }
 };
 
 // Load state from file if exists
@@ -58,7 +123,13 @@ const saveState = () => {
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(distPath));
+app.use(express.static(distPath, {
+  setHeaders: (res, filepath) => {
+    if (path.basename(filepath) === 'index.html') {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    }
+  }
+}));
 
 // Get current system state endpoint (fallback / initialization)
 app.get('/api/state', (req, res) => {
@@ -86,10 +157,18 @@ app.get('/events', (req, res) => {
 });
 
 // Event POST Endpoint
-app.post('/event', (req, res) => {
+app.post('/event', async (req, res) => {
   try {
     const event = req.body;
     
+    // Log the event in MongoDB
+    const logEntry = new LogModel({
+      eventType: event.type,
+      payload: event,
+      message: `System event: ${event.type} received`
+    });
+    await logEntry.save().catch(err => console.error('Error saving system log:', err.message));
+
     // Update local server state
     if (event.type === 'NEW_ORDER') {
       state.orders = [...state.orders.filter(o => o.id !== event.order.id), event.order];
@@ -188,6 +267,15 @@ app.post('/event', (req, res) => {
       state.inventory = event.inventory || [];
     } else if (event.type === 'UPDATE_MENU') {
       state.menuItems = event.menuItems || [];
+      try {
+        await MenuItemModel.deleteMany({});
+        if (state.menuItems.length > 0) {
+          await MenuItemModel.insertMany(state.menuItems);
+        }
+        console.log(`Synced ${state.menuItems.length} menu items to MongoDB.`);
+      } catch (err) {
+        console.error('Failed to sync menu updates to MongoDB:', err.message);
+      }
     } else if (event.type === 'ADD_TABLE') {
       state.tablesOccupancy[event.tableId] = { occupied: false };
     } else if (event.type === 'REMOVE_TABLE') {
@@ -462,9 +550,62 @@ app.post('/api/send-reservation-email', async (req, res) => {
   }
 });
 
+// Waiter login log endpoint
+app.post('/api/login/waiter', async (req, res) => {
+  try {
+    const { name, phone, success } = req.body;
+    const loginLog = new LoginModel({
+      username: name,
+      role: 'Waiter',
+      phone: phone,
+      success: success !== undefined ? success : true
+    });
+    await loginLog.save();
+    
+    // Also add a system log
+    const sysLog = new LogModel({
+      eventType: 'WAITER_LOGIN',
+      payload: { name, phone, success },
+      message: `Waiter ${name} logged in: ${success !== false ? 'success' : 'failure'}`
+    });
+    await sysLog.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Customer check-in log endpoint
+app.post('/api/login/customer', async (req, res) => {
+  try {
+    const { customerName, phone, tableId, success } = req.body;
+    const loginLog = new LoginModel({
+      username: customerName,
+      role: 'Customer',
+      tableId: tableId,
+      phone: phone,
+      success: success !== undefined ? success : true
+    });
+    await loginLog.save();
+
+    const sysLog = new LogModel({
+      eventType: 'CUSTOMER_CHECK_IN',
+      payload: { customerName, phone, tableId, success },
+      message: `Customer ${customerName} checked in at Table ${tableId}`
+    });
+    await sysLog.save();
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Fallback to index.html for React router
 
 app.use((req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   res.sendFile(path.join(distPath, 'index.html'));
 });
 

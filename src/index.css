@@ -80,18 +80,18 @@ body {
 
 /* Quick Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 3px;
+  height: 3px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(100, 116, 139, 0.55);
 }
 
 .glass-panel:hover .menu-item-image {
@@ -558,3 +558,21 @@ input::placeholder {
     padding: 0 !important;
   }
 }
+
+/* High-contrast scrollbar styling for Advanced Menu Editor board columns */
+.columns-container::-webkit-scrollbar {
+  height: 10px !important;
+}
+.columns-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05) !important;
+  border-radius: 6px !important;
+}
+.columns-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-radius: 6px !important;
+  border: 2px solid #ffffff !important;
+}
+.columns-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+

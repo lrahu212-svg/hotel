@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserPlus, Trash2, Calendar, ClipboardList, ChefHat, Settings, Menu, Plus } from 'lucide-react';
-import { useMenu, addMenuItem, deleteMenuItem, type MenuItem } from '../data/menu';
+import { useMenu, addMenuItem, deleteMenuItem, updateMenuItem, type MenuItem } from '../data/menu';
 import type { Order, Reservation } from '../types';
 
 interface Waiter {
@@ -78,6 +78,31 @@ const MenuManagement: React.FC = () => {
   const [imageUrl, setImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Edit and Food Type states
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [foodTypeSel, setFoodTypeSel] = useState<string>('none');
+  const [customFoodType, setCustomFoodType] = useState<string>('');
+
+  // Load custom columns dynamically from localStorage
+  const [customColumns, setCustomColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('hotel_advanced_menu_columns');
+    if (saved) {
+      return JSON.parse(saved).filter((c: string) => !['none', 'spicy', 'sweet', 'sour'].includes(c));
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    const handleColsUpdate = () => {
+      const saved = localStorage.getItem('hotel_advanced_menu_columns');
+      if (saved) {
+        setCustomColumns(JSON.parse(saved).filter((c: string) => !['none', 'spicy', 'sweet', 'sour'].includes(c)));
+      }
+    };
+    window.addEventListener('menu_columns_updated', handleColsUpdate);
+    return () => window.removeEventListener('menu_columns_updated', handleColsUpdate);
+  }, []);
+
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -92,22 +117,85 @@ const MenuManagement: React.FC = () => {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price) return;
-    const item: MenuItem = {
-      id: 'custom_' + Date.now().toString(),
-      name,
-      price: parseFloat(price),
-      costPrice: parseFloat(price) * 0.3, // default 30% food cost
-      category,
-      description: desc,
-      vegetarian: false,
-      spicy: false,
-      image: imageUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80'
-    };
-    addMenuItem(item);
+
+    let finalFoodType = '';
+    if (foodTypeSel === 'custom') {
+      finalFoodType = customFoodType.trim().toLowerCase();
+    } else if (foodTypeSel !== 'none') {
+      finalFoodType = foodTypeSel;
+    }
+
+    if (editingItem) {
+      const updated: MenuItem = {
+        ...editingItem,
+        name,
+        price: parseFloat(price),
+        costPrice: parseFloat(price) * 0.3,
+        category,
+        description: desc,
+        image: imageUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+        foodType: finalFoodType || undefined,
+        spicy: finalFoodType === 'spicy'
+      };
+      updateMenuItem(updated);
+      setEditingItem(null);
+    } else {
+      const item: MenuItem = {
+        id: 'custom_' + Date.now().toString(),
+        name,
+        price: parseFloat(price),
+        costPrice: parseFloat(price) * 0.3,
+        category,
+        description: desc,
+        vegetarian: false,
+        spicy: finalFoodType === 'spicy',
+        image: imageUrl.trim() || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&auto=format&fit=crop&q=80',
+        foodType: finalFoodType || undefined
+      };
+      addMenuItem(item);
+    }
+
     setName('');
     setPrice('');
     setDesc('');
     setImageUrl('');
+    setFoodTypeSel('none');
+    setCustomFoodType('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleEditClick = (item: MenuItem) => {
+    setEditingItem(item);
+    setName(item.name);
+    setPrice(item.price.toString());
+    setDesc(item.description);
+    setCategory(item.category);
+    setImageUrl(item.image);
+    
+    if (item.foodType) {
+      if (['spicy', 'sweet', 'sour'].includes(item.foodType)) {
+        setFoodTypeSel(item.foodType);
+        setCustomFoodType('');
+      } else {
+        setFoodTypeSel('custom');
+        setCustomFoodType(item.foodType);
+      }
+    } else {
+      setFoodTypeSel(item.foodType || 'none');
+      setCustomFoodType('');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setName('');
+    setPrice('');
+    setDesc('');
+    setImageUrl('');
+    setFoodTypeSel('none');
+    setCustomFoodType('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -117,7 +205,7 @@ const MenuManagement: React.FC = () => {
     <div className="reception-layout-grid">
       <div className="glass-panel" style={{ padding: '2rem' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Plus size={20} color="var(--accent-secondary)" /> Add Food Item
+          <Plus size={20} color="var(--accent-secondary)" /> {editingItem ? 'Edit Food Item' : 'Add Food Item'}
         </h2>
         <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
@@ -138,6 +226,25 @@ const MenuManagement: React.FC = () => {
               <option value="Sandwiches & Salads">Sandwiches & Salads</option>
             </select>
           </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Food Type</label>
+            <select value={foodTypeSel} onChange={e => setFoodTypeSel(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }}>
+              <option value="none">Unclassified</option>
+              <option value="spicy">Spicy</option>
+              <option value="sweet">Sweet</option>
+              <option value="sour">Sour</option>
+              {customColumns.map(col => (
+                <option key={col} value={col}>{col.charAt(0).toUpperCase() + col.slice(1)}</option>
+              ))}
+              <option value="custom">Other (Custom)</option>
+            </select>
+          </div>
+          {foodTypeSel === 'custom' && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Enter Custom Food Type</label>
+              <input type="text" required placeholder="e.g. bitter, salty" value={customFoodType} onChange={e => setCustomFoodType(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a' }} />
+            </div>
+          )}
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Upload Image (PNG, JPG, etc.)</label>
             <input 
@@ -162,7 +269,16 @@ const MenuManagement: React.FC = () => {
             <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase' }}>Description</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} style={{ width: '100%', padding: '0.65rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', minHeight: '60px' }} />
           </div>
-           <button type="submit" style={{ background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)', color: '#fff', border: 'none', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Add Item</button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+             <button type="submit" style={{ flex: 1, background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)', color: '#fff', border: 'none', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+               {editingItem ? 'Update Item' : 'Add Item'}
+             </button>
+             {editingItem && (
+               <button type="button" onClick={handleCancelEdit} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', padding: '0.85rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+                 Cancel
+               </button>
+             )}
+          </div>
         </form>
       </div>
 
@@ -170,16 +286,28 @@ const MenuManagement: React.FC = () => {
         <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Menu size={20} color="var(--status-ready)" /> Existing Menu Items ({menu.length})
         </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '600px', overflowY: 'auto', paddingRight: '0.5rem' }}>
           {menu.map(item => (
             <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
               <div>
-                <strong style={{ color: '#fff', display: 'block' }}>{item.name}</strong>
+                <strong style={{ color: '#fff', display: 'block' }}>
+                  {item.name} 
+                  {item.foodType && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--accent-secondary)', background: 'rgba(6, 182, 212, 0.15)', padding: '0.1rem 0.35rem', borderRadius: '4px', marginLeft: '0.35rem', textTransform: 'capitalize' }}>
+                      {item.foodType}
+                    </span>
+                  )}
+                </strong>
                 <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>₹{item.price.toFixed(2)} - {item.category}</span>
               </div>
-              <button onClick={() => deleteMenuItem(item.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', padding: '0.4rem', borderRadius: '4px', cursor: 'pointer' }}>
-                <Trash2 size={14} />
-              </button>
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                <button onClick={() => handleEditClick(item)} style={{ background: 'rgba(14, 165, 233, 0.1)', border: 'none', color: 'var(--accent-secondary)', padding: '0.4rem 0.65rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>
+                  Edit
+                </button>
+                <button onClick={() => deleteMenuItem(item.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', padding: '0.4rem', borderRadius: '4px', cursor: 'pointer' }}>
+                  <Trash2 size={14} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -188,7 +316,447 @@ const MenuManagement: React.FC = () => {
   );
 };
 
+const AdvancedMenuEditor: React.FC = () => {
+  const menu = useMenu();
 
+  // State to manage columns list dynamically
+  const [columns, setColumns] = useState<string[]>(() => {
+    const saved = localStorage.getItem('hotel_advanced_menu_columns');
+    let loaded: string[] = [];
+    if (saved) {
+      loaded = JSON.parse(saved);
+    } else {
+      const customTypes = new Set<string>();
+      menu.forEach(item => {
+        if (item.foodType) {
+          customTypes.add(item.foodType.toLowerCase());
+        }
+      });
+      loaded = ['none', 'spicy', 'sweet', 'sour', ...Array.from(customTypes).filter(t => !['spicy', 'sweet', 'sour'].includes(t))];
+    }
+    // Guarantee 'none' is always present at index 0
+    if (!loaded.includes('none')) {
+      loaded = ['none', ...loaded];
+    } else {
+      loaded = ['none', ...loaded.filter(c => c !== 'none')];
+    }
+    return loaded;
+  });
+
+  // Log column changes for debugging
+  useEffect(() => {
+    console.log('Columns state updated:', columns);
+  }, [columns]);
+
+
+  // Sync columns with localStorage
+  useEffect(() => {
+    const toSave = columns.includes('none') ? columns : ['none', ...columns];
+    localStorage.setItem('hotel_advanced_menu_columns', JSON.stringify(toSave));
+    window.dispatchEvent(new Event('menu_columns_updated'));
+  }, [columns]);
+
+  // Auto-scroll while dragging near viewport edges
+  useEffect(() => {
+    const EDGE = 120;       // px from top/bottom to trigger scroll
+    const SPEED = 12;       // px per animation frame
+    let animFrame: number;
+    let clientY = 0;
+
+    const onDragOver = (e: DragEvent) => { clientY = e.clientY; };
+
+    const scroll = () => {
+      const vh = window.innerHeight;
+      if (clientY < EDGE) {
+        window.scrollBy(0, -SPEED * (1 - clientY / EDGE));
+      } else if (clientY > vh - EDGE) {
+        window.scrollBy(0, SPEED * ((clientY - (vh - EDGE)) / EDGE));
+      }
+      animFrame = requestAnimationFrame(scroll);
+    };
+
+    const onDragStart = () => { animFrame = requestAnimationFrame(scroll); };
+    const onDragEnd = () => { cancelAnimationFrame(animFrame); };
+
+    window.addEventListener('dragover', onDragOver);
+    window.addEventListener('dragstart', onDragStart);
+    window.addEventListener('dragend', onDragEnd);
+    window.addEventListener('drop', onDragEnd);
+
+    return () => {
+      cancelAnimationFrame(animFrame);
+      window.removeEventListener('dragover', onDragOver);
+      window.removeEventListener('dragstart', onDragStart);
+      window.removeEventListener('dragend', onDragEnd);
+      window.removeEventListener('drop', onDragEnd);
+    };
+  }, []);
+
+  // Form states for column management
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newColName, setNewColName] = useState('');
+  const [editingColumn, setEditingColumn] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    e.dataTransfer.setData('text/plain', itemId);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetType: string) => {
+    e.preventDefault();
+    const itemId = e.dataTransfer.getData('text/plain');
+    const item = menu.find(i => i.id === itemId);
+    if (item) {
+      const updated: MenuItem = {
+        ...item,
+        foodType: targetType === 'none' ? undefined : targetType,
+        spicy: targetType === 'spicy'
+      };
+      updateMenuItem(updated);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+
+  const handleRenameColumn = (oldCol: string) => {
+    const newNameClean = renameValue.trim().toLowerCase();
+    if (!newNameClean || oldCol === newNameClean) {
+      setEditingColumn(null);
+      return;
+    }
+    if (columns.includes(newNameClean)) {
+      alert('This column name already exists!');
+      return;
+    }
+
+    setColumns(columns.map(c => c === oldCol ? newNameClean : c));
+
+    // Update menu items in this column
+    menu.forEach(item => {
+      if (item.foodType?.toLowerCase() === oldCol) {
+        const updated = {
+          ...item,
+          foodType: newNameClean,
+          spicy: newNameClean === 'spicy'
+        };
+        updateMenuItem(updated);
+      }
+    });
+
+    setEditingColumn(null);
+  };
+
+  const handleDeleteColumn = (col: string) => {
+    if (['none', 'spicy', 'sweet', 'sour'].includes(col)) return;
+    // Remove column from list
+    setColumns(prev => prev.filter(c => c !== col));
+    // Move items back to Unclassified
+    menu.forEach(item => {
+      if (item.foodType?.toLowerCase() === col) {
+        updateMenuItem({ ...item, foodType: undefined, spicy: false });
+      }
+    });
+    setEditingColumn(null);
+    setConfirmingDelete(null);
+  };
+
+  return (
+    <div className="glass-panel animate-fade-in" style={{ padding: '2rem' }}>
+      <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', marginBottom: '1.5rem' }}>
+        🛠️ Advanced Menu Editor (Drag & Drop Type Board)
+      </h2>
+      <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+        Drag and drop dishes to classify their food type. Click on column names (except Unclassified) to rename or delete columns.
+      </p>
+
+      {/* Top dashboard Add Column option */}
+      <div style={{ marginBottom: '2rem' }}>
+        {showAddForm ? (
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', maxWidth: '400px' }}>
+            <input
+              type="text"
+              autoFocus
+              placeholder="e.g. bitter, salty"
+              value={newColName}
+              onChange={e => setNewColName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  const nameClean = newColName.trim().toLowerCase();
+                  if (!nameClean) return;
+                  if (columns.includes(nameClean)) {
+                    alert('This food type column already exists!');
+                    return;
+                  }
+                  setColumns([...columns, nameClean]);
+                  setNewColName('');
+                  setShowAddForm(false);
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '0.5rem 0.75rem',
+                fontSize: '0.85rem',
+                background: '#fff',
+                color: '#000',
+                border: '1px solid rgba(0,0,0,0.15)',
+                borderRadius: '6px',
+                outline: 'none'
+              }}
+            />
+            <button 
+              type="button" 
+              onClick={() => {
+                console.log('Add column clicked, name:', newColName);
+                const nameClean = newColName.trim().toLowerCase();
+                if (!nameClean) return;
+                if (columns.includes(nameClean)) {
+                  alert('This food type column already exists!');
+                  return;
+                }
+                setColumns([...columns, nameClean]);
+                setNewColName('');
+                setShowAddForm(false);
+              }}
+              style={{ background: 'var(--accent-secondary)', color: '#ffffff', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+            >
+              Add
+            </button>
+            <button type="button" onClick={() => setShowAddForm(false)} style={{ background: 'rgba(0,0,0,0.06)', color: 'var(--accent-secondary)', border: 'none', padding: '0.5rem 1.25rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}>
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.2rem',
+              fontSize: '0.85rem',
+              background: 'linear-gradient(135deg, var(--accent-primary) 0%, #3b82f6 100%)',
+              color: '#ffffff',
+              fontWeight: 700,
+              borderRadius: '8px',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(37, 99, 235, 0.2)'
+            }}
+          >
+            <Plus size={16} /> Add Food Type Column
+          </button>
+        )}
+      </div>
+
+      {/* NEW LAYOUT: Unclassified on left, others in 2-col grid on right */}
+      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', width: '100%', paddingBottom: '1.25rem' }}>
+
+        {/* LEFT: Unclassified column */}
+        {(() => {
+          const col = 'none';
+          const itemsInCol = menu.filter(item => !item.foodType);
+          return (
+            <div
+              key="none"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, col)}
+              style={{
+                flex: '0 0 300px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '2px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '12px',
+                padding: '1rem',
+                minHeight: '400px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                alignSelf: 'stretch'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.5rem', marginBottom: '0.25rem' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Unclassified
+                </span>
+                <span style={{ fontSize: '0.75rem', color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                  {itemsInCol.length}
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1 }}>
+                {itemsInCol.map(item => (
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.05)', padding: '0.75rem', borderRadius: '8px', cursor: 'grab', userSelect: 'none', transition: 'all 0.15s' }}
+                    onDragOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                    onDragLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)'}
+                  >
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <img src={item.image} alt={item.name} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
+                      <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{item.name}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>₹{item.price.toFixed(2)} - {item.category}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* RIGHT: other columns in 2-col mini grid */}
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+          {columns.filter(c => c !== 'none').map(col => {
+            const itemsInCol = menu.filter(item => item.foodType?.toLowerCase() === col);
+            return (
+              <div
+                key={col}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, col)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: '12px',
+                  padding: '0.85rem',
+                  minHeight: '180px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}
+              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.5rem', marginBottom: '0.25rem' }}>
+                {editingColumn === col && col !== 'none' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', width: '100%' }}>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleRenameColumn(col); if (e.key === 'Escape') setEditingColumn(null); }}
+                      style={{
+                        width: '100%',
+                        padding: '0.35rem 0.5rem',
+                        fontSize: '0.8rem',
+                        background: '#fff',
+                        color: '#0f172a',
+                        border: '2px solid #2563eb',
+                        borderRadius: '4px',
+                        outline: 'none'
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.2rem' }}>
+                      <button
+                        onClick={() => handleRenameColumn(col)}
+                        style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                      >
+                        Save
+                      </button>
+                      {!['spicy', 'sweet', 'sour'].includes(col) && (
+                        confirmingDelete === col ? (
+                          <>
+                            <button
+                              onClick={() => handleDeleteColumn(col)}
+                              style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                            >
+                              Yes, Delete
+                            </button>
+                            <button
+                              onClick={() => setConfirmingDelete(null)}
+                              style={{ background: '#64748b', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                            >
+                              No
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmingDelete(col)}
+                            style={{ background: '#ef4444', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                          >
+                            Delete
+                          </button>
+                        )
+                      )}
+                      <button
+                        onClick={() => setEditingColumn(null)}
+                        style={{ background: '#64748b', color: '#fff', border: 'none', padding: '0.25rem 0.6rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <span
+                      onClick={() => {
+                        if (col !== 'none') {
+                          setEditingColumn(col);
+                          setRenameValue(col);
+                        }
+                      }}
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        color: 'var(--accent-secondary)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        cursor: col !== 'none' ? 'pointer' : 'default',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}
+                      title={col !== 'none' ? 'Click to rename/delete column' : ''}
+                    >
+                      {col === 'none' ? 'Unclassified' : col}
+                      {col !== 'none' && <span style={{ fontSize: '0.7rem', color: '#64748b' }}>✏️</span>}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', background: 'rgba(255,255,255,0.05)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                      {itemsInCol.length}
+                    </span>
+                  </>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, minHeight: '350px' }}>
+                {itemsInCol.map(item => (
+                  <div
+                    key={item.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.6)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      cursor: 'grab',
+                      userSelect: 'none',
+                      transition: 'all 0.15s'
+                    }}
+                    onDragOver={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
+                    onDragLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.05)'}
+                  >
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.25rem' }}>
+                      <img src={item.image} alt={item.name} style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
+                      <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>{item.name}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      ₹{item.price.toFixed(2)} - {item.category}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        </div>{/* end right 2-col grid */}
+      </div>{/* end outer flex */}
+    </div>
+  );
+};
 
 interface ReceptionViewProps {
   onUpdateSettings?: (settings: any) => void;
@@ -211,7 +779,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   onAddTable,
   onRemoveTable
 }) => {
-  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations'>('waiters');
+  const [activeTab, setActiveTab] = useState<'waiters' | 'menu' | 'reservations' | 'advanced-menu'>('waiters');
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -434,6 +1002,10 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     setWaiters(updated);
     localStorage.setItem('hotel_registered_waiters', JSON.stringify(updated));
     
+    if (onUpdateSettings) {
+      onUpdateSettings({ waiters: updated });
+    }
+    
     // Broadcast updates to sync other open tabs
     const bc = new BroadcastChannel('hotel_ordering_system');
     bc.postMessage({ type: 'REQUEST_SYNC' });
@@ -596,7 +1168,22 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
             Menu Management
           </button>
           
-
+          <button 
+            onClick={() => setActiveTab('advanced-menu')} 
+            style={{ 
+              background: activeTab === 'advanced-menu' ? 'var(--bg-secondary)' : 'transparent', 
+              border: activeTab === 'advanced-menu' ? '1px solid #cbd5e1' : '1px solid transparent', 
+              color: activeTab === 'advanced-menu' ? 'var(--accent-secondary)' : '#64748b', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '8px', 
+              cursor: 'pointer', 
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif",
+              fontSize: '0.75rem'
+            }}
+          >
+            Advanced Menu Editor
+          </button>
           
           {onResetAllData && (
             <button 
@@ -621,6 +1208,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
 
       {activeTab === 'menu' ? (
         <MenuManagement />
+      ) : activeTab === 'advanced-menu' ? (
+        <AdvancedMenuEditor />
       ) : activeTab === 'reservations' ? (
         <ReservationsList reservations={reservations} onRemove={onRemoveReservation} />
       ) : (

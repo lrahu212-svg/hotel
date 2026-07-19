@@ -93,6 +93,14 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     }
   }, [loggedInWaiter, waiterId]);
 
+  const logWaiterLogin = (nameStr: string, phoneStr: string, success: boolean) => {
+    fetch('/api/login/waiter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nameStr.trim(), phone: phoneStr.trim(), success })
+    }).catch(err => console.error('Failed to log login:', err));
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
@@ -131,8 +139,10 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         window.history.pushState({}, '', `/waiter/${found.id}`);
         window.dispatchEvent(new Event('popstate'));
       }
+      logWaiterLogin(loginName, loginPhone, true);
     } else {
       setLoginError('❌ Incorrect Name or Phone Number. Please check registration at Reception.');
+      logWaiterLogin(loginName, loginPhone, false);
     }
   };
 

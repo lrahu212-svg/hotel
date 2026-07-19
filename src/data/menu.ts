@@ -13,6 +13,7 @@ export interface MenuItem {
   isProteinRich?: boolean;
   isJunk?: boolean;
   ingredients?: string[];
+  foodType?: string;
 }
 
 export const MENU_ITEMS: MenuItem[] = [
@@ -662,6 +663,11 @@ export const addMenuItem = (item: MenuItem) => {
 export const deleteMenuItem = (id: string) => {
   const items = getMenuItems();
   saveMenuItems(items.filter(i => i.id !== id));
+};
+
+export const updateMenuItem = (item: MenuItem) => {
+  const items = getMenuItems();
+  saveMenuItems(items.map(i => i.id === item.id ? item : i));
 };
 
 export const useMenu = () => {
