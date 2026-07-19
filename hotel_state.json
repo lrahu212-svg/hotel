@@ -68,12 +68,33 @@
       "timestamp": 1784463719403,
       "totalAmount": 3,
       "customerName": "h"
+    },
+    {
+      "id": "ord_i1ve071q2",
+      "tableId": "1",
+      "items": [
+        {
+          "menuItemId": "k9",
+          "quantity": 1,
+          "notes": "",
+          "name": "Oatmeal with Fresh Berries",
+          "price": 6.5
+        }
+      ],
+      "status": "Pending",
+      "timestamp": 1784470167335,
+      "totalAmount": 6.5,
+      "customerName": "h"
     }
   ],
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "h",
+      "guestsCount": 1,
+      "checkInTime": 1784470103668,
+      "openedBy": "Customer"
     },
     "2": {
       "occupied": false

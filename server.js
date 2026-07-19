@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import mongoose from 'mongoose';
 
 // Connect to MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://adminvolcano_db_user:Volcano%402026@volcano.fczkc5w.mongodb.net/volcano_db?appName=Volcano';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://adminvolcano_db_user:rahul2026@volcano.fczkc5w.mongodb.net/?appName=Volcano';
 mongoose.connect(MONGODB_URI)
   .then(async () => {
     console.log('Connected to MongoDB');
