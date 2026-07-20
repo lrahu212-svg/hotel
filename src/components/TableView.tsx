@@ -604,7 +604,7 @@ export const TableView: React.FC<TableViewProps> = ({
             <span style={{ width: '8px', height: '8px', background: 'var(--status-ready)', borderRadius: '50%', display: 'inline-block' }}></span>
             <span>Welcome to <strong>Dash Hotel</strong> | Checked In: <strong>{occupancy.customerName}</strong></span>
           </div>
-          {!isWaiterMode && !isMobile && (
+          {!isWaiterMode && (
             <button
               onClick={handleCheckOut}
               style={{
@@ -1302,26 +1302,6 @@ export const TableView: React.FC<TableViewProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('chatbot')}
-            style={{
-              background: 'none',
-              border: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.2rem',
-              color: activeTab === 'chatbot' ? 'var(--accent-primary)' : '#64748b',
-              fontSize: '0.75rem',
-              fontWeight: activeTab === 'chatbot' ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            <span style={{ fontSize: '1.25rem' }}>🤖</span>
-            Assistant
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveTab('checkout')}
             style={{
               background: 'none',
@@ -1342,7 +1322,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
           <button
             type="button"
-            onClick={handleCheckOut}
+            onClick={() => setActiveTab('chatbot')}
             style={{
               background: 'none',
               border: 'none',
@@ -1350,14 +1330,14 @@ export const TableView: React.FC<TableViewProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               gap: '0.2rem',
-              color: '#ef4444',
+              color: activeTab === 'chatbot' ? 'var(--accent-primary)' : '#64748b',
               fontSize: '0.75rem',
-              fontWeight: 500,
+              fontWeight: activeTab === 'chatbot' ? 700 : 500,
               cursor: 'pointer'
             }}
           >
-            <span style={{ fontSize: '1.25rem' }}>🚪</span>
-            Logout
+            <span style={{ fontSize: '1.25rem' }}>🤖</span>
+            Assistant
           </button>
         </div>
       )}
