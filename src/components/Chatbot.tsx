@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { MenuItem } from '../data/menu'; // Added OrderItem import
 import type { Order, OrderItem } from '../types';
 import { Bot, Send } from 'lucide-react'; // Assuming lucide-react is available
@@ -15,6 +15,7 @@ interface ChatMessage {
   text: string;
   image?: string;
   suggestedItems?: MenuItem[];
+  showCategories?: boolean;
 }
 
 export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder }) => {
