@@ -8,6 +8,7 @@ interface Waiter {
   name: string;
   phone: string;
   assignedTables: string[];
+  type?: 'table' | 'room';
 }
 
 interface WaiterViewProps {
@@ -24,6 +25,7 @@ interface WaiterViewProps {
   onCallWaiter: (tableId: string, type: 'Call Waiter' | 'Request Bill' | 'Cash Payment Collection' | 'UPI Payment Completed') => void;
   onTableCheckIn: (tableId: string, customerName: string, guestsCount: number, openedBy?: 'Customer' | 'Waiter', phone?: string) => void;
   onUpdateItemStatus?: (orderId: string, itemIndex: number, status: OrderStatus) => void;
+  waiterType?: 'table' | 'room';
 }
 
 export const WaiterView: React.FC<WaiterViewProps> = ({
@@ -38,6 +40,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
   onCallWaiter,
   onTableCheckIn,
   onUpdateItemStatus,
+  waiterType = 'table',
 }) => {
   const [orderingForTable, setOrderingForTable] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<boolean>(false);
@@ -88,10 +91,11 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
   // Auto-redirect to the specific waiter URL if logged in but visiting the generic /waiter
   useEffect(() => {
     if (loggedInWaiter && waiterId !== loggedInWaiter.id) {
-      window.history.pushState({}, '', `/waiter/${loggedInWaiter.id}`);
+      const baseRoute = waiterType === 'room' ? '/room-waiter' : '/waiter';
+      window.history.pushState({}, '', `${baseRoute}/${loggedInWaiter.id}`);
       window.dispatchEvent(new Event('popstate'));
     }
-  }, [loggedInWaiter, waiterId]);
+  }, [loggedInWaiter, waiterId, waiterType]);
 
   const logWaiterLogin = (nameStr: string, phoneStr: string, success: boolean) => {
     fetch('/api/login/waiter', {
@@ -108,10 +112,24 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     const registeredWaiters = registeredWaitersRaw ? JSON.parse(registeredWaitersRaw) : [];
     
     // Authenticate by matching Name and Phone Number across all registered waiters
-    const found = registeredWaiters.find(
+    const existsAnywhere = registeredWaiters.find(
       (w: Waiter) =>
         w.name.toLowerCase() === loginName.trim().toLowerCase() &&
         w.phone.trim() === loginPhone.trim()
+    );
+    if (existsAnywhere && (waiterType === 'room' ? existsAnywhere.type !== 'room' : existsAnywhere.type === 'room')) {
+      setLoginError(waiterType === 'room' 
+        ? '❌ Account registered as a Table Waiter. Please log in at the Table Waiter Portal.' 
+        : '❌ Account registered as a Room Waiter. Please log in at the Room Waiter Portal.');
+      logWaiterLogin(loginName, loginPhone, false);
+      return;
+    }
+
+    const found = registeredWaiters.find(
+      (w: Waiter) =>
+        w.name.toLowerCase() === loginName.trim().toLowerCase() &&
+        w.phone.trim() === loginPhone.trim() &&
+        (waiterType === 'room' ? w.type === 'room' : (!w.type || w.type === 'table'))
     );
 
     if (found) {
@@ -136,7 +154,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
 
       // Automatically redirect to the specific waiter ID URL path
       if (found.id !== waiterId) {
-        window.history.pushState({}, '', `/waiter/${found.id}`);
+        const baseRoute = waiterType === 'room' ? '/room-waiter' : '/waiter';
+        window.history.pushState({}, '', `${baseRoute}/${found.id}`);
         window.dispatchEvent(new Event('popstate'));
       }
       logWaiterLogin(loginName, loginPhone, true);
@@ -240,30 +259,26 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
 
   // Alert when Food is Ready
   useEffect(() => {
-    // Collect tables assigned to current waiter or all if unassigned
-    let myTables: string[] = [];
-    if (loggedInWaiter) {
-      myTables = loggedInWaiter.assignedTables || [];
-    } else if (waiterId) {
-      const saved = localStorage.getItem(`waiter_session_${waiterId}`);
-      if (saved) myTables = JSON.parse(saved).assignedTables || [];
-    }
-    
-    // Only alert for orders on my tables (if I have assigned tables, otherwise alert all)
-    const myReadyOrders = orders.filter(o => 
-      o.status === 'Ready' && (myTables.length === 0 || myTables.includes(o.tableId))
-    );
+    // Track ready items count across my active orders
+    const myActiveOrders = orders.filter(o => {
+      const isRoomOrder = o.tableId.startsWith('Room ');
+      const matchesType = (waiterType === 'room') ? isRoomOrder : !isRoomOrder;
+      return o.status !== 'Served' && o.status !== 'Cancelled' && matchesType;
+    });
+    const readyItemsCount = myActiveOrders.reduce((sum, o) => sum + o.items.filter(i => i.status === 'Ready').length, 0);
 
-    if (myReadyOrders.length > lastReadyCount && myReadyOrders.length > 0) {
-      const latest = myReadyOrders[myReadyOrders.length - 1];
-      showNotification(`🍽️ FOOD READY FOR TABLE ${latest.tableId}!`);
+    if (readyItemsCount > lastReadyCount) {
+      // Find the latest order with a ready item to display in the notification
+      const latestOrder = myActiveOrders.find(o => o.items.some(i => i.status === 'Ready'));
+      if (latestOrder) {
+        showNotification(`🍽️ FOOD READY FOR ${latestOrder.tableId.startsWith('Room ') ? latestOrder.tableId : 'Table ' + latestOrder.tableId}!`);
+      }
       if (soundEnabled) {
         playDing(); // Will reuse the double-bell chime
       }
     }
-    
-    setLastReadyCount(myReadyOrders.length);
-  }, [orders, soundEnabled, loggedInWaiter, waiterId, lastReadyCount]);
+    setLastReadyCount(readyItemsCount);
+  }, [orders, soundEnabled, lastReadyCount, waiterType]);
 
   const showNotification = (msg: string) => {
     setToastAlert(msg);
@@ -308,11 +323,11 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
         <form onSubmit={handleLoginSubmit} className="glass-panel" style={{ padding: '2.5rem', width: '100%', maxWidth: '420px', border: '1px solid rgba(14, 165, 233, 0.2)' }}>
           <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
             <span style={{ fontSize: '3rem' }}>🛎️</span>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
-              Waiter Login
+            <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: waiterType === 'room' ? '#a855f7' : 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
+              {waiterType === 'room' ? 'Room Waiter Login' : 'Waiter Login'}
             </h2>
             <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.5rem', lineHeight: '1.4' }}>
-              Please sign in as <strong style={{ color: 'var(--accent-secondary)' }}>{targetProfile ? targetProfile.name : 'Registered Waiter'}</strong> to access this dashboard
+              Please sign in as <strong style={{ color: waiterType === 'room' ? '#a855f7' : 'var(--accent-secondary)' }}>{targetProfile ? targetProfile.name : (waiterType === 'room' ? 'Registered Room Waiter' : 'Registered Waiter')}</strong> to access this dashboard
             </p>
           </div>
 
@@ -324,10 +339,10 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '2rem' }}>
             <div>
-              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Waiter Name
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ffffff', border: '1px solid #cbd5e1', padding: '0.75rem 1rem', borderRadius: '10px' }}>
                 <User size={16} color="var(--accent-secondary)" />
                 <input
                   type="text"
@@ -335,16 +350,16 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                   placeholder="e.g. Michael Smith"
                   value={loginName}
                   onChange={(e) => setLoginName(e.target.value)}
-                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
+                  style={{ background: 'none', border: 'none', color: '#000000', outline: 'none', fontSize: '0.9rem', width: '100%' }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Phone Number
               </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', padding: '0.75rem 1rem', borderRadius: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#ffffff', border: '1px solid #cbd5e1', padding: '0.75rem 1rem', borderRadius: '10px' }}>
                 <Users size={16} color="var(--accent-secondary)" />
                 <input
                   type="tel"
@@ -352,7 +367,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                   placeholder="e.g. 9876543210"
                   value={loginPhone}
                   onChange={(e) => setLoginPhone(e.target.value)}
-                  style={{ background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.9rem', width: '100%' }}
+                  style={{ background: 'none', border: 'none', color: '#000000', outline: 'none', fontSize: '0.9rem', width: '100%' }}
                 />
               </div>
             </div>
@@ -362,7 +377,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
             type="submit"
             style={{
               width: '100%',
-              background: 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)',
+              background: waiterType === 'room' ? 'linear-gradient(135deg, #a855f7 0%, #d8b4fe 100%)' : 'linear-gradient(135deg, var(--accent-secondary) 0%, #06b6d4 100%)',
               color: '#0f172a',
               border: 'none',
               padding: '0.9rem',
@@ -370,7 +385,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
               cursor: 'pointer',
               fontWeight: 700,
               fontSize: '1rem',
-              boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+              boxShadow: waiterType === 'room' ? '0 4px 15px rgba(168, 85, 247, 0.3)' : '0 4px 15px rgba(6, 182, 212, 0.3)',
               transition: 'all 0.2s'
             }}
           >
@@ -381,12 +396,10 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     );
   }
   const totalTablesCount = parseInt(localStorage.getItem('owner_tables_count') || '4', 10);
+  const tables = Array.from({ length: totalTablesCount }, (_, i) => (i + 1).toString());
   const registeredWaitersRaw = localStorage.getItem('hotel_registered_waiters');
   const registeredWaiters: Waiter[] = registeredWaitersRaw ? JSON.parse(registeredWaitersRaw) : [];
 
-  // Instant Spot-Decision table assignment: distribute total tables equally round-robin among active/logged-in waiters on the fly
-  const total = totalTablesCount;
-  
   // Filter registered waiters to only those currently logged in
   const activeRegisteredWaiters = registeredWaiters.filter(w => activeWaitersState.includes(w.id));
   const targetWaiters = activeRegisteredWaiters.length > 0 ? activeRegisteredWaiters : registeredWaiters;
@@ -395,16 +408,31 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
   if (targetWaiters.length > 0) {
     // Sort to ensure consistent round-robin distribution order
     const sortedTargetWaiters = [...targetWaiters].sort((a, b) => a.id.localeCompare(b.id));
-    for (let i = 1; i <= total; i++) {
-      const tableIdStr = i.toString();
-      const waiterIndex = (i - 1) % sortedTargetWaiters.length;
-      const assignedWaiter = sortedTargetWaiters[waiterIndex];
-      // Assign the table to this waiter in the distributed list
-      const match = distributedWaiters.find(w => w.id === assignedWaiter.id);
-      if (match) {
-        match.assignedTables.push(tableIdStr);
-      }
+    
+    const savedRooms = localStorage.getItem('hotel_configured_rooms');
+    const roomsList = savedRooms ? (JSON.parse(savedRooms) as string[]) : [];
+
+    const tableWaiters = sortedTargetWaiters.filter(w => !w.type || w.type === 'table');
+    const roomWaiters = sortedTargetWaiters.filter(w => w.type === 'room');
+
+    if (tableWaiters.length > 0) {
+      tables.forEach((tableId, index) => {
+        const waiterIndex = index % tableWaiters.length;
+        const targetId = tableWaiters[waiterIndex].id;
+        const waiter = distributedWaiters.find(w => w.id === targetId);
+        if (waiter) waiter.assignedTables.push(tableId);
+      });
     }
+
+    if (roomWaiters.length > 0) {
+      roomsList.forEach((roomName, index) => {
+        const waiterIndex = index % roomWaiters.length;
+        const targetId = roomWaiters[waiterIndex].id;
+        const waiter = distributedWaiters.find(w => w.id === targetId);
+        if (waiter) waiter.assignedTables.push(roomName);
+      });
+    }
+
     // Update local storage if distribution changed to keep it in sync
     const currentSerialized = JSON.stringify(distributedWaiters);
     if (localStorage.getItem('hotel_registered_waiters') !== currentSerialized) {
@@ -416,28 +444,47 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
     }
   }
 
-  // Reload current logged in waiter state if assignments changed
   const currentAssignedWaiter = distributedWaiters.find(w => w.id === loggedInWaiter?.id);
   const currentWaiterAssignedTables = currentAssignedWaiter ? currentAssignedWaiter.assignedTables : (loggedInWaiter ? loggedInWaiter.assignedTables : []);
-
-  // Filter requests (only show tables assigned to the logged-in waiter)
   const assignedTables = currentWaiterAssignedTables;
 
   const activeRequests = requests
-    .filter(r => r.status === 'Pending' && assignedTables.includes(r.tableId))
+    .filter(r => {
+      const isRoomReq = r.tableId.startsWith('Room ');
+      const matchesType = (waiterType === 'room') ? isRoomReq : !isRoomReq;
+      return r.status === 'Pending' && matchesType;
+    })
     .sort((a, b) => b.timestamp - a.timestamp);
     
   const resolvedRequests = requests
-    .filter(r => r.status === 'Resolved' && assignedTables.includes(r.tableId))
+    .filter(r => {
+      const isRoomReq = r.tableId.startsWith('Room ');
+      const matchesType = (waiterType === 'room') ? isRoomReq : !isRoomReq;
+      return r.status === 'Resolved' && matchesType;
+    })
     .sort((a, b) => b.timestamp - a.timestamp);
 
-  // Filter active orders (Pending, Preparing, Ready) to show on Waiter Dashboard
+  // Filter active orders (Pending, Preparing, Ready, or Served but occupied rooms) to show on Waiter Dashboard
   const activeWaiterOrders = orders
-    .filter(o => o.status !== 'Served' && o.status !== 'Cancelled' && assignedTables.includes(o.tableId))
+    .filter(o => {
+      const isRoomOrder = o.tableId.startsWith('Room ');
+      const matchesType = (waiterType === 'room') ? isRoomOrder : !isRoomOrder;
+      if (!matchesType) return false;
+      if (o.status === 'Cancelled') return false;
+      if (waiterType === 'room') {
+        const isOccupied = tablesOccupancy[o.tableId]?.occupied;
+        return o.status !== 'Served' || isOccupied;
+      }
+      return o.status !== 'Served';
+    })
     .sort((a, b) => a.timestamp - b.timestamp);
     
   const servedOrders = orders
-    .filter(o => o.status === 'Served' && assignedTables.includes(o.tableId))
+    .filter(o => {
+      const isRoomOrder = o.tableId.startsWith('Room ');
+      const matchesType = (waiterType === 'room') ? isRoomOrder : !isRoomOrder;
+      return o.status === 'Served' && matchesType;
+    })
     .sort((a, b) => b.timestamp - a.timestamp);
 
   if (isMobile) {
@@ -501,7 +548,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
             </button>
             <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Outfit', sans-serif" }}>
               {activeTab === 'tasks' && 'Active Tasks'}
-              {activeTab === 'tables' && 'Table Map'}
+              {activeTab === 'tables' && (waiterType === 'room' ? 'Room Map' : 'Table Map')}
               {activeTab === 'history' && 'History Log'}
             </h1>
           </div>
@@ -518,9 +565,9 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                 alignItems: 'center'
               }}
             >
-              {soundEnabled ? <Volume2 size={20} color="var(--accent-primary)" /> : <VolumeX size={20} color="#64748b" />}
+              {soundEnabled ? <Volume2 size={20} color={waiterType === 'room' ? '#a855f7' : 'var(--accent-primary)'} /> : <VolumeX size={20} color="#64748b" />}
             </button>
-            <span style={{ fontSize: '0.65rem', background: 'var(--accent-secondary-glow)', color: 'var(--accent-secondary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+            <span style={{ fontSize: '0.65rem', background: waiterType === 'room' ? 'rgba(168, 85, 247, 0.1)' : 'var(--accent-secondary-glow)', color: waiterType === 'room' ? '#a855f7' : 'var(--accent-secondary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
               {waiterName.split(' ')[0]}
             </span>
           </div>
@@ -555,7 +602,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                   <div>
                     <span style={{ fontWeight: 800, fontSize: '1.25rem', color: '#0f172a', fontFamily: "'Outfit', sans-serif" }}>
-                      Waiter Menu
+                      {waiterType === 'room' ? 'Room Waiter Menu' : 'Waiter Menu'}
                     </span>
                     <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>{waiterName}</p>
                   </div>
@@ -577,8 +624,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                       padding: '0.85rem 1rem',
                       borderRadius: '10px',
                       border: 'none',
-                      background: activeTab === 'tasks' ? 'var(--accent-secondary-glow)' : 'transparent',
-                      color: activeTab === 'tasks' ? 'var(--accent-secondary)' : '#475569',
+                      background: activeTab === 'tasks' ? (waiterType === 'room' ? 'rgba(168, 85, 247, 0.15)' : 'var(--accent-secondary-glow)') : 'transparent',
+                      color: activeTab === 'tasks' ? (waiterType === 'room' ? '#a855f7' : 'var(--accent-secondary)') : '#475569',
                       fontWeight: activeTab === 'tasks' ? 700 : 500,
                       cursor: 'pointer',
                       textAlign: 'left',
@@ -589,26 +636,30 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                     Active Tasks ({activeWaiterOrders.length + activeRequests.length})
                   </button>
                   
-                  <button
-                    onClick={() => { setActiveTab('tables'); setMenuOpen(false); }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.85rem 1rem',
-                      borderRadius: '10px',
-                      border: 'none',
-                      background: activeTab === 'tables' ? 'var(--accent-secondary-glow)' : 'transparent',
-                      color: activeTab === 'tables' ? 'var(--accent-secondary)' : '#475569',
-                      fontWeight: activeTab === 'tables' ? 700 : 500,
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    <Layers size={18} />
-                    Table Map ({assignedTables.length})
-                  </button>
+                  {waiterType !== 'room' && (
+                    <button
+                      onClick={() => { setActiveTab('tables'); setMenuOpen(false); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.85rem 1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: activeTab === 'tables' ? 'var(--accent-secondary-glow)' : 'transparent',
+                        color: activeTab === 'tables' ? 'var(--accent-secondary)' : '#475569',
+                        fontWeight: activeTab === 'tables' ? 700 : 500,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        fontSize: '0.9rem'
+                      }}
+                    >
+                      <Layers size={18} />
+                      Table Map ({assignedTables.length})
+                    </button>
+                  )}
+                  
+
 
                   <button
                     onClick={() => { setActiveTab('history'); setMenuOpen(false); }}
@@ -688,38 +739,79 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                     <div key={order.id} style={{ background: 'rgba(14, 165, 233, 0.03)', border: '1px solid rgba(14, 165, 233, 0.1)', padding: '0.85rem', borderRadius: '10px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <div>
-                          <strong style={{ fontSize: '0.95rem', color: 'var(--accent-primary)' }}>Table {order.tableId}</strong>
+                          <strong style={{ fontSize: '0.95rem', color: order.tableId.startsWith('Room ') ? '#a855f7' : 'var(--accent-primary)' }}>{order.tableId.startsWith('Room ') ? order.tableId : `Table ${order.tableId}`}</strong>
                           <span style={{ fontSize: '0.7rem', color: '#64748b', marginLeft: '0.4rem' }}>
                             {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        {order.status === 'Ready' && (
-                          <button
-                            onClick={() => onServeOrder(order.id, waiterName)}
-                            style={{ background: '#0f172a', border: 'none', color: '#fff', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
-                          >
-                            Serve All
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          {order.status !== 'Served' && (order.status === 'Ready' || order.items.some(i => i.status === 'Ready')) && (
+                            <button
+                              onClick={() => {
+                                // Serve all ready items
+                                order.items.forEach((item, idx) => {
+                                  if (item.status === 'Ready' || item.status === 'Preparing' || item.status === 'Pending') {
+                                    onUpdateItemStatus?.(order.id, idx, 'Served');
+                                  }
+                                });
+                                // Mark order served
+                                onServeOrder(order.id, waiterName);
+                              }}
+                              style={{ background: '#0f172a', border: 'none', color: '#fff', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                               {waiterType === 'room' ? 'Delivered' : 'Serve All'}
+                            </button>
+                          )}
+                          {waiterType === 'room' && order.status === 'Served' && (
+                            <button
+                              onClick={() => {
+                                onCheckOutTable(order.tableId);
+                              }}
+                              style={{ background: '#10b981', border: 'none', color: '#fff', padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              Payment Done
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
                       <div style={{ background: '#ffffff', padding: '0.65rem', borderRadius: '6px', border: '1px solid var(--border-glass)' }}>
                         {order.items.map((item, index) => {
+                          if ((item.status as any) === 'Cancelled') return null;
+                          const isCancelled = (item.status as any) === 'Cancelled';
                           const isServed = item.status === 'Served' || order.status === 'Served';
                           const isReady = item.status === 'Ready' || order.status === 'Ready';
                           return (
                             <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.2rem 0', fontSize: '0.8rem' }}>
-                              <span style={{ color: '#1e293b', textDecoration: isServed ? 'line-through' : 'none', opacity: isServed ? 0.5 : 1 }}>
-                                <strong>{item.quantity}x</strong> {item.name}
+                              <span style={{ 
+                                color: isCancelled ? '#ef4444' : '#1e293b', 
+                                textDecoration: (isServed || isCancelled) ? 'line-through' : 'none', 
+                                opacity: (isServed || isCancelled) ? 0.5 : 1 
+                              }}>
+                                <strong>{item.quantity}x</strong> {item.name} {isCancelled && '(Cancelled)'}
                               </span>
-                              {isReady && !isServed && (
-                                <button
-                                  onClick={() => onUpdateItemStatus?.(order.id, index, 'Served')}
-                                  style={{ background: 'rgba(16, 185, 129, 0.15)', border: 'none', color: '#10b981', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}
-                                >
-                                  Serve
-                                </button>
-                              )}
+                              <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                {isReady && !isServed && !isCancelled && waiterType !== 'room' && (
+                                  <button
+                                    onClick={() => onUpdateItemStatus?.(order.id, index, 'Served')}
+                                    style={{ background: 'rgba(16, 185, 129, 0.15)', border: 'none', color: '#10b981', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}
+                                  >
+                                    Serve
+                                  </button>
+                                )}
+                                {!isServed && !isCancelled && waiterType !== 'room' && (
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`Cancel ${item.name} from Table ${order.tableId}?`)) {
+                                        onUpdateItemStatus?.(order.id, index, 'Cancelled');
+                                      }
+                                    }}
+                                    style={{ background: 'rgba(239, 68, 68, 0.15)', border: 'none', color: '#ef4444', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}
+                                  >
+                                    Cancel
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           );
                         })}
@@ -753,7 +845,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                         border: `1px solid ${isBill ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)'}`
                       }}>
                         <div>
-                          <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>Table {req.tableId}</strong>
+                          <strong style={{ fontSize: '0.9rem', color: req.tableId.startsWith('Room ') ? '#a855f7' : '#0f172a' }}>{req.tableId.startsWith('Room ') ? req.tableId : `Table ${req.tableId}`}</strong>
                           <span style={{ fontSize: '0.75rem', display: 'block', color: '#475569', marginTop: '0.15rem' }}>{req.type}</span>
                         </div>
                         <button
@@ -776,26 +868,29 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
           </div>
         )}
 
+
+
         {activeTab === 'tables' && (
           <div className="glass-panel" style={{ padding: '1.25rem' }}>
             <h2 style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Layers size={16} /> Table Overview
+              <Layers size={16} /> {waiterType === 'room' ? 'Room Overview' : 'Table Overview'}
             </h2>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-              {assignedTables.map(tableId => {
+              {tables.map(tableId => {
                 const occ = tablesOccupancy[tableId] || { occupied: false };
                 const isAssignedToMe = currentWaiterAssignedTables.includes(tableId);
+                const isRoom = tableId.startsWith('Room ');
 
                 return (
                   <div key={tableId} style={{
                     padding: '0.85rem',
-                    background: '#ffffff',
-                    border: isAssignedToMe ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
+                    background: isRoom ? '#faf5ff' : '#ffffff',
+                    border: isAssignedToMe ? (isRoom ? '1px solid #a855f7' : '1px solid var(--accent-primary)') : '1px solid var(--border-glass)',
                     borderRadius: '10px'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Table {tableId}</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.85rem', color: isRoom ? '#000000' : '#000' }}>{isRoom ? tableId : `Table ${tableId}`}</span>
                       <span style={{
                         fontSize: '0.6rem',
                         fontWeight: 700,
@@ -815,13 +910,15 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                         <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
                           {!paymentStep[tableId] && (
                             <>
-                              <button
-                                onClick={() => setOrderingForTable(tableId)}
-                                disabled={occ.openedBy !== 'Waiter'}
-                                style={{ background: 'rgba(14, 165, 233, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem 0.35rem', fontSize: '0.65rem', fontWeight: 600, flex: 1 }}
-                              >
-                                Order
-                              </button>
+                              {waiterType !== 'room' && (
+                                <button
+                                  onClick={() => setOrderingForTable(tableId)}
+                                  disabled={occ.openedBy !== 'Waiter'}
+                                  style={{ background: 'rgba(14, 165, 233, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem 0.35rem', fontSize: '0.65rem', fontWeight: 600, flex: 1 }}
+                                >
+                                  Order
+                                </button>
+                              )}
                               <button
                                 onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
                                 style={{ background: 'rgba(16, 185, 129, 0.1)', border: 'none', borderRadius: '4px', color: 'var(--status-ready)', padding: '0.2rem 0.35rem', fontSize: '0.65rem', fontWeight: 600, flex: 1 }}
@@ -849,7 +946,11 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                       </div>
                     ) : (
                       <div style={{ marginTop: '0.4rem' }}>
-                        {checkInPrompt === tableId ? (
+                        {waiterType === 'room' ? (
+                          <div style={{ textAlign: 'center', fontSize: '0.65rem', color: '#94a3b8', fontStyle: 'italic', padding: '0.2rem' }}>
+                            Vacant (Guest must order)
+                          </div>
+                        ) : checkInPrompt === tableId ? (
                           <input
                             autoFocus
                             type="text"
@@ -891,7 +992,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {servedOrders.slice(0, 10).map(order => (
                   <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(0,0,0,0.04)', fontSize: '0.75rem' }}>
-                    <span>Table {order.tableId} ({order.items.length} items)</span>
+                    <span>{order.tableId.startsWith('Room ') ? order.tableId : `Table ${order.tableId}`} ({order.items.length} items)</span>
                     <span style={{ fontWeight: 700, color: 'var(--status-ready)' }}>₹{order.totalAmount.toFixed(0)}</span>
                   </div>
                 ))}
@@ -905,7 +1006,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {resolvedRequests.slice(0, 10).map(req => (
                   <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.4rem', borderBottom: '1px solid rgba(0,0,0,0.04)', fontSize: '0.75rem', color: '#64748b' }}>
-                    <span>Table {req.tableId} ({req.type})</span>
+                    <span>{req.tableId.startsWith('Room ') ? req.tableId : `Table ${req.tableId}`} ({req.type})</span>
                     <span>Done</span>
                   </div>
                 ))}
@@ -926,7 +1027,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
             overflowY: 'auto'
           }}>
             <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '0.85rem', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h2 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>Table {orderingForTable} Order</h2>
+              <h2 style={{ margin: 0, color: '#fff', fontSize: '1.1rem', fontWeight: 800 }}>{orderingForTable.startsWith('Room ') ? orderingForTable : `Table ${orderingForTable}`} Order</h2>
               <button 
                 onClick={() => setOrderingForTable(null)}
                 style={{ background: 'rgba(14, 165, 233, 0.15)', border: 'none', color: '#38bdf8', borderRadius: '6px', padding: '0.35rem 0.75rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem' }}
@@ -1087,36 +1188,64 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                   ? `Partially Served (${order.items.filter(i => i.status === 'Served').length}/${order.items.length})`
                                   : order.status}
                               </span>
-                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
                                 {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </div>
-                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-primary)' }}>Table {order.tableId}</h3>
-                          </div>
-                          
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            {order.status === 'Ready' && (
-                              <button
-                                onClick={() => {
-                                  onServeOrder(order.id, loggedInWaiter?.name || 'Waiter');
-                                }}
-                                style={{
-                                  background: '#0f172a',
-                                  border: 'none',
-                                  color: '#fff',
-                                  padding: '0.5rem 1rem',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  fontWeight: 600,
-                                  fontSize: '0.85rem',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem'
-                                }}
-                              >
-                                <Check size={14} /> Serve All
-                              </button>
-                            )}
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: order.tableId.startsWith('Room ') ? '#a855f7' : 'var(--accent-primary)' }}>{order.tableId.startsWith('Room ') ? order.tableId : `Table ${order.tableId}`}</h3>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                             {order.status !== 'Served' && (order.status === 'Ready' || order.items.some(i => i.status === 'Ready')) && (
+                               <button
+                                 onClick={() => {
+                                   // Serve all ready items
+                                   order.items.forEach((item, idx) => {
+                                     if (item.status === 'Ready' || item.status === 'Preparing' || item.status === 'Pending') {
+                                       onUpdateItemStatus?.(order.id, idx, 'Served');
+                                     }
+                                   });
+                                   // Mark order served
+                                   onServeOrder(order.id, loggedInWaiter?.name || 'Waiter');
+                                 }}
+                                 style={{
+                                   background: '#0f172a',
+                                   border: 'none',
+                                   color: '#fff',
+                                   padding: '0.5rem 1rem',
+                                   borderRadius: '8px',
+                                   cursor: 'pointer',
+                                   fontWeight: 600,
+                                   fontSize: '0.85rem',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   gap: '0.25rem'
+                                 }}
+                               >
+                                 <Check size={14} /> {waiterType === 'room' ? 'Delivered' : 'Serve All'}
+                               </button>
+                             )}
+                             {waiterType === 'room' && order.status === 'Served' && (
+                               <button
+                                 onClick={() => {
+                                   onCheckOutTable(order.tableId);
+                                 }}
+                                 style={{
+                                   background: '#10b981',
+                                   border: 'none',
+                                   color: '#fff',
+                                   padding: '0.5rem 1rem',
+                                   borderRadius: '8px',
+                                   cursor: 'pointer',
+                                   fontWeight: 600,
+                                   fontSize: '0.85rem',
+                                   display: 'flex',
+                                   alignItems: 'center',
+                                   gap: '0.25rem'
+                                 }}
+                               >
+                                 <Check size={14} /> Payment Done
+                               </button>
+                             )}
+                           </div>
                           </div>
                         </div>
 
@@ -1124,37 +1253,69 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                           <h4 style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Items to Serve</h4>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {order.items.map((item, index) => {
+                              if ((item.status as any) === 'Cancelled') return null;
+                              const isCancelled = (item.status as any) === 'Cancelled';
                               const isServed = item.status === 'Served' || order.status === 'Served';
                               const isReady = item.status === 'Ready' || order.status === 'Ready';
                               
                               return (
                                 <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.9rem', color: '#1e293b', textDecoration: isServed ? 'line-through' : 'none', opacity: isServed ? 0.5 : 1 }}>
-                                    <strong style={{ color: 'var(--accent-primary)' }}>{item.quantity}x</strong> {item.name}
+                                  <span style={{ 
+                                    fontSize: '0.9rem', 
+                                    color: isCancelled ? '#ef4444' : '#1e293b', 
+                                    textDecoration: (isServed || isCancelled) ? 'line-through' : 'none', 
+                                    opacity: (isServed || isCancelled) ? 0.5 : 1 
+                                  }}>
+                                    <strong style={{ color: 'var(--accent-primary)' }}>{item.quantity}x</strong> {item.name} {isCancelled && '(Cancelled)'}
                                   </span>
-                                  {isReady && !isServed && (
-                                    <button
-                                      onClick={() => {
-                                        if (onUpdateItemStatus) {
-                                          onUpdateItemStatus(order.id, index, 'Served');
-                                        }
-                                      }}
-                                      style={{
-                                        background: 'rgba(16, 185, 129, 0.2)',
-                                        border: '1px solid rgba(16, 185, 129, 0.4)',
-                                        color: '#10b981',
-                                        padding: '0.25rem 0.5rem',
-                                        borderRadius: '6px',
-                                        fontSize: '0.75rem',
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.25rem'
-                                      }}
-                                    >
-                                      <Check size={12} /> Serve
-                                    </button>
-                                  )}
+                                  <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                    {isReady && !isServed && !isCancelled && waiterType !== 'room' && (
+                                      <button
+                                        onClick={() => {
+                                          if (onUpdateItemStatus) {
+                                            onUpdateItemStatus(order.id, index, 'Served');
+                                          }
+                                        }}
+                                        style={{
+                                          background: 'rgba(16, 185, 129, 0.2)',
+                                          border: '1px solid rgba(16, 185, 129, 0.4)',
+                                          color: '#10b981',
+                                          padding: '0.25rem 0.5rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.25rem'
+                                        }}
+                                      >
+                                        <Check size={12} /> Serve
+                                      </button>
+                                    )}
+                                    {!isServed && !isCancelled && waiterType !== 'room' && (
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm(`Cancel ${item.name} from Table ${order.tableId}?`)) {
+                                            onUpdateItemStatus?.(order.id, index, 'Cancelled');
+                                          }
+                                        }}
+                                        style={{
+                                          background: 'rgba(239, 68, 68, 0.2)',
+                                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                                          color: '#ef4444',
+                                          padding: '0.25rem 0.5rem',
+                                          borderRadius: '6px',
+                                          fontSize: '0.75rem',
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '0.25rem'
+                                        }}
+                                      >
+                                        Cancel
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
@@ -1208,8 +1369,8 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                                 {new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                               </span>
                             </div>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--accent-secondary)' }}>
-                              {req.tableId === 'System' ? 'System Warning' : `Table ${req.tableId}`}
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: req.tableId.startsWith('Room ') ? '#a855f7' : 'var(--accent-secondary)' }}>
+                              {req.tableId === 'System' ? 'System Warning' : (req.tableId.startsWith('Room ') ? req.tableId : `Table ${req.tableId}`)}
                             </h3>
                             {req.text && (
                               <p style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.25rem' }}>{req.text}</p>
@@ -1247,248 +1408,240 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
               </div>
             </div>
           </div>
-
-          {/* RIGHT SIDE: Table Occupancy Map (Always visible in 3 lines / 3 columns grid on the side) */}
-          <div className="glass-panel waiter-right-panel">
-            <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Layers size={18} color="var(--accent-primary)" /> Table Map
-            </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '0.75rem' }}>
-              {assignedTables.length === 0 ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: '#64748b' }}>
-                  <Layers size={36} style={{ opacity: 0.15, marginBottom: '0.75rem' }} />
-                  <p style={{ margin: 0, fontSize: '0.95rem' }}>No tables available.</p>
-                </div>
-              ) : (
-                assignedTables.map((tableId) => {
+          {/* RIGHT SIDE: Table & Room Map */}
+          {waiterType !== 'room' && (
+            <div className="glass-panel waiter-right-panel">
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#1e293b', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Layers size={18} color="var(--accent-primary)" /> Table Map
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '0.75rem' }}>
+                {tables.map((tableId) => {
                   const occ = tablesOccupancy[tableId] || { occupied: false };
-                  const assignedWaiter = distributedWaiters.find(w => w.assignedTables.includes(tableId));
-                  const isAssignedToMe = currentWaiterAssignedTables.includes(tableId);
-                  
-                  return (
-                    <div key={tableId} style={{
-                      padding: '1.25rem',
-                      background: '#ffffff',
-                      border: isAssignedToMe ? '1px solid var(--accent-primary)' : '1px solid var(--border-glass)',
-                      borderRadius: '12px',
-                      boxShadow: isAssignedToMe ? '0 4px 12px rgba(37, 99, 235, 0.05)' : '0 4px 6px -1px rgba(0, 0, 0, 0.03)',
-                      transition: 'all 0.2s ease-in-out'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                        <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
-                          Table {tableId}
-                          {isAssignedToMe && <span style={{ fontSize: '0.65rem', color: 'var(--accent-secondary)', marginLeft: '0.4rem' }}>(Mine)</span>}
-                        </h3>
-                        <span style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 750,
-                          color: occ.occupied ? 'var(--status-cancelled)' : 'var(--status-ready)',
-                          padding: '0.1rem 0.35rem',
-                          borderRadius: '4px',
-                          textTransform: 'uppercase',
-                          background: occ.occupied ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
-                        }}>
-                          {occ.occupied ? 'Occupied' : 'Vacant'}
-                        </span>
-                      </div>
-
-                      {assignedWaiter && (
-                        <p style={{ margin: '0.15rem 0 0.4rem 0', fontSize: '0.7rem', color: '#94a3b8' }}>
-                          Waiter: <strong>{assignedWaiter.name}</strong>
-                        </p>
-                      )}
-
-                      {occ.occupied ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                          <span style={{ fontSize: '0.75rem', color: '#475569' }}>
-                            👤 <strong>{occ.customerName}</strong> ({occ.guestsCount}) {occ.openedBy !== 'Waiter' && <span style={{ color: 'var(--accent-primary)', fontSize: '0.65rem' }}>[Customer]</span>}
+                    const assignedWaiter = distributedWaiters.find(w => w.assignedTables.includes(tableId));
+                    const isAssignedToMe = currentWaiterAssignedTables.includes(tableId);
+                    const isRoom = tableId.startsWith('Room ');
+                    
+                    return (
+                      <div key={tableId} style={{
+                        padding: '1.25rem',
+                        background: isRoom ? '#faf5ff' : '#ffffff',
+                        border: isAssignedToMe ? (isRoom ? '1px solid #a855f7' : '1px solid var(--accent-primary)') : '1px solid var(--border-glass)',
+                        borderRadius: '12px',
+                        boxShadow: isAssignedToMe ? '0 4px 12px rgba(37, 99, 235, 0.05)' : '0 4px 6px -1px rgba(0, 0, 0, 0.03)',
+                        transition: 'all 0.2s ease-in-out'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                          <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0, color: isRoom ? '#000000' : '#000' }}>
+                            {isRoom ? tableId : `Table ${tableId}`}
+                            {isAssignedToMe && <span style={{ fontSize: '0.65rem', color: 'var(--accent-secondary)', marginLeft: '0.4rem' }}>(Mine)</span>}
+                          </h3>
+                          <span style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 750,
+                            color: occ.occupied ? 'var(--status-cancelled)' : 'var(--status-ready)',
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            background: occ.occupied ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                          }}>
+                            {occ.occupied ? 'Occupied' : 'Vacant'}
                           </span>
-                          <div style={{ display: 'flex', gap: '0.35rem', width: '100%', flexWrap: 'wrap' }}>
-                            {!paymentStep[tableId] && (
-                              <>
-                                <button
-                                  onClick={() => setOrderingForTable(tableId)}
-                                  disabled={occ.openedBy !== 'Waiter'}
-                                  style={{
-                                    background: occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.02)' : 'rgba(14, 165, 233, 0.1)',
-                                    border: `1px solid ${occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(14, 165, 233, 0.2)'}`,
-                                    borderRadius: '6px',
-                                    color: occ.openedBy !== 'Waiter' ? '#475569' : 'var(--status-ready)',
-                                    padding: '0.25rem 0.4rem',
-                                    fontSize: '0.7rem',
-                                    cursor: occ.openedBy !== 'Waiter' ? 'not-allowed' : 'pointer',
-                                    fontWeight: 600,
-                                    flex: '1 1 auto'
-                                  }}
-                                  title={occ.openedBy !== 'Waiter' ? "Ordering disabled for customer-owned tables" : "Add Order"}
-                                >
-                                  Order
-                                </button>
-                                
-                                <button
-                                  onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
-                                  style={{
-                                    background: 'rgba(16, 185, 129, 0.1)',
-                                    border: '1px solid rgba(16, 185, 129, 0.2)',
-                                    borderRadius: '6px',
-                                    color: 'var(--status-ready)',
-                                    padding: '0.25rem 0.4rem',
-                                    fontSize: '0.7rem',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    flex: '1 1 auto'
-                                  }}
-                                  title="Record Payment & Settle"
-                                >
-                                  Settle
-                                </button>
-                                
+                        </div>
+
+                        {assignedWaiter && (
+                          <p style={{ margin: '0.15rem 0 0.4rem 0', fontSize: '0.7rem', color: '#94a3b8' }}>
+                            Waiter: <strong>{assignedWaiter.name}</strong>
+                          </p>
+                        )}
+
+                        {occ.occupied ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#475569' }}>
+                              👤 <strong>{occ.customerName}</strong> ({occ.guestsCount}) {occ.openedBy !== 'Waiter' && <span style={{ color: 'var(--accent-primary)', fontSize: '0.65rem' }}>[Customer]</span>}
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.35rem', width: '100%', flexWrap: 'wrap' }}>
+                              {!paymentStep[tableId] && (
+                                <>
+                                  <button
+                                    onClick={() => setOrderingForTable(tableId)}
+                                    disabled={occ.openedBy !== 'Waiter'}
+                                    style={{
+                                      background: occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.02)' : 'rgba(14, 165, 233, 0.1)',
+                                      border: `1px solid ${occ.openedBy !== 'Waiter' ? 'rgba(255,255,255,0.05)' : 'rgba(14, 165, 233, 0.2)'}`,
+                                      borderRadius: '6px',
+                                      color: occ.openedBy !== 'Waiter' ? '#475569' : 'var(--status-ready)',
+                                      padding: '0.25rem 0.4rem',
+                                      fontSize: '0.7rem',
+                                      cursor: occ.openedBy !== 'Waiter' ? 'not-allowed' : 'pointer',
+                                      fontWeight: 600,
+                                      flex: '1 1 auto'
+                                    }}
+                                    title={occ.openedBy !== 'Waiter' ? "Ordering disabled for customer-owned tables" : "Add Order"}
+                                  >
+                                    Order
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'SELECT' }))}
+                                    style={{
+                                      background: 'rgba(16, 185, 129, 0.1)',
+                                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                                      borderRadius: '6px',
+                                      color: 'var(--status-ready)',
+                                      padding: '0.25rem 0.4rem',
+                                      fontSize: '0.7rem',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      flex: '1 1 auto'
+                                    }}
+                                    title="Record Payment & Settle"
+                                  >
+                                    Settle
+                                  </button>
+                                  
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`Are you sure you want to clear ${tableId.startsWith('Room ') ? tableId : 'Table ' + tableId}?`)) {
+                                        onCheckOutTable(tableId);
+                                      }
+                                    }}
+                                    style={{
+                                      background: 'rgba(239, 68, 68, 0.1)',
+                                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                                      borderRadius: '6px',
+                                      color: '#ef4444',
+                                      padding: '0.25rem 0.4rem',
+                                      fontSize: '0.7rem',
+                                      cursor: 'pointer',
+                                      fontWeight: 600,
+                                      flex: '1 1 auto'
+                                    }}
+                                    title="Force Clear/Checkout Table"
+                                  >
+                                    Clear
+                                  </button>
+                                </>
+                              )}
+                              
+                              {paymentStep[tableId] === 'SELECT' && (
+                                <div style={{ display: 'flex', gap: '0.25rem', flex: 1 }}>
+                                  <button
+                                    onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'CASH_CONFIRM' }))}
+                                    style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, flex: 1 }}
+                                  >
+                                    Cash
+                                  </button>
+                                  <button
+                                    onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'UPI_CONFIRM' }))}
+                                    style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px', color: '#38bdf8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, flex: 1 }}
+                                  >
+                                    UPI
+                                  </button>
+                                  <button
+                                    onClick={() => setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; })}
+                                    style={{ background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '6px', color: '#94a3b8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, width: '30px' }}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )}
+
+                              {paymentStep[tableId] === 'CASH_CONFIRM' && (
                                 <button
                                   onClick={() => {
-                                    console.log('WaiterView: Clear button clicked for tableId:', tableId);
-                                    if (window.confirm(`Are you sure you want to clear Table ${tableId}? This resets table occupancy and resolves requests.`)) {
-                                      console.log('WaiterView: Clear confirmed. Calling onCheckOutTable for tableId:', tableId);
-                                      onCheckOutTable(tableId);
+                                    onCheckOutTable(tableId, 'Cash');
+                                    setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; });
+                                  }}
+                                  style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid var(--status-ready)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, flex: 1 }}
+                                >
+                                  Cash Paid ✅
+                                </button>
+                              )}
+
+                              {paymentStep[tableId] === 'UPI_CONFIRM' && (
+                                <button
+                                  onClick={() => {
+                                    onCheckOutTable(tableId, 'UPI');
+                                    setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; });
+                                  }}
+                                  style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', borderRadius: '6px', color: '#38bdf8', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, flex: 1 }}
+                                >
+                                  UPI Paid ✅
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <p style={{ fontSize: '0.7rem', color: '#64748b', margin: 0, fontWeight: 700 }}>Status: Settled</p>
+                            </div>
+                            
+                            {checkInPrompt === tableId ? (
+                              <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                <input
+                                  autoFocus
+                                  type="text"
+                                  placeholder="Client Name"
+                                  value={tempName}
+                                  onChange={(e) => setTempName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && tempName.trim()) {
+                                      onTableCheckIn(tableId, tempName.trim(), 1, 'Waiter');
+                                      setOrderingForTable(tableId);
+                                      setCheckInPrompt(null);
                                     }
                                   }}
-                                  style={{
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                                    borderRadius: '6px',
-                                    color: '#ef4444',
-                                    padding: '0.25rem 0.4rem',
-                                    fontSize: '0.7rem',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    flex: '1 1 auto'
+                                  style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.75rem', outline: 'none' }}
+                                />
+                                <button
+                                  onClick={() => {
+                                    if (tempName.trim()) {
+                                      onTableCheckIn(tableId, tempName.trim(), 1, 'Waiter');
+                                      setOrderingForTable(tableId);
+                                      setCheckInPrompt(null);
+                                    }
                                   }}
-                                  title="Force Clear/Checkout Table"
+                                  style={{ background: 'rgba(14, 165, 233, 0.2)', border: '1px solid var(--accent-secondary)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}
                                 >
-                                  Clear
-                                </button>
-                              </>
-                            )}
-                            
-                            {paymentStep[tableId] === 'SELECT' && (
-                              <div style={{ display: 'flex', gap: '0.25rem', flex: 1 }}>
-                                <button
-                                  onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'CASH_CONFIRM' }))}
-                                  style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, flex: 1 }}
-                                >
-                                  Cash
+                                  Start
                                 </button>
                                 <button
-                                  onClick={() => setPaymentStep(prev => ({ ...prev, [tableId]: 'UPI_CONFIRM' }))}
-                                  style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px', color: '#38bdf8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, flex: 1 }}
-                                >
-                                  UPI
-                                </button>
-                                <button
-                                  onClick={() => setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; })}
-                                  style={{ background: 'transparent', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '6px', color: '#94a3b8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, width: '30px' }}
+                                  onClick={() => setCheckInPrompt(null)}
+                                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#94a3b8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, width: '28px' }}
                                 >
                                   ✕
                                 </button>
                               </div>
-                            )}
-
-                            {paymentStep[tableId] === 'CASH_CONFIRM' && (
+                            ) : (
                               <button
                                 onClick={() => {
-                                  onCheckOutTable(tableId, 'Cash');
-                                  setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; });
+                                  setTempName('');
+                                  setCheckInPrompt(tableId);
                                 }}
-                                style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid var(--status-ready)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, flex: 1 }}
-                              >
-                                Cash Paid ✅
-                              </button>
-                            )}
-
-                            {paymentStep[tableId] === 'UPI_CONFIRM' && (
-                              <button
-                                onClick={() => {
-                                  onCheckOutTable(tableId, 'UPI');
-                                  setPaymentStep(prev => { const n = {...prev}; delete n[tableId]; return n; });
+                                style={{
+                                  background: 'rgba(14, 165, 233, 0.1)',
+                                  border: '1px solid rgba(14, 165, 233, 0.2)',
+                                  borderRadius: '6px',
+                                  color: 'var(--status-ready)',
+                                  padding: '0.4rem',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  fontWeight: 700,
+                                  width: '100%'
                                 }}
-                                style={{ background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', borderRadius: '6px', color: '#38bdf8', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, flex: 1 }}
                               >
-                                UPI Paid ✅
+                                New Order
                               </button>
                             )}
                           </div>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <p style={{ fontSize: '0.7rem', color: '#64748b', margin: 0, fontWeight: 700 }}>Status: Settled</p>
-                          </div>
-                          
-                          {checkInPrompt === tableId ? (
-                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                              <input
-                                autoFocus
-                                type="text"
-                                placeholder="Client Name"
-                                value={tempName}
-                                onChange={(e) => setTempName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && tempName.trim()) {
-                                    onTableCheckIn(tableId, tempName.trim(), 1, 'Waiter');
-                                    setOrderingForTable(tableId);
-                                    setCheckInPrompt(null);
-                                  }
-                                }}
-                                style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.75rem', outline: 'none' }}
-                              />
-                              <button
-                                onClick={() => {
-                                  if (tempName.trim()) {
-                                    onTableCheckIn(tableId, tempName.trim(), 1, 'Waiter');
-                                    setOrderingForTable(tableId);
-                                    setCheckInPrompt(null);
-                                  }
-                                }}
-                                style={{ background: 'rgba(14, 165, 233, 0.2)', border: '1px solid var(--accent-secondary)', borderRadius: '6px', color: 'var(--status-ready)', padding: '0.25rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}
-                              >
-                                Start
-                              </button>
-                              <button
-                                onClick={() => setCheckInPrompt(null)}
-                                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#94a3b8', padding: '0.25rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600, width: '28px' }}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setTempName('');
-                                setCheckInPrompt(tableId);
-                              }}
-                              style={{
-                                background: 'rgba(14, 165, 233, 0.1)',
-                                border: '1px solid rgba(14, 165, 233, 0.2)',
-                                borderRadius: '6px',
-                                color: 'var(--status-ready)',
-                                padding: '0.4rem',
-                                fontSize: '0.75rem',
-                                cursor: 'pointer',
-                                fontWeight: 700,
-                                width: '100%'
-                              }}
-                            >
-                              New Order
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
-          </div>
-
+          )}
         </div>
       ) : (
         /* History Logs View */
@@ -1505,7 +1658,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                 servedOrders.map(order => (
                   <div key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', fontSize: '0.9rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                      <span>Table {order.tableId} - {order.items.length} items</span>
+                      <span>{order.tableId.startsWith('Room ') ? order.tableId : `Table ${order.tableId}`} - {order.items.length} items</span>
                       <span style={{ fontWeight: 600, color: 'var(--status-ready)' }}>₹{order.totalAmount.toFixed(2)}</span>
                     </div>
                     {order.servedBy && (
@@ -1531,7 +1684,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
                 resolvedRequests.map(req => (
                   <div key={req.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem', fontSize: '0.85rem', color: '#64748b' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                      <span>Table {req.tableId} - {req.type}</span>
+                      <span>{req.tableId.startsWith('Room ') ? req.tableId : `Table ${req.tableId}`} - {req.type}</span>
                       <span>Done</span>
                     </div>
                     {req.resolvedBy && (
@@ -1559,7 +1712,7 @@ export const WaiterView: React.FC<WaiterViewProps> = ({
           overflowY: 'auto'
         }}>
           <div style={{ position: 'sticky', top: 0, zIndex: 10, padding: '1rem', background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-            <h2 style={{ margin: 0, color: '#fff', fontSize: '1.25rem', fontWeight: 800 }}>Table {orderingForTable} Order</h2>
+            <h2 style={{ margin: 0, color: '#fff', fontSize: '1.25rem', fontWeight: 800 }}>{orderingForTable.startsWith('Room ') ? orderingForTable : `Table ${orderingForTable}`} Order</h2>
             <button 
               onClick={() => setOrderingForTable(null)}
               style={{ background: 'rgba(14, 165, 233, 0.15)', border: '1px solid rgba(14, 165, 233, 0.3)', color: '#38bdf8', borderRadius: '8px', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}

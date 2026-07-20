@@ -19,6 +19,10 @@ export const Portal: React.FC = () => {
   const [kitchenIdInput, setKitchenIdInput] = useState<string>('4');
 
   const [tablesCount, setTablesCountState] = useState<number>(() => parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
+  const [rooms, setRooms] = useState<string[]>(() => {
+    const saved = localStorage.getItem('hotel_configured_rooms');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   useEffect(() => {
     // Load initial stats from localStorage
@@ -44,12 +48,22 @@ export const Portal: React.FC = () => {
         const savedKitchen = localStorage.getItem('hotel_kitchen_configs');
         if (savedKitchen) setKitchenConfigs(JSON.parse(savedKitchen));
       }
+      if (e.key === 'hotel_configured_rooms') {
+        const saved = localStorage.getItem('hotel_configured_rooms');
+        setRooms(saved ? JSON.parse(saved) : []);
+      }
+    };
+    const syncRoomsSetting = () => {
+      const saved = localStorage.getItem('hotel_configured_rooms');
+      setRooms(saved ? JSON.parse(saved) : []);
     };
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('HOTEL_SETTINGS_UPDATED', syncRoomsSetting);
 
     return () => {
       channel.close();
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('HOTEL_SETTINGS_UPDATED', syncRoomsSetting);
     };
   }, []);
 
@@ -199,11 +213,60 @@ export const Portal: React.FC = () => {
               gap: '0.6rem',
               alignItems: 'center',
               justifyContent: 'center',
-              marginTop: '1.5rem'
+              marginTop: '1.5rem',
+              marginBottom: '2rem'
             }}
           >
             📅 OPEN CUSTOMER TABLE RESERVATION PORTAL
           </button>
+
+          {/* Customer Rooms */}
+          {rooms.length > 0 && (
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                🏨 Customer Rooms ({rooms.length} Links)
+              </h2>
+              <p style={{ color: '#555', marginBottom: '1.5rem', fontSize: '0.95rem', fontWeight: 650 }}>
+                Guests can scan or access their room menu link directly to check in and place room service orders.
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '1rem' }}>
+                {rooms.map((roomName) => (
+                  <button
+                    key={roomName}
+                    onClick={() => openWindow(`/room/${encodeURIComponent(roomName)}`)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#ffffff',
+                      border: '1px solid var(--border-glass)',
+                      padding: '1.25rem',
+                      borderRadius: '12px',
+                      color: '#000000',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '1rem',
+                      textAlign: 'left',
+                      transition: 'all 0.15s ease-in-out',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                      fontFamily: "'Outfit', sans-serif"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#a855f7';
+                      e.currentTarget.style.background = '#faf5ff';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border-glass)';
+                      e.currentTarget.style.background = '#ffffff';
+                    }}
+                  >
+                    <span>{roomName}</span>
+                    <ArrowUpRight size={18} color="#a855f7" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Staff Dashboards */}
@@ -262,26 +325,54 @@ export const Portal: React.FC = () => {
           </div>
 
           {/* Waiter Dashboards Selection */}
-          <div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              🛎️ Waiter Dashboard
-            </h3>
-            
-            <button 
-              onClick={() => openWindow('/waiter')} 
-              className="btn-constructivist-primary"
-              style={{ 
-                width: '100%',
-                padding: '0.9rem', 
-                fontSize: '0.95rem',
-                display: 'flex',
-                gap: '0.5rem',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              OPEN WAITER DASHBOARD
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🛎️ Table Waiter Dashboard
+              </h3>
+              
+              <button 
+                onClick={() => openWindow('/waiter')} 
+                className="btn-constructivist-primary"
+                style={{ 
+                  width: '100%',
+                  padding: '0.9rem', 
+                  fontSize: '0.95rem',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                OPEN TABLE WAITER DASHBOARD
+              </button>
+            </div>
+
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#a855f7', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                🏨 Room Waiter Dashboard
+              </h3>
+              
+              <button 
+                onClick={() => openWindow('/room-waiter')} 
+                className="btn-constructivist-primary"
+                style={{ 
+                  width: '100%',
+                  padding: '0.9rem', 
+                  fontSize: '0.95rem',
+                  background: '#a855f7',
+                  borderColor: '#a855f7',
+                  color: '#fff',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '2px 2px 0px #1a1a1a'
+                }}
+              >
+                OPEN ROOM WAITER DASHBOARD
+              </button>
+            </div>
           </div>
 
         </div>

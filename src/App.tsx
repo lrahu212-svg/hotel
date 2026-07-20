@@ -114,6 +114,9 @@ export const App: React.FC = () => {
               localStorage.removeItem('hotel_active_waiters');
               window.dispatchEvent(new StorageEvent('storage', { key: 'hotel_registered_waiters' }));
             }
+            if (msg.settings.rooms !== undefined) {
+              localStorage.setItem('hotel_configured_rooms', JSON.stringify(msg.settings.rooms));
+            }
           }
           break;
         }
@@ -186,6 +189,10 @@ export const App: React.FC = () => {
             localStorage.setItem('hotel_registered_waiters', JSON.stringify(msg.settings.waiters));
             localStorage.removeItem('hotel_active_waiters');
             window.dispatchEvent(new StorageEvent('storage', { key: 'hotel_registered_waiters' }));
+          }
+          if (msg.settings.rooms !== undefined) {
+            localStorage.setItem('hotel_configured_rooms', JSON.stringify(msg.settings.rooms));
+            window.dispatchEvent(new CustomEvent('HOTEL_SETTINGS_UPDATED'));
           }
           break;
         }
@@ -449,9 +456,10 @@ export const App: React.FC = () => {
             newItems[itemIndex] = { ...newItems[itemIndex], status };
           }
           
-          const allServed = newItems.every(item => item.status === 'Served');
-          const allReadyOrServed = newItems.every(item => item.status === 'Ready' || item.status === 'Served');
-          const newOrderStatus = allServed ? 'Served' : (allReadyOrServed ? 'Ready' : (o.status === 'Pending' ? 'Preparing' : o.status));
+          const allCancelled = newItems.every(item => item.status === 'Cancelled');
+          const allServed = newItems.every(item => item.status === 'Served' || item.status === 'Cancelled');
+          const allReadyOrServed = newItems.every(item => item.status === 'Ready' || item.status === 'Served' || item.status === 'Cancelled');
+          const newOrderStatus = allCancelled ? 'Cancelled' : (allServed ? 'Served' : (allReadyOrServed ? 'Ready' : (o.status === 'Pending' ? 'Preparing' : o.status)));
 
           return { ...o, items: newItems, status: newOrderStatus };
         }
@@ -622,6 +630,26 @@ export const App: React.FC = () => {
       }
     }
 
+    // Match /room/:roomId (where roomId can be a string like "Room 101")
+    const roomMatch = path.match(/^\/room\/(.+)$/);
+    if (roomMatch) {
+      const roomId = decodeURIComponent(roomMatch[1]);
+      return (
+        <TableView
+          tableId={roomId}
+          occupancy={tablesOccupancy[roomId] || { occupied: false }}
+          orders={orders}
+          requests={requests}
+          reservations={reservations}
+          onRemoveReservation={(reservationId) => postSyncEvent({ type: 'REMOVE_RESERVATION', reservationId })}
+          onCheckIn={(name, guests, openedBy, phone) => handleTableCheckIn(roomId, name, guests, openedBy, phone)}
+          onCheckOut={(paymentMethod) => handleTableCheckOut(roomId, paymentMethod)}
+          onPlaceOrder={(items) => handlePlaceOrder(roomId, items)}
+          onCallWaiter={(type) => handleCallWaiter(roomId, type)}
+        />
+      );
+    }
+
     // Match /kitchen/:id (N number)
     const kitchenMatch = path.match(/^\/kitchen\/(\d+)$/);
     if (kitchenMatch) {
@@ -654,6 +682,30 @@ export const App: React.FC = () => {
           onCallWaiter={handleCallWaiter}
           onTableCheckIn={handleTableCheckIn}
           onUpdateItemStatus={handleUpdateOrderItemStatus}
+          waiterType="table"
+        />
+      );
+    }
+
+    // Match /room-waiter (optionally with /:id)
+    const roomWaiterMatch = path.match(/^\/room-waiter(?:\/(\d+))?$/);
+    if (roomWaiterMatch) {
+      const waiterId = roomWaiterMatch[1] || '';
+      return (
+        <WaiterView
+          waiterId={waiterId}
+          orders={orders}
+          requests={requests}
+          tablesOccupancy={tablesOccupancy}
+          reservations={reservations}
+          onResolveRequest={handleResolveRequest}
+          onServeOrder={handleServeOrder}
+          onCheckOutTable={handleTableCheckOut}
+          onPlaceOrder={handlePlaceOrder}
+          onCallWaiter={handleCallWaiter}
+          onTableCheckIn={handleTableCheckIn}
+          onUpdateItemStatus={handleUpdateOrderItemStatus}
+          waiterType="room"
         />
       );
     }

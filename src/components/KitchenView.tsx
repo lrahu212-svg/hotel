@@ -23,6 +23,8 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
   const [focusedOrderIndex, setFocusedOrderIndex] = useState<number>(0);
   const [isNavigatingItems, setIsNavigatingItems] = useState<boolean>(false);
   const [openedViaNumber, setOpenedViaNumber] = useState<boolean>(false);
+  const keyBufferRef = useRef<string>('');
+  const bufferTimeoutRef = useRef<any>(null);
 
   const processPrintQueue = useCallback(() => { // Added useCallback
     if (isPrinting.current || printQueue.current.length === 0) return;
@@ -44,7 +46,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
     printDiv.innerHTML = `
       <div style="padding: 15px 0;">
         <h2 style="text-align: center; margin: 5px 0; color: #000;">KITCHEN ORDER TICKET</h2>
-        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${order.tableId}</h3>
+        <h3 style="text-align: center; margin: 5px 0; color: #000;">${order.tableId.startsWith('Room ') ? order.tableId : 'Table ' + order.tableId}</h3>
         <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
           ${new Date(order.timestamp).toLocaleString()}
         </div>
@@ -132,7 +134,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       filteredItems: order.items
         .map((item, originalIndex) => ({ ...item, originalIndex }))
         .filter(item => {
-          if (item.status === 'Ready' || item.status === 'Served') return false;
+          if (item.status === 'Ready' || item.status === 'Served' || item.status === 'Cancelled') return false;
           const menuItem = MENU_ITEMS.find(m => m.id === item.menuItemId);
           return menuItem ? isItemForStation(menuItem.category) : true;
         })
@@ -193,11 +195,33 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
       const key = e.key;
       const currentFocusedOrder = displayOrders[focusedOrderIndex];
 
-      if (/^[1-9]$/.test(key)) {
-        // Find the index of the oldest active order for this table in displayOrders
-        const orderIdx = displayOrders.findIndex(
-          o => o.tableId === key && (o.status === 'Pending' || o.status === 'Preparing')
+      if (/^[0-9]$/.test(key)) {
+        // Append to typed key buffer
+        keyBufferRef.current += key;
+        
+        // Reset clear-timeout
+        if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+        bufferTimeoutRef.current = setTimeout(() => {
+          keyBufferRef.current = '';
+        }, 1500);
+
+        const currentBuffer = keyBufferRef.current;
+
+        // Match room (e.g., tableId starts with 'Room ' and matches digits in room number)
+        let orderIdx = displayOrders.findIndex(
+          o => {
+            const tableClean = o.tableId.replace(/\D/g, ''); // Extract room digits
+            return tableClean === currentBuffer && o.tableId.startsWith('Room ') && (o.status === 'Pending' || o.status === 'Preparing');
+          }
         );
+
+        // Match table (exact match)
+        if (orderIdx === -1) {
+          orderIdx = displayOrders.findIndex(
+            o => o.tableId === currentBuffer && !o.tableId.startsWith('Room ') && (o.status === 'Pending' || o.status === 'Preparing')
+          );
+        }
+
         if (orderIdx !== -1) {
           setFocusedOrderIndex(orderIdx);
           setIsNavigatingItems(false);
@@ -221,22 +245,54 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
         }
       } else if (key === 'Enter') {
         e.preventDefault();
-        if (currentFocusedOrder) {
+        
+        // If there's a number in the buffer, try to match it and complete it immediately!
+        const currentBuffer = keyBufferRef.current;
+        let matchedOrder = currentFocusedOrder;
+
+        if (currentBuffer) {
+          // Reset buffer and timeout
+          keyBufferRef.current = '';
+          if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+
+          let orderIdx = displayOrders.findIndex(
+            o => {
+              const tableClean = o.tableId.replace(/\D/g, '');
+              return tableClean === currentBuffer && o.tableId.startsWith('Room ') && (o.status === 'Pending' || o.status === 'Preparing');
+            }
+          );
+
+          if (orderIdx === -1) {
+            orderIdx = displayOrders.findIndex(
+              o => o.tableId === currentBuffer && !o.tableId.startsWith('Room ') && (o.status === 'Pending' || o.status === 'Preparing')
+            );
+          }
+
+          if (orderIdx !== -1) {
+            matchedOrder = displayOrders[orderIdx];
+            setFocusedOrderIndex(orderIdx);
+            setIsNavigatingItems(false);
+          }
+        }
+
+        if (matchedOrder) {
           const kitchenMode = localStorage.getItem('hotel_kitchen_mode') || 'monitor';
-          if (openedViaNumber || kitchenMode === 'printer') {
+          const isRoomOrder = matchedOrder.tableId.startsWith('Room ');
+          
+          if (openedViaNumber || kitchenMode === 'printer' || isRoomOrder || currentBuffer) {
             // Ready all
-            markAllComplete(currentFocusedOrder);
+            markAllComplete(matchedOrder);
             setOpenedViaNumber(false);
             setIsNavigatingItems(false);
           } else if (isNavigatingItems) {
-            // Toggle focused item
-            const item = currentFocusedOrder.filteredItems[focusedItemIndex];
+            // Toggle focused item (only for tables)
+            const item = matchedOrder.filteredItems[focusedItemIndex];
             if (item) {
               const newStatus = item.status === 'Ready' ? 'Preparing' : 'Ready';
-              if (onUpdateItemStatus) onUpdateItemStatus(currentFocusedOrder.id, item.originalIndex, newStatus);
+              if (onUpdateItemStatus) onUpdateItemStatus(matchedOrder.id, item.originalIndex, newStatus);
             }
           } else {
-            // Enter item navigation inside card
+            // Enter item navigation inside card (only for tables)
             setIsNavigatingItems(true);
             setFocusedItemIndex(0);
           }
@@ -345,6 +401,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
           const slotPadding = isPacked ? '0.75rem' : '1rem';
 
           const isCardFocused = displayOrders[focusedOrderIndex]?.id === order.id;
+          const isRoom = order.tableId.startsWith('Room ');
 
           return (
             <div 
@@ -355,30 +412,42 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
               }} 
               style={{
                 cursor: 'pointer',
-                background: 'rgba(255,255,255,0.02)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: isRoom ? '#f3e8ff' : '#ffffff',
+                border: isRoom ? '1px solid #d8b4fe' : '1px solid #cbd5e1',
+                borderTop: isRoom ? '4px solid #a855f7' : '4px solid #0ea5e9',
                 borderRadius: '12px',
                 padding: slotPadding,
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.05)',
                 backdropFilter: 'blur(5px)',
-                borderColor: order.status === 'Pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(14, 165, 233, 0.2)',
-                outline: isCardFocused ? '2.5px solid #38bdf8' : 'none',
+                borderColor: isRoom ? '#d8b4fe' : '#cbd5e1',
+                outline: isCardFocused ? (isRoom ? '2.5px solid #a855f7' : '2.5px solid #0ea5e9') : 'none',
                 boxSizing: 'border-box',
                 overflow: 'hidden'
               }}
             >
               {/* Slot Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: headerBottomMargin, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.5rem' }}>
-                <div>
-                  <span style={{ fontSize: '0.6rem', background: order.status === 'Pending' ? 'var(--status-pending)' : 'var(--status-preparing)', color: '#fff', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: headerBottomMargin, borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <span style={{ 
+                    fontSize: '0.6rem', 
+                    background: isRoom ? '#a855f7' : (order.status === 'Pending' ? 'var(--status-pending)' : 'var(--status-preparing)'), 
+                    color: '#fff', 
+                    padding: '0.15rem 0.4rem', 
+                    borderRadius: '4px', 
+                    fontWeight: 700, 
+                    textTransform: 'uppercase', 
+                    letterSpacing: '0.05em' 
+                  }}>
                     {order.status}
                   </span>
-                  <h3 style={{ fontSize: titleSize, fontWeight: 850, color: '#fff', marginTop: '0.25rem' }}>Table {order.tableId}</h3>
+                  <h3 style={{ fontSize: titleSize, fontWeight: 850, color: '#000000', marginTop: '0.25rem' }}>
+                    {isRoom ? order.tableId : `Table ${order.tableId}`}
+                  </h3>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--accent-secondary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span style={{ fontSize: '0.8rem', color: isRoom ? '#4c1d95' : '#475569', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <Clock size={12} /> {getElapsedTime(order.timestamp)}
                 </span>
               </div>
@@ -400,6 +469,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
                       key={index}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (isRoom) return; // Disable click completion for room food items
                         toggleItemComplete(order.id, item);
                       }}
                       style={{ 
@@ -408,9 +478,9 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
                         alignItems: 'start',
                         padding: '0.25rem',
                         borderRadius: '6px',
-                        outline: isItemFocused ? '1.5px solid #38bdf8' : 'none',
-                        background: isItemFocused ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
-                        cursor: 'pointer'
+                        outline: isItemFocused ? (isRoom ? '1.5px solid #a855f7' : '1.5px solid #0ea5e9') : 'none',
+                        background: isItemFocused ? (isRoom ? 'rgba(168, 85, 247, 0.1)' : 'rgba(14, 165, 233, 0.1)') : 'transparent',
+                        cursor: isRoom ? 'default' : 'pointer'
                       }}
                     >
                       <div style={{ 
@@ -419,14 +489,14 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
                         textAlign: 'right', 
                         paddingTop: '0.1rem' 
                       }}>
-                        <strong style={{ color: 'var(--accent-secondary)', fontSize: qtyFontSize, lineHeight: 1 }}>
+                        <strong style={{ color: isRoom ? '#7e22ce' : '#0369a1', fontSize: qtyFontSize, lineHeight: 1 }}>
                           {item.quantity}x
                         </strong>
                       </div>
                       <div style={{ flex: 1 }}>
                         <span style={{ 
                           fontSize: itemFontSize, 
-                          color: isCompleted ? '#10b981' : '#f8fafc', 
+                          color: isCompleted ? '#10b981' : '#000000', 
                           fontWeight: 700, 
                           lineHeight: 1.2, 
                           display: 'block',
@@ -436,7 +506,7 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
                           {item.name}
                         </span>
                         {item.notes && (
-                          <span style={{ display: 'block', fontSize: notesSize, color: 'var(--status-pending)', fontStyle: 'italic', marginTop: '0.1rem' }}>
+                          <span style={{ display: 'block', fontSize: notesSize, color: isRoom ? '#b91c1c' : '#b45309', fontStyle: 'italic', marginTop: '0.1rem' }}>
                             * {item.notes}
                           </span>
                         )}
@@ -454,9 +524,9 @@ export const KitchenView: React.FC<KitchenViewProps> = ({ kitchenId, orders, onU
                     enqueuePrint([order]);
                   }}
                   style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    color: '#fff',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    color: '#0f172a',
                     padding: '0.35rem 0.75rem',
                     borderRadius: '6px',
                     fontSize: '0.75rem',

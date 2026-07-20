@@ -724,7 +724,7 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                   return (
                     <div key={order.id} style={{ padding: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.05)', fontSize: '0.8rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                        <span>T-{order.tableId.split('_archived_')[0]} (#{order.id.slice(-4).toUpperCase()})</span>
+                        <span>{order.tableId.startsWith('Room ') ? order.tableId.split('_archived_')[0] : `T-${order.tableId.split('_archived_')[0]}`} (#{order.id.slice(-4).toUpperCase()})</span>
                         <span>₹{order.totalAmount.toFixed(0)}</span>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem' }}>
@@ -1612,8 +1612,8 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
                         {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </td>
                       <td style={{ padding: '1rem', fontWeight: 600 }}>
-                        Table {order.tableId.split('_archived_')[0]}
-                        {order.customerName && <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--accent-primary)' }}>{order.customerName}</span>}
+                        {order.tableId.startsWith('Room ') ? order.tableId.split('_archived_')[0] : `Table ${order.tableId.split('_archived_')[0]}`}
+                        {order.customerName && <span style={{ display: 'block', fontSize: '0.75rem', color: order.tableId.startsWith('Room ') ? '#a855f7' : 'var(--accent-primary)' }}>{order.customerName}</span>}
                       </td>
                       <td style={{ padding: '1rem', color: '#475569' }}>
                         {order.items.map((item, idx) => (

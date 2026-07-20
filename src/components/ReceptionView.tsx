@@ -8,6 +8,7 @@ interface Waiter {
   name: string;
   phone: string;
   assignedTables: string[]; // e.g. ['1', '2']
+  type?: 'table' | 'room';
 }
 
 interface KitchenConfig {
@@ -783,10 +784,16 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
   const [waiters, setWaiters] = useState<Waiter[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [waiterType, setWaiterType] = useState<'table' | 'room'>('table');
   const [notification, setNotification] = useState<string | null>(null);
   const [kitchenMode, setKitchenMode] = useState<'monitor' | 'printer'>(
     (localStorage.getItem('hotel_kitchen_mode') as 'monitor' | 'printer') || 'monitor'
   );
+  const [rooms, setRooms] = useState<string[]>(() => {
+    const saved = localStorage.getItem('hotel_configured_rooms');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [editingRoomIndex, setEditingRoomIndex] = useState<number | null>(null);
 
   // Printing Queue system for bills
   const printQueue = useRef<{ tableId: string; paymentMethod: string; orders: Order[] }[]>([]);
@@ -838,7 +845,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     printDiv.innerHTML = `
       <div style="padding: 15px 0;">
         <h2 style="text-align: center; margin: 5px 0; color: #000;">GUEST BILL</h2>
-        <h3 style="text-align: center; margin: 5px 0; color: #000;">Table ${tableId}</h3>
+        <h3 style="text-align: center; margin: 5px 0; color: #000;">${tableId.startsWith('Room ') ? tableId : 'Table ' + tableId}</h3>
         <div style="text-align: center; font-size: 0.8em; margin-bottom: 10px; color: #000;">
           Date: ${new Date().toLocaleString()}
         </div>
@@ -1024,16 +1031,73 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     const tablesCount = parseInt(localStorage.getItem('owner_tables_count') || '4', 10);
     const tables = Array.from({ length: tablesCount }, (_, i) => (i + 1).toString());
     
-    // Initialize empty assignments
-    const updated = currentWaiters.map(w => ({ ...w, assignedTables: [] as string[] }));
+    // Retrieve configured rooms
+    const savedRooms = localStorage.getItem('hotel_configured_rooms');
+    const roomsList = savedRooms ? (JSON.parse(savedRooms) as string[]) : [];
     
-    // Distribute all tables as evenly as possible
-    tables.forEach((tableId, index) => {
-      const waiterIndex = index % currentWaiters.length;
-      updated[waiterIndex].assignedTables.push(tableId);
-    });
+    // Separate waiters by type
+    const tableWaiters = currentWaiters.filter(w => !w.type || w.type === 'table');
+    const roomWaiters = currentWaiters.filter(w => w.type === 'room');
+
+    // Create copy with empty assignedTables
+    const updated = currentWaiters.map(w => ({ ...w, assignedTables: [] as string[] }));
+
+    // Distribute tables to table waiters
+    if (tableWaiters.length > 0) {
+      tables.forEach((tableId, index) => {
+        const waiterIndex = index % tableWaiters.length;
+        const targetId = tableWaiters[waiterIndex].id;
+        const waiter = updated.find(w => w.id === targetId);
+        if (waiter) waiter.assignedTables.push(tableId);
+      });
+    }
+
+    // Distribute rooms to room waiters
+    if (roomWaiters.length > 0) {
+      roomsList.forEach((roomName, index) => {
+        const waiterIndex = index % roomWaiters.length;
+        const targetId = roomWaiters[waiterIndex].id;
+        const waiter = updated.find(w => w.id === targetId);
+        if (waiter) waiter.assignedTables.push(roomName);
+      });
+    }
     
     return updated;
+  };
+
+  useEffect(() => {
+    const syncRooms = () => {
+      const saved = localStorage.getItem('hotel_configured_rooms');
+      if (saved) {
+        setRooms(JSON.parse(saved));
+      } else {
+        setRooms([]);
+      }
+    };
+    syncRooms();
+
+    window.addEventListener('storage', syncRooms);
+    window.addEventListener('HOTEL_SETTINGS_UPDATED', syncRooms);
+    return () => {
+      window.removeEventListener('storage', syncRooms);
+      window.removeEventListener('HOTEL_SETTINGS_UPDATED', syncRooms);
+    };
+  }, []);
+
+  const saveRooms = (updatedRooms: string[]) => {
+    setRooms(updatedRooms);
+    localStorage.setItem('hotel_configured_rooms', JSON.stringify(updatedRooms));
+    
+    // Redistribute both tables and rooms to active waiters
+    const updatedWaiters = redistributeTables(waiters);
+    saveWaiters(updatedWaiters);
+
+    if (onUpdateSettings) {
+      onUpdateSettings({ rooms: updatedRooms, waiters: updatedWaiters });
+    }
+    const bc = new BroadcastChannel('hotel_ordering_system');
+    bc.postMessage({ type: 'REQUEST_SYNC' });
+    bc.close();
   };
 
   const handleRegister = (e: React.FormEvent) => {
@@ -1051,7 +1115,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
       id: Date.now().toString(),
       name: name.trim(),
       phone: phone.trim(),
-      assignedTables: []
+      assignedTables: [],
+      type: waiterType
     };
 
     const baseWaiters = [...waiters, newWaiter];
@@ -1061,7 +1126,8 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
     // Reset Form
     setName('');
     setPhone('');
-    showToast('🎉 Waiter registered & tables auto-assigned!');
+    setWaiterType('table');
+    showToast('🎉 Waiter registered & assignments updated!');
   };
 
   const handleDelete = (id: string) => {
@@ -1253,10 +1319,24 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
 
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Table Assignments
+                Waiter Type / Role
+              </label>
+              <select
+                value={waiterType}
+                onChange={(e) => setWaiterType(e.target.value as 'table' | 'room')}
+                style={{ width: '100%', padding: '0.65rem 0.85rem', background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '8px', color: '#0f172a', outline: 'none', fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                <option value="table">Table Waiter (Assign Tables)</option>
+                <option value="room">Room Waiter (Assign Rooms)</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.75rem', color: '#64748b', marginBottom: '0.4rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Assignments
               </label>
               <p style={{ margin: '0.2rem 0 0 0', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                ℹ️ Registered tables are divided and assigned automatically among all registered waiters.
+                ℹ️ Configured tables and rooms are auto-distributed among matching registered staff.
               </p>
             </div>
 
@@ -1306,15 +1386,20 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                   borderRadius: '12px'
                 }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>{waiter.name}</h3>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                       {waiter.name}
+                       <span style={{ fontSize: '0.6rem', padding: '0.1rem 0.35rem', borderRadius: '4px', background: waiter.type === 'room' ? 'rgba(168,85,247,0.15)' : 'rgba(14,165,233,0.15)', color: waiter.type === 'room' ? '#c084fc' : '#38bdf8', fontWeight: 700, textTransform: 'uppercase' }}>
+                         {waiter.type === 'room' ? 'Room' : 'Table'}
+                       </span>
+                    </h3>
                     <p style={{ margin: '0.15rem 0 0.5rem 0', fontSize: '0.75rem', color: '#64748b' }}>📞 {waiter.phone}</p>
                     <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                       {waiter.assignedTables.length === 0 ? (
                         <span style={{ fontSize: '0.7rem', color: '#f43f5e', background: 'rgba(244,63,94,0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>Unassigned</span>
                       ) : (
                         waiter.assignedTables.map(t => (
-                          <span key={t} style={{ fontSize: '0.7rem', color: 'var(--accent-secondary)', background: 'rgba(6,182,212,0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 600 }}>
-                            Table {t}
+                          <span key={t} style={{ fontSize: '0.7rem', color: t.startsWith('Room ') ? '#000000' : 'var(--accent-secondary)', background: t.startsWith('Room ') ? 'rgba(168,85,247,0.2)' : 'rgba(6,182,212,0.1)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 700 }}>
+                            {t.startsWith('Room ') ? t : `Table ${t}`}
                           </span>
                         ))
                       )}
@@ -1323,20 +1408,18 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
 
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <button
-                      onClick={() => window.open(`/waiter/${waiter.id}`, '_blank')}
+                      onClick={() => window.open(waiter.type === 'room' ? `/room-waiter/${waiter.id}` : `/waiter/${waiter.id}`, '_blank')}
                       style={{
-                        background: 'rgba(14, 165, 233, 0.1)',
-                        border: '1px solid rgba(14, 165, 233, 0.2)',
-                        color: 'var(--accent-secondary)',
+                        background: waiter.type === 'room' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(14, 165, 233, 0.1)',
+                        border: waiter.type === 'room' ? '1px solid rgba(168, 85, 247, 0.2)' : '1px solid rgba(14, 165, 233, 0.2)',
+                        color: waiter.type === 'room' ? '#c084fc' : 'var(--accent-secondary)',
                         padding: '0.5rem 0.75rem',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        fontWeight: 600,
+                        fontWeight: 700,
+                        fontFamily: "'Outfit', sans-serif",
                         fontSize: '0.75rem',
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
+                        transition: 'all 0.2s'
                       }}
                     >
                       Launch
@@ -1402,7 +1485,7 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-          {Object.keys(tablesOccupancy || {}).sort((a,b) => parseInt(a,10) - parseInt(b,10)).map(tableId => (
+          {Object.keys(tablesOccupancy || {}).filter(id => !id.startsWith('Room ')).sort((a,b) => parseInt(a,10) - parseInt(b,10)).map(tableId => (
             <div key={tableId} style={{
               display: 'flex',
               alignItems: 'center',
@@ -1418,6 +1501,118 @@ export const ReceptionView: React.FC<ReceptionViewProps> = ({
                   if (window.confirm(`Are you sure you want to remove Table ${tableId}?`)) {
                     onRemoveTable?.(tableId);
                     showToast(`🗑️ Table ${tableId} removed.`);
+                  }
+                }}
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: 'none',
+                  color: '#ef4444',
+                  padding: '0.35rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Room Registry Management Panel */}
+      <div className="glass-panel" style={{ padding: '2rem', marginTop: '2.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#a855f7', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          🏨 Room Registry Management
+        </h2>
+        
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+          <input
+            type="text"
+            placeholder="e.g. Room 101 or 101"
+            id="new-room-input"
+            style={{ padding: '0.5rem 1rem', flex: 1, borderRadius: '8px', border: '1px solid var(--border-glass)', background: '#fff' }}
+          />
+          <button
+            onClick={() => {
+              const el = document.getElementById('new-room-input') as HTMLInputElement;
+              if (el && el.value.trim()) {
+                const rid = el.value.trim();
+                const roomKey = rid.toLowerCase().startsWith('room') ? rid : `Room ${rid}`;
+                if (rooms.includes(roomKey)) {
+                  showToast('⚠️ Room already exists!');
+                } else {
+                  const updated = [...rooms, roomKey];
+                  saveRooms(updated);
+                  el.value = '';
+                  showToast(`🎉 Room ${roomKey} added successfully!`);
+                }
+              }
+            }}
+            className="btn-constructivist-primary"
+            style={{ padding: '0.5rem 1.5rem', fontSize: '0.85rem', background: '#a855f7', borderColor: '#a855f7', color: '#fff', boxShadow: '2px 2px 0px #1a1a1a' }}
+          >
+            Add Room
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+          {rooms.map((roomName, idx) => (
+            <div key={idx} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1rem',
+              background: '#f8fafc',
+              border: '1px solid var(--border-glass)',
+              borderRadius: '8px'
+            }}>
+              {editingRoomIndex === idx ? (
+                <input
+                  type="text"
+                  defaultValue={roomName}
+                  onBlur={(e) => {
+                    const val = e.target.value.trim();
+                    if (val && val !== roomName) {
+                      const updated = [...rooms];
+                      updated[idx] = val;
+                      saveRooms(updated);
+                    }
+                    setEditingRoomIndex(null);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val && val !== roomName) {
+                        const updated = [...rooms];
+                        updated[idx] = val;
+                        saveRooms(updated);
+                      }
+                      setEditingRoomIndex(null);
+                    }
+                  }}
+                  autoFocus
+                  style={{
+                    padding: '0.2rem 0.5rem',
+                    border: '1px solid #a855f7',
+                    borderRadius: '4px',
+                    width: '120px'
+                  }}
+                />
+              ) : (
+                <span 
+                  onClick={() => setEditingRoomIndex(idx)}
+                  style={{ fontWeight: 800, color: '#000000', cursor: 'pointer' }}
+                  title="Click to edit"
+                >
+                  {roomName} ✏️
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  if (window.confirm(`Are you sure you want to remove ${roomName}?`)) {
+                    const updated = rooms.filter((_, i) => i !== idx);
+                    saveRooms(updated);
+                    showToast(`🗑️ ${roomName} removed.`);
                   }
                 }}
                 style={{

@@ -43,6 +43,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const [razorpayLinkId, setRazorpayLinkId] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showCheckOutSuccess, setShowCheckOutSuccess] = useState(false);
+  const [showOrderLimitWarning, setShowOrderLimitWarning] = useState(false);
   const [sessionActive, setSessionActive] = useState<boolean>(() => !!sessionStorage.getItem(`table_session_active_${tableId}`));
 
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
@@ -193,6 +194,14 @@ export const TableView: React.FC<TableViewProps> = ({
 
     if (orderItems.length === 0) return;
 
+    if (hasOrderedThisSession) {
+      setShowOrderLimitWarning(true);
+      setTimeout(() => {
+        setShowOrderLimitWarning(false);
+      }, 3000);
+      return;
+    }
+
     onPlaceOrder(orderItems);
     setCart({});
     showToast('🎉 Order placed successfully!');
@@ -253,7 +262,8 @@ export const TableView: React.FC<TableViewProps> = ({
         setSessionActive(false);
       };
 
-      if (paymentMethod) {
+      const isRoom = tableId.startsWith('Room ');
+      if (paymentMethod || isRoom) {
         setShowCheckOutSuccess(true);
         const timer = setTimeout(() => {
           resetAll();
@@ -355,6 +365,9 @@ export const TableView: React.FC<TableViewProps> = ({
   };
 
   const tableOrders = orders.filter(o => o.tableId === tableId).sort((a, b) => b.timestamp - a.timestamp);
+  const hasOrderedThisSession = tableId.startsWith('Room ') && tableOrders.some(
+    o => o.customerName === occupancy.customerName && o.status !== 'Cancelled'
+  );
   const activeTableRequest = requests.find(r => r.tableId === tableId && r.status === 'Pending');
 
   if (showCheckOutSuccess) {
@@ -403,7 +416,7 @@ export const TableView: React.FC<TableViewProps> = ({
               <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--accent-secondary)', marginTop: '1rem', fontFamily: "'Outfit', sans-serif" }}>
                 Welcome to Dash Hotel
               </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>Dining at Table {tableId} - Please check in to unlock the menu</p>
+              <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '0.25rem' }}>{tableId.startsWith('Room ') ? `Dining in ${tableId}` : `Dining at Table ${tableId}`} - Please check in to unlock the menu</p>
             </div>
 
             {activeRes && (
@@ -477,9 +490,28 @@ export const TableView: React.FC<TableViewProps> = ({
       </>
     );
   }
-
   return (
     <>
+      {showOrderLimitWarning && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(255,255,255,0.96)',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>⚠️</span>
+          <h2 style={{ color: '#0f172a', fontWeight: 800, marginBottom: '1rem' }}>Order Already Placed!</h2>
+          <p style={{ color: '#475569', maxWidth: '400px', marginBottom: '2rem', lineHeight: '1.6' }}>
+            In room service, you can only place one order per session. Your order has been sent to the kitchen. To place another order, please ask the front desk or wait for the waiter to settle the bill.
+          </p>
+        </div>
+      )}
       <div className="animate-fade-in" style={{ maxWidth: '1000px', margin: '0 auto', padding: '1rem', paddingBottom: '5rem' }}>
         {/* Toast Notification */}
         {notification && (
@@ -511,7 +543,7 @@ export const TableView: React.FC<TableViewProps> = ({
         {/* Header Bar */}
         <header className="glass-panel customer-header">
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Table {tableId}</h1>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{tableId.startsWith('Room ') ? tableId : `Table ${tableId}`}</h1>
             <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>LuxeBite Digital Menu</span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
@@ -539,7 +571,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   {activeTableRequest?.type === 'Call Waiter' ? 'Waiter Called' : 'Call Waiter'}
                 </button>
 
-                {!isMobile && (
+                {!isMobile && !tableId.startsWith('Room ') && (
                   <button
                     onClick={() => handleServiceClick('Request Bill')}
                     disabled={activeTableRequest?.type === 'Request Bill'}
@@ -980,7 +1012,7 @@ export const TableView: React.FC<TableViewProps> = ({
           /* activeTab === 'checkout' view */
           <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 800, marginBottom: '1.5rem', color: '#1e293b' }}>
-              💳 Table Settlement & Bill Checkout
+              💳 {tableId.startsWith('Room ') ? 'Room' : 'Table'} Settlement & Bill Checkout
             </h2>
 
             <div style={{ background: 'rgba(0,0,0,0.02)', padding: '1.25rem', borderRadius: '12px', marginBottom: '1.5rem', textAlign: 'center', border: '1px solid rgba(0,0,0,0.04)' }}>
@@ -988,7 +1020,7 @@ export const TableView: React.FC<TableViewProps> = ({
               <div style={{ fontSize: '2.2rem', fontWeight: 800, color: '#10b981', margin: '0.5rem 0' }}>
                 ₹{tableOrders.reduce((sum, order) => sum + (order.status !== 'Cancelled' ? order.totalAmount : 0), 0).toFixed(2)}
               </div>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Includes all served and active orders for Table {tableId}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>Includes all served and active orders for {tableId.startsWith('Room ') ? tableId : `Table ${tableId}`}</p>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
@@ -1018,7 +1050,7 @@ export const TableView: React.FC<TableViewProps> = ({
             ) : paymentMethod === 'Cash' ? (
               <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
                 <h3 style={{ color: '#f59e0b', fontSize: '1.1rem', margin: 0 }}>💵 Cash Settle Requested</h3>
-                <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.25rem' }}>A waiter has been dispatched to Table {tableId} to collect cash.</p>
+                <p style={{ color: '#64748b', fontSize: '0.8rem', marginTop: '0.25rem' }}>A waiter has been dispatched to {tableId.startsWith('Room ') ? tableId : `Table ${tableId}`} to collect cash.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

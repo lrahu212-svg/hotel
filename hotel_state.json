@@ -19,6 +19,12 @@
     },
     "6": {
       "occupied": false
+    },
+    "Room 111": {
+      "occupied": false
+    },
+    "Room 112": {
+      "occupied": false
     }
   },
   "settings": {
@@ -33,7 +39,23 @@
           "3",
           "4"
         ]
+      },
+      {
+        "id": "1784555412972",
+        "name": "r",
+        "phone": "r",
+        "assignedTables": [
+          "Room 111",
+          "Room 222",
+          "Room 112"
+        ],
+        "type": "room"
       }
+    ],
+    "rooms": [
+      "Room 111",
+      "Room 222",
+      "Room 112"
     ]
   },
   "reservations": [],
@@ -41,7 +63,7 @@
     {
       "id": "inv_1",
       "name": "Coffee Beans",
-      "quantity": 1925,
+      "quantity": 1385,
       "unit": "g",
       "threshold": 500
     },
@@ -69,7 +91,7 @@
     {
       "id": "inv_5",
       "name": "Water",
-      "quantity": 9750,
+      "quantity": 7800,
       "unit": "ml",
       "threshold": 2000
     }
