@@ -12,6 +12,17 @@ interface OwnerDashboardProps {
 
 export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOccupancy, onCheckOutTable, onResetAllData }) => {
   const MENU_ITEMS = useMenu();
+  const [autoUpdateInterval, setAutoUpdateIntervalState] = useState<number>(() => {
+    const saved = localStorage.getItem('hotel_auto_update_interval');
+    return saved !== null ? parseInt(saved, 10) : 5000;
+  });
+
+  const handleAutoUpdateChange = (newVal: number) => {
+    localStorage.setItem('hotel_auto_update_interval', newVal.toString());
+    setAutoUpdateIntervalState(newVal);
+    window.dispatchEvent(new CustomEvent('HOTEL_AUTO_UPDATE_CHANGED'));
+  };
+
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [ownerTablesCount, setOwnerTablesCount] = useState<number>(parseInt(localStorage.getItem('owner_tables_count') || '4', 10));
@@ -297,9 +308,59 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
               {activeTab === 'settings' && 'System Settings'}
             </h1>
           </div>
-          <span style={{ fontSize: '0.7rem', color: '#fff', background: 'var(--accent-primary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
-            {orders.length} orders
-          </span>
+          <style>{`
+            @keyframes heartbeat {
+              0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+              70% { transform: scale(1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
+              100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+            }
+          `}</style>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              background: 'rgba(255, 255, 255, 0.8)',
+              border: '1px solid var(--border-glass)',
+              padding: '0.25rem 0.5rem',
+              borderRadius: '6px',
+              fontSize: '0.65rem',
+              fontWeight: 600,
+              fontFamily: "'Outfit', sans-serif"
+            }}>
+              <span style={{
+                width: '6px',
+                height: '6px',
+                background: autoUpdateInterval > 0 ? '#10b981' : '#94a3b8',
+                borderRadius: '50%',
+                display: 'inline-block',
+                animation: autoUpdateInterval > 0 ? 'heartbeat 2s infinite' : 'none',
+              }}></span>
+              <select
+                value={autoUpdateInterval}
+                onChange={(e) => handleAutoUpdateChange(parseInt(e.target.value, 10))}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--accent-secondary)',
+                  fontWeight: 700,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  fontSize: '0.65rem',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                <option value={0}>Off</option>
+                <option value={2000}>2s</option>
+                <option value={5000}>5s</option>
+                <option value={10000}>10s</option>
+                <option value={30000}>30s</option>
+              </select>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: '#fff', background: 'var(--accent-primary)', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700 }}>
+              {orders.length} orders
+            </span>
+          </div>
         </header>
 
         {/* Mobile Side Drawer Navigation */}
@@ -757,6 +818,51 @@ export const OwnerDashboard: React.FC<OwnerDashboardProps> = ({ orders, tablesOc
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Automatic Update Option */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'rgba(255, 255, 255, 0.8)',
+            border: '1px solid var(--border-glass)',
+            padding: '0.4rem 0.75rem',
+            borderRadius: '8px',
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            fontFamily: "'Outfit', sans-serif"
+          }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              background: autoUpdateInterval > 0 ? '#10b981' : '#94a3b8',
+              borderRadius: '50%',
+              display: 'inline-block',
+              animation: autoUpdateInterval > 0 ? 'heartbeat 2s infinite' : 'none',
+              boxShadow: autoUpdateInterval > 0 ? '0 0 8px #10b981' : 'none'
+            }}></span>
+            <span style={{ color: '#475569' }}>Auto Update:</span>
+            <select
+              value={autoUpdateInterval}
+              onChange={(e) => handleAutoUpdateChange(parseInt(e.target.value, 10))}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--accent-secondary)',
+                fontWeight: 700,
+                outline: 'none',
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                fontFamily: "'Outfit', sans-serif"
+              }}
+            >
+              <option value={0}>Off</option>
+              <option value={2000}>2s</option>
+              <option value={5000}>5s</option>
+              <option value={10000}>10s</option>
+              <option value={30000}>30s</option>
+            </select>
+          </div>
+
           <span style={{ fontSize: '0.8rem', color: '#1a1a1a', background: 'rgba(0,0,0,0.05)', padding: '0.5rem 1rem', border: '2px solid #1a1a1a', fontWeight: 700 }}>
             Session Audit: {orders.length} total orders recorded
           </span>

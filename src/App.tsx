@@ -339,12 +339,35 @@ export const App: React.FC = () => {
     };
 
     // Polling fallback to keep tabs synchronized in case of browser concurrent connection limits
-    const pollInterval = setInterval(fetchFreshState, 4000);
+    let activeInterval: any = null;
+    const startPolling = (ms: number) => {
+      if (activeInterval) {
+        clearInterval(activeInterval);
+        activeInterval = null;
+      }
+      if (ms > 0) {
+        activeInterval = setInterval(fetchFreshState, ms);
+      }
+    };
+
+    const savedInterval = localStorage.getItem('hotel_auto_update_interval');
+    const initialRate = savedInterval !== null ? parseInt(savedInterval, 10) : 5000;
+    startPolling(initialRate);
+
+    const handleIntervalChange = () => {
+      const saved = localStorage.getItem('hotel_auto_update_interval');
+      const rate = saved !== null ? parseInt(saved, 10) : 5000;
+      startPolling(rate);
+    };
+    window.addEventListener('HOTEL_AUTO_UPDATE_CHANGED', handleIntervalChange);
 
     return () => {
       eventSource.close();
       localChannel.close();
-      clearInterval(pollInterval);
+      if (activeInterval) {
+        clearInterval(activeInterval);
+      }
+      window.removeEventListener('HOTEL_AUTO_UPDATE_CHANGED', handleIntervalChange);
     };
   }, []);
 
