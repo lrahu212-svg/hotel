@@ -3,7 +3,11 @@
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "Test",
+      "guestsCount": 1,
+      "checkInTime": 1784565172173,
+      "openedBy": "Customer"
     },
     "2": {
       "occupied": false
@@ -12,18 +16,16 @@
       "occupied": false
     },
     "4": {
-      "occupied": false
+      "occupied": true,
+      "customerName": "4",
+      "guestsCount": 1,
+      "checkInTime": 1784565283372,
+      "openedBy": "Customer"
     },
     "5": {
       "occupied": false
     },
     "6": {
-      "occupied": false
-    },
-    "Room 111": {
-      "occupied": false
-    },
-    "Room 112": {
       "occupied": false
     }
   },
@@ -39,23 +41,7 @@
           "3",
           "4"
         ]
-      },
-      {
-        "id": "1784555412972",
-        "name": "r",
-        "phone": "r",
-        "assignedTables": [
-          "Room 111",
-          "Room 222",
-          "Room 112"
-        ],
-        "type": "room"
       }
-    ],
-    "rooms": [
-      "Room 111",
-      "Room 222",
-      "Room 112"
     ]
   },
   "reservations": [],
@@ -63,7 +49,7 @@
     {
       "id": "inv_1",
       "name": "Coffee Beans",
-      "quantity": 1385,
+      "quantity": 1925,
       "unit": "g",
       "threshold": 500
     },
@@ -91,7 +77,7 @@
     {
       "id": "inv_5",
       "name": "Water",
-      "quantity": 7800,
+      "quantity": 9750,
       "unit": "ml",
       "threshold": 2000
     }
