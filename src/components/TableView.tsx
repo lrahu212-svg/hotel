@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMenu, type MenuItem } from '../data/menu';
 import type { Order, OrderItem, ServiceRequest, TableOccupancy, Reservation } from '../types';
-import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search, Bot } from 'lucide-react';
+import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search, Bot, MessageCircle, ChevronDown } from 'lucide-react';
 import { Chatbot } from './Chatbot';
 
 interface TableViewProps {
@@ -36,6 +36,7 @@ export const TableView: React.FC<TableViewProps> = ({
   const [cart, setCart] = useState<{ [itemId: string]: { quantity: number; notes: string } }>({});
   const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout' | 'chatbot'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [billEmail, setBillEmail] = useState('');
@@ -662,11 +663,11 @@ export const TableView: React.FC<TableViewProps> = ({
               Your Orders ({tableOrders.length})
             </button>
             <button
-              onClick={() => setActiveTab('chatbot')}
+              onClick={() => setIsChatbotOpen(prev => !prev)}
               style={{
-                background: activeTab === 'chatbot' ? 'var(--accent-primary)' : 'transparent',
-                color: activeTab === 'chatbot' ? '#ffffff' : '#64748b',
-                border: `1px solid ${activeTab === 'chatbot' ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
+                background: isChatbotOpen ? 'var(--accent-primary)' : 'transparent',
+                color: isChatbotOpen ? '#ffffff' : '#64748b',
+                border: `1px solid ${isChatbotOpen ? 'var(--accent-primary)' : 'var(--border-glass)'}`,
                 padding: '0.75rem 1.5rem',
                 borderRadius: '8px',
                 cursor: 'pointer',
@@ -998,16 +999,6 @@ export const TableView: React.FC<TableViewProps> = ({
               ))
             )}
           </div>
-        ) : activeTab === 'chatbot' ? (
-          <Chatbot
-            menuItems={MENU_ITEMS}
-            orders={orders}
-            onPlaceOrder={(items) => {
-              onPlaceOrder(items);
-              showToast('🎉 Order placed successfully!');
-              setActiveTab('history');
-            }}
-          />
         ) : (
           /* activeTab === 'checkout' view */
           <div className="glass-panel animate-fade-in" style={{ padding: '1.5rem', width: '100%' }}>
@@ -1322,7 +1313,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
           <button
             type="button"
-            onClick={() => setActiveTab('chatbot')}
+            onClick={() => setIsChatbotOpen(prev => !prev)}
             style={{
               background: 'none',
               border: 'none',
@@ -1330,9 +1321,9 @@ export const TableView: React.FC<TableViewProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               gap: '0.2rem',
-              color: activeTab === 'chatbot' ? 'var(--accent-primary)' : '#64748b',
+              color: isChatbotOpen ? 'var(--accent-primary)' : '#64748b',
               fontSize: '0.75rem',
-              fontWeight: activeTab === 'chatbot' ? 700 : 500,
+              fontWeight: isChatbotOpen ? 700 : 500,
               cursor: 'pointer'
             }}
           >
@@ -1589,6 +1580,94 @@ export const TableView: React.FC<TableViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Floating Chatbot Widget and Toggle Button */}
+      {!isWaiterMode && (
+        <>
+          {/* Chatbot Popover Panel */}
+          {isChatbotOpen && (
+            <div 
+              style={{
+                position: 'fixed',
+                zIndex: 999,
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
+                transition: 'all 0.3s ease-in-out',
+                ...(isMobile ? {
+                  bottom: '148px',
+                  left: '16px',
+                  right: '16px',
+                  height: '65vh',
+                  maxHeight: '500px',
+                  borderRadius: '16px',
+                  overflow: 'hidden'
+                } : {
+                  bottom: '96px',
+                  right: '24px',
+                  width: '380px',
+                  height: '600px',
+                  borderRadius: '16px',
+                  overflow: 'hidden'
+                })
+              }}
+            >
+              <Chatbot
+                menuItems={MENU_ITEMS}
+                orders={orders}
+                onPlaceOrder={(items) => {
+                  onPlaceOrder(items);
+                  showToast('🎉 Order placed successfully!');
+                }}
+              />
+            </div>
+          )}
+
+          {/* Floating Circle Toggle Button */}
+          <button
+            onClick={() => setIsChatbotOpen(prev => !prev)}
+            style={{
+              position: 'fixed',
+              background: '#f43f5e', // Pink/red matching screenshots
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 6px 20px rgba(244, 63, 94, 0.4)',
+              zIndex: 1000,
+              transition: 'transform 0.2s ease, background-color 0.2s ease',
+              ...(isMobile ? {
+                bottom: '80px',
+                right: '20px',
+                width: '56px',
+                height: '56px'
+              } : {
+                bottom: '24px',
+                right: '24px',
+                width: '60px',
+                height: '60px'
+              })
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)';
+              e.currentTarget.style.backgroundColor = '#e11d48';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.backgroundColor = '#f43f5e';
+            }}
+          >
+            {isChatbotOpen ? (
+              <ChevronDown size={28} color="#ffffff" />
+            ) : (
+              <MessageCircle size={28} color="#ffffff" />
+            )}
+          </button>
+        </>
       )}
     </>
   );

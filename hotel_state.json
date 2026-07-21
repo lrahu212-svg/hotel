@@ -3,11 +3,7 @@
   "requests": [],
   "tablesOccupancy": {
     "1": {
-      "occupied": true,
-      "customerName": "Test",
-      "guestsCount": 1,
-      "checkInTime": 1784565172173,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "2": {
       "occupied": false
@@ -16,11 +12,7 @@
       "occupied": false
     },
     "4": {
-      "occupied": true,
-      "customerName": "4",
-      "guestsCount": 1,
-      "checkInTime": 1784565283372,
-      "openedBy": "Customer"
+      "occupied": false
     },
     "5": {
       "occupied": false

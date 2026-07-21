@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { MenuItem } from '../data/menu'; // Added OrderItem import
 import type { Order, OrderItem } from '../types';
-import { Bot, Send } from 'lucide-react'; // Assuming lucide-react is available
+import { Send } from 'lucide-react'; // Assuming lucide-react is available
 import { CHATBOT_QA } from '../data/chatbot_qa';
 
 interface ChatbotProps {
@@ -387,27 +387,30 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      height: '600px', // Fixed height for chatbot window
+      height: '100%', // Take full height of responsive parent wrapper
       border: '1px solid var(--border-glass)',
       borderRadius: '12px',
       overflow: 'hidden',
-      background: 'rgba(15, 23, 42, 0.7)', // Darker glass-panel background
+      background: 'rgba(15, 23, 42, 0.75)', // Darker glass-panel background
       backdropFilter: 'blur(10px)',
       boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
     }}>
       {/* Chat Header */}
       <div style={{
-        padding: '1rem',
-        background: 'rgba(14, 165, 233, 0.2)', // Accent color for header
+        padding: '1.5rem 1.25rem',
+        background: '#111c3a', // Deep navy/dark blue background like screenshot
         borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        color: '#fff',
-        fontWeight: 700,
-        fontSize: '1.1rem'
+        flexDirection: 'column',
+        gap: '0.25rem',
+        color: '#fff'
       }}>
-        <Bot size={24} color="#10b981" /> AI Food Assistant
+        <div style={{ fontSize: '1.75rem', fontWeight: 800, fontFamily: "'Outfit', sans-serif", display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          Hi there! 👋
+        </div>
+        <div style={{ fontSize: '0.85rem', color: '#cbd5e1', fontWeight: 500 }}>
+          Start a chat. We're here to help you 24/7.
+        </div>
       </div>
 
       {/* Chat Messages */}
