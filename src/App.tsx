@@ -254,6 +254,9 @@ export const App: React.FC = () => {
           window.dispatchEvent(new CustomEvent('TABLE_SETTLED', { 
             detail: { tableId: msg.tableId, paymentMethod: msg.paymentMethod } 
           }));
+          window.dispatchEvent(new CustomEvent('CUSTOMER_CHECKED_OUT', { 
+            detail: { tableId: msg.tableId } 
+          }));
           break;
         }
         case 'ADD_RESERVATION': {

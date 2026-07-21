@@ -259,7 +259,6 @@ export const TableView: React.FC<TableViewProps> = ({
         setShowPaymentModal(false);
         setPaymentMethod(null);
         setPaymentSuccess(false);
-        setShowCheckOutSuccess(false);
         setRazorpayLinkId(null);
         setActiveTab('menu');
         setMenuSearch('');
@@ -274,20 +273,28 @@ export const TableView: React.FC<TableViewProps> = ({
           }
         ]);
       };
-
-      const isRoom = tableId.startsWith('Room ');
-      // Only display the "Payment Done" success checkout screen if they were previously logged in (sessionActive is true)
-      if (sessionActive && (paymentMethod || isRoom)) {
-        setShowCheckOutSuccess(true);
-        const timer = setTimeout(() => {
-          resetAll();
-        }, 5000);
-        return () => clearTimeout(timer);
-      } else {
-        resetAll();
-      }
+      resetAll();
     }
-  }, [occupancy.occupied, paymentMethod, tableId, sessionActive]);
+  }, [occupancy.occupied]);
+
+  // Listen to live customer checked out events to show the checkout success screen
+  useEffect(() => {
+    const handleCheckedOutEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && customEvent.detail.tableId === tableId) {
+        if (sessionActive) {
+          setShowCheckOutSuccess(true);
+          const timer = setTimeout(() => {
+            setShowCheckOutSuccess(false);
+          }, 5000);
+          return () => clearTimeout(timer);
+        }
+      }
+    };
+
+    window.addEventListener('CUSTOMER_CHECKED_OUT', handleCheckedOutEvent);
+    return () => window.removeEventListener('CUSTOMER_CHECKED_OUT', handleCheckedOutEvent);
+  }, [tableId, sessionActive]);
 
   const handleCheckOut = () => {
     if (window.confirm("Are you sure you want to logout?")) {
