@@ -277,6 +277,54 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
       }
     }
 
+    // 7b. Food Type, Attribute & Category Filters (e.g. "spicy", "sweet", "vegetarian", "coffee", "tea")
+    const isSpicy = lowerQuery.includes('spicy') || lowerQuery.includes('hot') || lowerQuery.includes('chili') || lowerQuery.includes('spic');
+    const isSweet = lowerQuery.includes('sweet') || lowerQuery.includes('sugar') || lowerQuery.includes('dessert') || lowerQuery.includes('bakery');
+    const isVeg = lowerQuery.includes('veg') || lowerQuery.includes('vegetarian') || lowerQuery.includes('vegan');
+    
+    let attributeFilteredItems: MenuItem[] = [];
+    let attributeName = '';
+    
+    if (isSpicy) {
+      attributeFilteredItems = menuItems.filter(item => item.spicy || item.foodType?.toLowerCase() === 'spicy');
+      attributeName = 'spicy';
+    } else if (isSweet) {
+      attributeFilteredItems = menuItems.filter(item => item.category === 'Breakfast & Bakery' || item.foodType?.toLowerCase() === 'sweet');
+      attributeName = 'sweet';
+    } else if (isVeg) {
+      attributeFilteredItems = menuItems.filter(item => item.vegetarian);
+      attributeName = 'vegetarian';
+    }
+    
+    if (attributeFilteredItems.length > 0) {
+      const responseText = `Here are some delicious **${attributeName}** options on our menu. Would you like to order the **${attributeFilteredItems[0].name}**?`;
+      setSuggestedItem(attributeFilteredItems[0]);
+      simulateBotTyping(responseText, attributeFilteredItems[0].image, attributeFilteredItems.slice(0, 4));
+      return;
+    }
+
+    const categories = ['Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'];
+    const matchedCategory = categories.find(cat => {
+      const catLower = cat.toLowerCase();
+      return lowerQuery.includes(catLower) || 
+             (catLower.includes('coffee') && lowerQuery.includes('coffee')) ||
+             (catLower.includes('tea') && lowerQuery.includes('tea')) ||
+             (catLower.includes('beverage') && lowerQuery.includes('drink')) ||
+             (catLower.includes('breakfast') && lowerQuery.includes('breakfast')) ||
+             (catLower.includes('sandwich') && lowerQuery.includes('sandwich')) ||
+             (catLower.includes('salad') && lowerQuery.includes('salad'));
+    });
+    
+    if (matchedCategory) {
+      const categoryItems = menuItems.filter(item => item.category === matchedCategory);
+      if (categoryItems.length > 0) {
+        const responseText = `Here are the options in our **${matchedCategory}** category. Would you like to order the **${categoryItems[0].name}**?`;
+        setSuggestedItem(categoryItems[0]);
+        simulateBotTyping(responseText, categoryItems[0].image, categoryItems.slice(0, 4));
+        return;
+      }
+    }
+
     // 8. Ingredient Analysis / Search
     const commonIngredients = ['avocado', 'chocolate', 'cheese', 'coffee', 'espresso', 'milk', 'egg', 'cream', 'berry', 'berries', 'strawberry', 'tomato', 'basil', 'salad', 'bread', 'syrup', 'cinnamon', 'mint', 'lemon', 'ginger', 'honey', 'matcha', 'tea'];
     let matchedIngredient = commonIngredients.find(ing => lowerQuery.includes(ing));
