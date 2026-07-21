@@ -663,6 +663,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
           placeholder="Ask about food..."
           style={{
             flex: 1,
+            minWidth: '0', // Allow input to shrink on small screens
             padding: '0.75rem 1rem',
             borderRadius: '20px',
             border: '1px solid var(--border-glass)',
@@ -688,7 +689,8 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
             fontWeight: 600,
             transition: 'background-color 0.2s',
             width: isMobile ? '40px' : 'auto',
-            height: isMobile ? '40px' : 'auto'
+            height: isMobile ? '40px' : 'auto',
+            flexShrink: 0 // Prevent button from shrinking
           }}
         >
           <Send size={18} />

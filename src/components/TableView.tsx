@@ -1576,11 +1576,10 @@ export const TableView: React.FC<TableViewProps> = ({
                 boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
                 transition: 'all 0.3s ease-in-out',
                 ...(isMobile ? {
+                  top: '12px', // Start near the top of viewport to eliminate upper gap
                   bottom: '72px', // Sitting just above the bottom nav bar
                   left: '12px',
                   right: '12px',
-                  height: '68vh',
-                  maxHeight: '520px',
                   borderRadius: '16px',
                   overflow: 'hidden'
                 } : {
