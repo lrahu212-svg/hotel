@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import type { MenuItem } from '../data/menu'; // Added OrderItem import
 import type { Order, OrderItem } from '../types';
 import { Send } from 'lucide-react'; // Assuming lucide-react is available
-import { CHATBOT_QA } from '../data/chatbot_qa';
 
 export interface ChatMessage {
   sender: 'user' | 'bot';
@@ -108,59 +107,16 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
     return tmp[a.length][b.length];
   };
 
-  const isFuzzyMatch = (word1: string, word2: string): boolean => {
-    const w1 = word1.toLowerCase();
-    const w2 = word2.toLowerCase();
-    if (w1.includes(w2) || w2.includes(w1)) return true;
-    const distance = getLevenshteinDistance(w1, w2);
-    if (w1.length <= 5) return distance <= 1;
-    return distance <= 2;
-  };
-
   const processBotResponse = (query: string) => {
     console.log('Processing query:', query);
     const lowerQuery = query.toLowerCase();
-    const queryWords = lowerQuery.split(/[\s,?.!]+/).filter(w => w.length >= 3);
-    const hasCategoryMatch = (keywords: string[]): boolean => {
-      return queryWords.some(qWord => keywords.some(kw => isFuzzyMatch(qWord, kw)));
-    };
-    let response = "I'm sorry, I don't have information on that, or I didn't understand your request. Please ask about food items on our menu, or for a recommendation.";
     
     // Reset suggested item if new query, unless it's a 'yes/no' to a previous suggestion
     if (!lowerQuery.includes('yes') && !lowerQuery.includes('confirm') && !lowerQuery.includes('no') && !lowerQuery.includes('cancel')) {
         setSuggestedItem(null);
     }
 
-    // 1. Calculate Token-Based Similarity for all menu items to get precise/fuzzy hits
-    const scoredMenuItems = menuItems.map(item => {
-      const qWords = lowerQuery.split(/[\s,?.!]+/);
-      const nameWords = item.name.toLowerCase().split(/[\s,?.!]+/);
-      
-      let matches = 0;
-      for (const qw of qWords) {
-        if (qw.length < 3 || ['want', 'like', 'love', 'eat', 'hungry', 'food', 'order', 'please', 'with', 'have', 'show', 'give'].includes(qw)) continue;
-        for (const nw of nameWords) {
-          if (nw.includes(qw) || qw.includes(nw) || getLevenshteinDistance(qw, nw) <= 1) {
-            matches++;
-            break;
-          }
-        }
-      }
-      const score = matches / Math.max(qWords.length - 2, nameWords.length); // Adjusted divisor for better query handling
-      return { item, score };
-    }).filter(x => x.score > 0.25).sort((a, b) => b.score - a.score);
-
-    const bestMatch = scoredMenuItems.length > 0 ? scoredMenuItems[0].item : null;
-
-    // 2. Greeting Intent
-    const greetingWords = ['hi', 'hello', 'hey', 'greetings', 'morning', 'evening', 'who are you', 'howdy', 'hola'];
-    const isGreeting = greetingWords.some(gw => lowerQuery.startsWith(gw) || lowerQuery === gw);
-    if (isGreeting) {
-      simulateBotTyping("Hello! 👋 I am your virtual food assistant. I can recommend options by price (e.g. 'under 100'), ingredients (e.g. 'with avocado'), nutrition (e.g. 'high protein', 'low calorie'), or tell you about specific dishes (e.g. 'tell me about Peppermint Tea'). What can I get for you?");
-      return;
-    }
-
-    // 3. Confirm/Cancel Suggestion Intent (Yes/No response)
+    // 1. Confirm/Cancel Suggestion Intent (Yes/No response)
     if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it') || lowerQuery.includes('ok') || lowerQuery.includes('sure'))) {
         onPlaceOrder([{
             menuItemId: suggestedItem.id,
@@ -169,142 +125,79 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
             name: suggestedItem.name,
             price: suggestedItem.price
         }]);
-        response = `Great choice! I've placed an order for one ${suggestedItem.name}. It will be ready shortly.`;
-        const itemImage = suggestedItem.image;
+        simulateBotTyping(`Great choice! I've placed an order for one ${suggestedItem.name}. It will be ready shortly.`, suggestedItem.image);
         setSuggestedItem(null);
-        simulateBotTyping(response, itemImage);
         return;
     } else if (suggestedItem && (lowerQuery.includes('no') || lowerQuery.includes('cancel') || lowerQuery.includes('stop'))) {
-        response = `No problem! I've cancelled the recommendation for ${suggestedItem.name}. Let me know if you would like something else!`;
+        simulateBotTyping(`No problem! I've cancelled the recommendation for ${suggestedItem.name}. Let me know if you would like something else!`);
         setSuggestedItem(null);
-        simulateBotTyping(response);
         return;
     }
 
-    // 4. Order Action Intent (e.g. "order mocha", "add avocado toast to cart")
-    const isOrderIntent = lowerQuery.includes('order') || lowerQuery.includes('add') || lowerQuery.includes('buy') || lowerQuery.includes('want') || lowerQuery.includes('get');
-    if (isOrderIntent && bestMatch) {
-      onPlaceOrder([{
-        menuItemId: bestMatch.id,
-        quantity: 1,
-        notes: '',
-        name: bestMatch.name,
-        price: bestMatch.price
-      }]);
-      simulateBotTyping(`Perfect! I've automatically added one **${bestMatch.name}** (₹${bestMatch.price.toFixed(2)}) to your order.`, bestMatch.image);
+    // 2. Greeting Intent
+    const greetingWords = ['hi', 'hello', 'hey', 'greetings', 'morning', 'evening', 'who are you', 'howdy', 'hola'];
+    const isGreeting = greetingWords.some(gw => lowerQuery.startsWith(gw) || lowerQuery === gw);
+    if (isGreeting) {
+      simulateBotTyping("Hello! 👋 I am your smart AI Food Assistant. I can analyze ingredients, costs, calories, and categories to find exactly what you need (e.g. 'spicy food under 150', 'high protein breakfast', 'something with avocado'). What are you looking for?");
       return;
     }
 
-    // 5. Specific Detail Intent (e.g. "tell me about Matcha Latte", "explain Peppermint Tea")
+    // 2b. Specific Detail Intent (e.g. "tell me about Matcha Latte", "explain Peppermint Tea")
     const isDetailsIntent = lowerQuery.includes('detail') || lowerQuery.includes('explain') || lowerQuery.includes('describe') || lowerQuery.includes('info') || lowerQuery.includes('tell me about') || lowerQuery.includes('what is') || lowerQuery.includes('about') || lowerQuery.includes('ingredient') || lowerQuery.includes('nutri');
-    if (isDetailsIntent && bestMatch) {
-      const advantages = getFoodAdvantagesLocal(bestMatch);
-      const explanation = `**${bestMatch.name}** (${bestMatch.category})\n\n` +
-        `• **Description**: ${bestMatch.description || 'Freshly prepared'}\n` +
-        `• **Price**: ₹${bestMatch.price.toFixed(2)}\n` +
-        `• **Nutrition**: 🔥 ${bestMatch.calories || 0} kcal | 💪 ${bestMatch.protein || 0}g protein\n` +
-        `• **Ingredients**: ${bestMatch.ingredients?.join(', ') || 'Fresh ingredients'}\n` +
+    
+    // Find matching item by name similarity
+    const scoredMenuItemsForDetails = menuItems.map(item => {
+      const qWords = lowerQuery.split(/[\s,?.!]+/);
+      const nameWords = item.name.toLowerCase().split(/[\s,?.!]+/);
+      let nameMatches = 0;
+      for (const qw of qWords) {
+        if (qw.length < 3 || ['want', 'like', 'love', 'eat', 'hungry', 'food', 'order', 'please', 'with', 'have', 'show', 'give', 'detail', 'explain', 'describe', 'info', 'about', 'what', 'is'].includes(qw)) continue;
+        for (const nw of nameWords) {
+          if (nw.includes(qw) || qw.includes(nw) || getLevenshteinDistance(qw, nw) <= 1) {
+            nameMatches++;
+            break;
+          }
+        }
+      }
+      const score = nameMatches / Math.max(qWords.length - 2, nameWords.length);
+      return { item, score };
+    }).filter(x => x.score > 0.25).sort((a, b) => b.score - a.score);
+
+    const bestDetailMatch = scoredMenuItemsForDetails.length > 0 ? scoredMenuItemsForDetails[0].item : null;
+
+    if (isDetailsIntent && bestDetailMatch) {
+      const advantages = getFoodAdvantagesLocal(bestDetailMatch);
+      const explanation = `**${bestDetailMatch.name}** (${bestDetailMatch.category})\n\n` +
+        `• **Description**: ${bestDetailMatch.description || 'Freshly prepared'}\n` +
+        `• **Price**: ₹${bestDetailMatch.price.toFixed(2)}\n` +
+        `• **Nutrition**: 🔥 ${bestDetailMatch.calories || 0} kcal | 💪 ${bestDetailMatch.protein || 0}g protein\n` +
+        `• **Ingredients**: ${bestDetailMatch.ingredients?.join(', ') || 'Fresh ingredients'}\n` +
         `• **Health Benefits**: ${advantages}`;
         
-      setSuggestedItem(bestMatch);
-      simulateBotTyping(explanation, bestMatch.image, [bestMatch]);
+      setSuggestedItem(bestDetailMatch);
+      simulateBotTyping(explanation, bestDetailMatch.image, [bestDetailMatch]);
       return;
     }
 
-    // 6. Budget/Price Filters (e.g. "under 100", "pocket friendly", "cheap")
+    // 3. Parse Constraints from User Query
     const budgetMatch = lowerQuery.match(/\b(\d+)\b/);
-    const isCheapQuery = lowerQuery.includes('cheap') || lowerQuery.includes('budget') || lowerQuery.includes('pocket friendly') || lowerQuery.includes('low price') || lowerQuery.includes('cheapest');
-    if (budgetMatch || isCheapQuery) {
-      let budgetLimit = budgetMatch ? parseInt(budgetMatch[1], 10) : null;
-      let matchedItems = [...menuItems];
-      
-      if (budgetLimit) {
-        matchedItems = matchedItems.filter(item => item.price <= budgetLimit);
-      }
-      
-      matchedItems.sort((a, b) => a.price - b.price);
-      
-      if (matchedItems.length > 0) {
-        let responseText = '';
-        if (budgetLimit) {
-          responseText = `Here are the best options under ₹${budgetLimit} (cheapest first). Would you like to order the **${matchedItems[0].name}**?`;
-        } else {
-          responseText = `Here are our most budget-friendly options. Would you like to order the **${matchedItems[0].name}**?`;
-        }
-        setSuggestedItem(matchedItems[0]);
-        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
-        return;
-      } else if (budgetLimit) {
-        const cheapest = [...menuItems].sort((a, b) => a.price - b.price)[0];
-        simulateBotTyping(`I couldn't find any items under ₹${budgetLimit}. Our cheapest option is the **${cheapest.name}** for ₹${cheapest.price.toFixed(2)}. Would you like to order it?`, cheapest.image, [cheapest]);
-        setSuggestedItem(cheapest);
-        return;
-      }
-    }
+    const hasStrictBudget = budgetMatch !== null;
+    const budgetLimit = budgetMatch ? parseInt(budgetMatch[1], 10) : null;
+    const isCheapPreferred = lowerQuery.includes('cheap') || lowerQuery.includes('budget') || lowerQuery.includes('pocket friendly') || lowerQuery.includes('low price') || lowerQuery.includes('cheapest') || lowerQuery.includes('low cost');
 
-    // 7. Protein & Nutrition Filters
-    const isProteinQuery = lowerQuery.includes('protein') || lowerQuery.includes('muscle') || lowerQuery.includes('gym') || lowerQuery.includes('protein rich') || lowerQuery.includes('high protein');
-    const isHealthyQuery = lowerQuery.includes('healthy') || lowerQuery.includes('diet') || lowerQuery.includes('nutrition') || lowerQuery.includes('nutritious');
-    const isLowCalQuery = lowerQuery.includes('low calorie') || lowerQuery.includes('low cal') || lowerQuery.includes('diet friendly') || lowerQuery.includes('weight loss');
-    const isHighCalQuery = lowerQuery.includes('high calorie') || lowerQuery.includes('heavy') || lowerQuery.includes('fill me up');
-
-    if (isProteinQuery || isHealthyQuery || isLowCalQuery || isHighCalQuery) {
-      let matchedItems = [...menuItems];
-      let responseText = '';
-      
-      if (isProteinQuery) {
-        matchedItems.sort((a, b) => (b.protein || 0) - (a.protein || 0));
-        responseText = `Here are our highest protein options. Would you like to order the **${matchedItems[0].name}** (💪 ${matchedItems[0].protein || 0}g protein)?`;
-      } else if (isLowCalQuery) {
-        matchedItems.sort((a, b) => (a.calories || 9999) - (b.calories || 9999));
-        responseText = `Here are our lowest calorie options. Would you like to order the **${matchedItems[0].name}** (🔥 ${matchedItems[0].calories || 0} kcal)?`;
-      } else if (isHighCalQuery) {
-        matchedItems.sort((a, b) => (b.calories || 0) - (a.calories || 0));
-        responseText = `Here are our most filling, high-calorie options. Would you like to order the **${matchedItems[0].name}** (🔥 ${matchedItems[0].calories || 0} kcal)?`;
-      } else {
-        matchedItems.sort((a, b) => {
-          const scoreA = (a.protein || 0) * 10 - (a.calories || 0) * 0.1;
-          const scoreB = (b.protein || 0) * 10 - (b.calories || 0) * 0.1;
-          return scoreB - scoreA;
-        });
-        responseText = `Here are some of our healthiest options. Would you like to order the **${matchedItems[0].name}**?`;
-      }
-      
-      if (matchedItems.length > 0) {
-        setSuggestedItem(matchedItems[0]);
-        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
-        return;
-      }
-    }
-
-    // 7b. Food Type, Attribute & Category Filters (e.g. "spicy", "sweet", "vegetarian", "coffee", "tea")
+    const isHighProtein = lowerQuery.includes('protein') || lowerQuery.includes('muscle') || lowerQuery.includes('gym') || lowerQuery.includes('protein rich') || lowerQuery.includes('high protein');
+    const isLowCalorie = lowerQuery.includes('low calorie') || lowerQuery.includes('low cal') || lowerQuery.includes('diet friendly') || lowerQuery.includes('weight loss');
+    const isHighCalorie = lowerQuery.includes('high calorie') || lowerQuery.includes('heavy') || lowerQuery.includes('fill me up');
+    
     const isSpicy = lowerQuery.includes('spicy') || lowerQuery.includes('hot') || lowerQuery.includes('chili') || lowerQuery.includes('spic');
     const isSweet = lowerQuery.includes('sweet') || lowerQuery.includes('sugar') || lowerQuery.includes('dessert') || lowerQuery.includes('bakery');
     const isVeg = lowerQuery.includes('veg') || lowerQuery.includes('vegetarian') || lowerQuery.includes('vegan');
-    
-    let attributeFilteredItems: MenuItem[] = [];
-    let attributeName = '';
-    
-    if (isSpicy) {
-      attributeFilteredItems = menuItems.filter(item => item.spicy || item.foodType?.toLowerCase() === 'spicy');
-      attributeName = 'spicy';
-    } else if (isSweet) {
-      attributeFilteredItems = menuItems.filter(item => item.category === 'Breakfast & Bakery' || item.foodType?.toLowerCase() === 'sweet');
-      attributeName = 'sweet';
-    } else if (isVeg) {
-      attributeFilteredItems = menuItems.filter(item => item.vegetarian);
-      attributeName = 'vegetarian';
-    }
-    
-    if (attributeFilteredItems.length > 0) {
-      const responseText = `Here are some delicious **${attributeName}** options on our menu. Would you like to order the **${attributeFilteredItems[0].name}**?`;
-      setSuggestedItem(attributeFilteredItems[0]);
-      simulateBotTyping(responseText, attributeFilteredItems[0].image, attributeFilteredItems.slice(0, 4));
-      return;
-    }
+
+    const commonIngredients = ['avocado', 'chocolate', 'cheese', 'coffee', 'espresso', 'milk', 'egg', 'cream', 'berry', 'berries', 'strawberry', 'tomato', 'basil', 'salad', 'bread', 'syrup', 'cinnamon', 'mint', 'lemon', 'ginger', 'honey', 'matcha', 'tea'];
+    const matchedIngredients = commonIngredients.filter(ing => lowerQuery.includes(ing));
 
     const categories = ['Coffee & Espresso', 'Teas & Infusions', 'Cold Beverages', 'Breakfast & Bakery', 'Sandwiches & Salads'];
-    const matchedCategory = categories.find(cat => {
+    const matchedCategories = categories.filter(cat => {
       const catLower = cat.toLowerCase();
       return lowerQuery.includes(catLower) || 
              (catLower.includes('coffee') && lowerQuery.includes('coffee')) ||
@@ -314,173 +207,124 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
              (catLower.includes('sandwich') && lowerQuery.includes('sandwich')) ||
              (catLower.includes('salad') && lowerQuery.includes('salad'));
     });
-    
-    if (matchedCategory) {
-      const categoryItems = menuItems.filter(item => item.category === matchedCategory);
-      if (categoryItems.length > 0) {
-        const responseText = `Here are the options in our **${matchedCategory}** category. Would you like to order the **${categoryItems[0].name}**?`;
-        setSuggestedItem(categoryItems[0]);
-        simulateBotTyping(responseText, categoryItems[0].image, categoryItems.slice(0, 4));
-        return;
-      }
+
+    // 4. Filter and Score Menu Items
+    let eligibleItems = [...menuItems];
+
+    if (hasStrictBudget && budgetLimit !== null) {
+      eligibleItems = eligibleItems.filter(item => item.price <= budgetLimit);
+    }
+    if (isVeg) {
+      eligibleItems = eligibleItems.filter(item => item.vegetarian);
     }
 
-    // 8. Ingredient Analysis / Search
-    const commonIngredients = ['avocado', 'chocolate', 'cheese', 'coffee', 'espresso', 'milk', 'egg', 'cream', 'berry', 'berries', 'strawberry', 'tomato', 'basil', 'salad', 'bread', 'syrup', 'cinnamon', 'mint', 'lemon', 'ginger', 'honey', 'matcha', 'tea'];
-    let matchedIngredient = commonIngredients.find(ing => lowerQuery.includes(ing));
-    if (matchedIngredient) {
-      const matchedItems = menuItems.filter(item => {
-        const inName = item.name.toLowerCase().includes(matchedIngredient);
-        const inDesc = item.description?.toLowerCase().includes(matchedIngredient);
-        const inIng = item.ingredients?.some(i => i.toLowerCase().includes(matchedIngredient));
-        return inName || inDesc || inIng;
-      });
+    const scoredItems = eligibleItems.map(item => {
+      let score = 0;
+
+      const qWords = lowerQuery.split(/[\s,?.!]+/);
+      const nameWords = item.name.toLowerCase().split(/[\s,?.!]+/);
+      let nameMatches = 0;
+      for (const qw of qWords) {
+        if (qw.length < 3 || ['want', 'like', 'love', 'eat', 'hungry', 'food', 'order', 'please', 'with', 'have', 'show', 'give'].includes(qw)) continue;
+        for (const nw of nameWords) {
+          if (nw.includes(qw) || qw.includes(nw) || getLevenshteinDistance(qw, nw) <= 1) {
+            nameMatches++;
+            break;
+          }
+        }
+      }
+      const nameSimilarity = nameMatches / Math.max(qWords.length - 2, nameWords.length);
+      score += nameSimilarity * 20;
+
+      if (matchedCategories.includes(item.category)) {
+        score += 15;
+      }
+
+      if (matchedIngredients.length > 0) {
+        const hasIng = matchedIngredients.some(ing => 
+          item.name.toLowerCase().includes(ing) || 
+          item.description?.toLowerCase().includes(ing) || 
+          item.ingredients?.some(i => i.toLowerCase().includes(ing))
+        );
+        if (hasIng) score += 15;
+      }
+
+      if (isSpicy && (item.spicy || item.foodType?.toLowerCase() === 'spicy')) {
+        score += 12;
+      }
+
+      if (isSweet && (item.category === 'Breakfast & Bakery' || item.foodType?.toLowerCase() === 'sweet')) {
+        score += 12;
+      }
+
+      if (isHighProtein && item.protein) {
+        score += item.protein * 1.5;
+      }
+
+      if (isLowCalorie && item.calories) {
+        score += (600 - item.calories) * 0.05;
+      }
+      if (isHighCalorie && item.calories) {
+        score += item.calories * 0.05;
+      }
+
+      if (isCheapPreferred) {
+        score += (300 - item.price) * 0.1;
+      }
+
+      return { item, score };
+    });
+
+    const filteredScored = scoredItems
+      .filter(x => x.score > 0 || (hasStrictBudget && x.item.price <= (budgetLimit || 9999)))
+      .sort((a, b) => b.score - a.score);
+
+    if (filteredScored.length > 0) {
+      const bestSuggestion = filteredScored[0].item;
+      setSuggestedItem(bestSuggestion);
+
+      const reasons: string[] = [];
+      if (hasStrictBudget) reasons.push(`fits your ₹${budgetLimit} budget`);
+      if (isCheapPreferred) reasons.push(`is budget friendly (₹${bestSuggestion.price})`);
+      if (isVeg && bestSuggestion.vegetarian) reasons.push(`is vegetarian`);
+      if (isSpicy && (bestSuggestion.spicy || bestSuggestion.foodType === 'Spicy')) reasons.push(`is spicy`);
+      if (isHighProtein && bestSuggestion.protein) reasons.push(`has high protein (${bestSuggestion.protein}g)`);
+      if (isLowCalorie && bestSuggestion.calories) reasons.push(`has low calories (${bestSuggestion.calories} kcal)`);
       
-      if (matchedItems.length > 0) {
-        const responseText = `Here are the options containing **${matchedIngredient}**. Would you like to order the **${matchedItems[0].name}**?`;
-        setSuggestedItem(matchedItems[0]);
-        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
+      const matchedIngName = matchedIngredients.find(ing => 
+        bestSuggestion.name.toLowerCase().includes(ing) || 
+        bestSuggestion.ingredients?.some(i => i.toLowerCase().includes(ing))
+      );
+      if (matchedIngName) reasons.push(`contains ${matchedIngName}`);
+
+      let explanationText = `Based on your request, I recommend the **${bestSuggestion.name}** (₹${bestSuggestion.price.toFixed(2)}).`;
+      if (reasons.length > 0) {
+        explanationText += ` It ${reasons.join(', and ')}.`;
+      }
+      explanationText += `\n\nWould you like me to add it to your order?`;
+
+      const isOrderIntent = lowerQuery.includes('order') || lowerQuery.includes('add') || lowerQuery.includes('buy') || lowerQuery.includes('want') || lowerQuery.includes('get');
+      if (isOrderIntent) {
+        onPlaceOrder([{
+          menuItemId: bestSuggestion.id,
+          quantity: 1,
+          notes: '',
+          name: bestSuggestion.name,
+          price: bestSuggestion.price
+        }]);
+        simulateBotTyping(`Perfect! I've analyzed our ingredients & prices and added one **${bestSuggestion.name}** to your order (₹${bestSuggestion.price.toFixed(2)}).`, bestSuggestion.image);
+        setSuggestedItem(null);
         return;
       }
-    }
 
-    // 9. Standard Food Item recommendations
-    if (bestMatch) {
-      simulateBotTyping(`Yes, we have **${bestMatch.name}** for ₹${bestMatch.price.toFixed(2)}. Would you like to order it?`, bestMatch.image, [bestMatch]);
-      setSuggestedItem(bestMatch);
-      return;
-    }
-
-    // --- Agent Logic: Process Questions from CHATBOT_QA ---
-    console.log('Checking CHATBOT_QA...');
-    for (const qa of CHATBOT_QA) {
-      if (qa.keywords.some(keyword => lowerQuery.includes(keyword))) {
-        console.log('Matched QA keyword for:', qa.keywords);
-        let itemToSuggest: MenuItem | undefined;
-        let responseItems: MenuItem[] = [];
-
-        if (qa.suggestedItemId) {
-            itemToSuggest = menuItems.find(item => item.id === qa.suggestedItemId);
-            if (itemToSuggest) responseItems = [itemToSuggest];
-        } else if (qa.categoryFilter || qa.attributeFilter) {
-            let filtered = menuItems;
-            if (qa.categoryFilter) {
-                filtered = filtered.filter(item => item.category === qa.categoryFilter);
-            }
-            if (qa.attributeFilter) {
-                switch (qa.attributeFilter) {
-                    case 'spicy':
-                        filtered = filtered.filter(item => item.spicy);
-                        break;
-                    case 'vegetarian':
-                        filtered = filtered.filter(item => item.vegetarian);
-                        break;
-                    case 'low_calorie':
-                        filtered = filtered.filter(item => item.calories !== undefined && item.calories <= 300 && !item.isJunk);
-                        break;
-                    case 'low_sugar': // Using !isJunk as a proxy for low sugar
-                        filtered = filtered.filter(item => !item.isJunk);
-                        break;
-                }
-            }
-            responseItems = filtered.slice(0, 3); // Suggest up to 3 items
-            if (responseItems.length > 0) {
-                itemToSuggest = responseItems[Math.floor(Math.random() * responseItems.length)]; // Pick one to "suggest" for order
-            }
-        }
-        
-        if (responseItems.length > 0) {
-            response = `${qa.responseTemplate(itemToSuggest)}\n\nHere are some options:`;
-            setSuggestedItem(itemToSuggest || null);
-            simulateBotTyping(response, itemToSuggest?.image, responseItems);
-        } else {
-            response = qa.responseTemplate(); // Use template without item if none found
-            setSuggestedItem(null);
-            simulateBotTyping(response);
-        }
-        return;
-      }
-    }
-
-    // --- Agent Logic: Generic Category/Attribute Fallbacks ---
-    console.log('Checking generic category fallbacks...');
-    if (hasCategoryMatch(['coffee', 'espresso', 'cafe'])) {
-        console.log('Matched coffee/espresso generic fallback.');
-        const coffeeItems = menuItems.filter(item => item.category === 'Coffee & Espresso');
-        let suggested: MenuItem | null = null;
-        if (coffeeItems.length > 0) {
-            response = `Our coffee and espresso selections include:`;
-            suggested = coffeeItems[Math.floor(Math.random() * coffeeItems.length)];
-            setSuggestedItem(suggested); // Suggest a random one
-        } else {
-            response = "We do not have any coffee or espresso items on the menu.";
-        }
-        simulateBotTyping(response, suggested?.image, coffeeItems.slice(0, 4));
-        return;
-    }
-    // Add similar blocks for other categories/attributes if not covered by CHATBOT_QA
-    if (hasCategoryMatch(['tea', 'infusion', 'chai'])) {
-      console.log('Matched tea/infusion generic fallback.');
-      const teaItems = menuItems.filter(item => item.category === 'Teas & Infusions');
-      let suggested: MenuItem | null = null;
-      if (teaItems.length > 0) {
-          response = `Our tea and infusion selections include:`;
-          suggested = teaItems[Math.floor(Math.random() * teaItems.length)];
-          setSuggestedItem(suggested);
-      } else {
-          response = "We do not have any tea or infusion items on the menu.";
-      }
-      simulateBotTyping(response, suggested?.image, teaItems.slice(0, 4));
-      return;
-    }
-    if (hasCategoryMatch(['cold beverage', 'drink', 'shake', 'smoothie', 'juice', 'jice'])) {
-      console.log('Matched cold beverage generic fallback.');
-      const coldDrinkItems = menuItems.filter(item => item.category === 'Cold Beverages');
-      let suggested: MenuItem | null = null;
-      if (coldDrinkItems.length > 0) {
-          response = `Our cold beverages include:`;
-          suggested = coldDrinkItems[Math.floor(Math.random() * coldDrinkItems.length)];
-          setSuggestedItem(suggested);
-      } else {
-          response = "We do not have any cold beverages on the menu.";
-      }
-      simulateBotTyping(response, suggested?.image, coldDrinkItems.slice(0, 4));
-      return;
-    }
-    if (hasCategoryMatch(['breakfast', 'bakery', 'pastry', 'muffin', 'croissant'])) {
-      console.log('Matched breakfast/bakery generic fallback.');
-      const breakfastItems = menuItems.filter(item => item.category === 'Breakfast & Bakery');
-      let suggested: MenuItem | null = null;
-      if (breakfastItems.length > 0) {
-          response = `Our breakfast and bakery items include:`;
-          suggested = breakfastItems[Math.floor(Math.random() * breakfastItems.length)];
-          setSuggestedItem(suggested);
-      } else {
-          response = "We do not have any breakfast or bakery items on the menu.";
-      }
-      simulateBotTyping(response, suggested?.image, breakfastItems.slice(0, 4));
-      return;
-    }
-    if (hasCategoryMatch(['sandwich', 'salad', 'soup', 'lunch'])) {
-      console.log('Matched sandwich/salad/soup generic fallback.');
-      const lunchItems = menuItems.filter(item => item.category === 'Sandwiches & Salads');
-      let suggested: MenuItem | null = null;
-      if (lunchItems.length > 0) {
-          response = `Our sandwiches, salads, and soups include:`;
-          suggested = lunchItems[Math.floor(Math.random() * lunchItems.length)];
-          setSuggestedItem(suggested);
-      } else {
-          response = "We do not have any sandwiches, salads, or soups on the menu.";
-      }
-      simulateBotTyping(response, suggested?.image, lunchItems.slice(0, 4));
+      simulateBotTyping(explanationText, bestSuggestion.image, filteredScored.map(x => x.item).slice(0, 4));
       return;
     }
 
     // --- Final Fallback ---
     console.log('Falling back to generic response.');
-    response = "I'm sorry, I couldn't find specific information for that. Could you please rephrase or ask about specific menu items or categories?";
+    simulateBotTyping("I'm sorry, I couldn't find specific items matching all those criteria. Could you please rephrase or ask about specific menu items, ingredients, or budget ranges?");
     setSuggestedItem(null);
-    simulateBotTyping(response);
   };
 
   const intentKeywords = ['want', 'like', 'love', 'eat', 'immediately', 'immidiatly', 'hungry', 'food', 'recommend', 'something'];
