@@ -1310,26 +1310,6 @@ export const TableView: React.FC<TableViewProps> = ({
             <span style={{ fontSize: '1.25rem' }}>💳</span>
             Checkout
           </button>
-
-          <button
-            type="button"
-            onClick={() => setIsChatbotOpen(prev => !prev)}
-            style={{
-              background: 'none',
-              border: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.2rem',
-              color: isChatbotOpen ? 'var(--accent-primary)' : '#64748b',
-              fontSize: '0.75rem',
-              fontWeight: isChatbotOpen ? 700 : 500,
-              cursor: 'pointer'
-            }}
-          >
-            <span style={{ fontSize: '1.25rem' }}>🤖</span>
-            Assistant
-          </button>
         </div>
       )}
 
@@ -1596,11 +1576,11 @@ export const TableView: React.FC<TableViewProps> = ({
                 boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
                 transition: 'all 0.3s ease-in-out',
                 ...(isMobile ? {
-                  bottom: '148px',
-                  left: '16px',
-                  right: '16px',
-                  height: '65vh',
-                  maxHeight: '500px',
+                  bottom: '72px', // Sitting just above the bottom nav bar
+                  left: '12px',
+                  right: '12px',
+                  height: '68vh',
+                  maxHeight: '520px',
                   borderRadius: '16px',
                   overflow: 'hidden'
                 } : {
@@ -1616,6 +1596,7 @@ export const TableView: React.FC<TableViewProps> = ({
               <Chatbot
                 menuItems={MENU_ITEMS}
                 orders={orders}
+                isMobile={isMobile}
                 onPlaceOrder={(items) => {
                   onPlaceOrder(items);
                   showToast('🎉 Order placed successfully!');

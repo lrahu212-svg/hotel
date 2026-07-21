@@ -8,6 +8,7 @@ interface ChatbotProps {
   menuItems: MenuItem[];
   orders: Order[];
   onPlaceOrder: (items: OrderItem[]) => void; // Added onPlaceOrder prop
+  isMobile?: boolean;
 }
 
 interface ChatMessage {
@@ -18,7 +19,7 @@ interface ChatMessage {
   showCategories?: boolean;
 }
 
-export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder }) => {
+export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder, isMobile = false }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       sender: 'bot',
@@ -592,6 +593,7 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
       {/* Chat Input */}
       <form onSubmit={handleSendMessage} style={{
         padding: '1rem',
+        paddingRight: isMobile ? '76px' : '1rem',
         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex',
         gap: '0.5rem',
@@ -677,17 +679,20 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
             color: '#fff',
             border: 'none',
             borderRadius: '20px',
-            padding: '0.75rem 1.25rem',
+            padding: isMobile ? '0.75rem' : '0.75rem 1.25rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '0.5rem',
+            gap: isMobile ? '0' : '0.5rem',
             fontWeight: 600,
             transition: 'background-color 0.2s',
+            width: isMobile ? '40px' : 'auto',
+            height: isMobile ? '40px' : 'auto'
           }}
         >
-          <Send size={20} /> Send
+          <Send size={18} />
+          {!isMobile && 'Send'}
         </button>
       </form>
       {/* Basic keyframe for typing animation */}
