@@ -404,15 +404,17 @@ input::placeholder {
 
 /* Responsive Navbar */
 .main-navbar {
-  margin: 1rem;
+  margin: 0 0 1rem 0; /* Remove top and side margins, keep bottom margin */
   padding: 0.75rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
-  top: 1rem;
+  top: 0; /* Stick to absolute top */
   z-index: 100;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  border-radius: 0 0 12px 12px !important; /* Flat top, rounded bottom corners */
+  border-top: none;
 }
 
 .navbar-brand {
@@ -471,7 +473,7 @@ input::placeholder {
 
 @media (max-width: 640px) {
   .main-navbar {
-    margin: 0.5rem;
+    margin: 0 0 0.5rem 0; /* Remove top and side margins, keep bottom margin on mobile */
     padding: 0.6rem 0.75rem;
     flex-wrap: wrap;
     gap: 0.5rem;
