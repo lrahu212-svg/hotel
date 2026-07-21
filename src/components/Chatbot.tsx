@@ -60,6 +60,7 @@ const getFoodAdvantagesLocal = (item: MenuItem): string => {
 };
 
 export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder, isMobile = false, messages, setMessages }) => {
+  console.log('Active orders length:', orders.length);
   const [input, setInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [suggestedItem, setSuggestedItem] = useState<MenuItem | null>(null); // To handle ordering flow
@@ -130,29 +131,89 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
         setSuggestedItem(null);
     }
 
-    // --- Smart Bot Logic: Specific Details Search ---
-    const isDetailsQuery = lowerQuery.includes('detail') || lowerQuery.includes('explain') || lowerQuery.includes('describe') || lowerQuery.includes('info') || lowerQuery.includes('tell me about') || lowerQuery.includes('what is') || lowerQuery.includes('about') || lowerQuery.includes('ingredient') || lowerQuery.includes('nutri');
-    if (isDetailsQuery) {
-      const matchedItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
-      if (matchedItem) {
-        const advantages = getFoodAdvantagesLocal(matchedItem);
-        const explanation = `**${matchedItem.name}** (${matchedItem.category})\n\n` +
-          `• **Description**: ${matchedItem.description || 'Freshly prepared'}\n` +
-          `• **Price**: ₹${matchedItem.price.toFixed(2)}\n` +
-          `• **Nutrition**: 🔥 ${matchedItem.calories || 0} kcal | 💪 ${matchedItem.protein || 0}g protein\n` +
-          `• **Ingredients**: ${matchedItem.ingredients?.join(', ') || 'Fresh ingredients'}\n` +
-          `• **Health Benefits**: ${advantages}`;
-          
-        setSuggestedItem(matchedItem);
-        simulateBotTyping(explanation, matchedItem.image, [matchedItem]);
-        return;
+    // 1. Calculate Token-Based Similarity for all menu items to get precise/fuzzy hits
+    const scoredMenuItems = menuItems.map(item => {
+      const qWords = lowerQuery.split(/[\s,?.!]+/);
+      const nameWords = item.name.toLowerCase().split(/[\s,?.!]+/);
+      
+      let matches = 0;
+      for (const qw of qWords) {
+        if (qw.length < 3 || ['want', 'like', 'love', 'eat', 'hungry', 'food', 'order', 'please', 'with', 'have', 'show', 'give'].includes(qw)) continue;
+        for (const nw of nameWords) {
+          if (nw.includes(qw) || qw.includes(nw) || getLevenshteinDistance(qw, nw) <= 1) {
+            matches++;
+            break;
+          }
+        }
       }
+      const score = matches / Math.max(qWords.length - 2, nameWords.length); // Adjusted divisor for better query handling
+      return { item, score };
+    }).filter(x => x.score > 0.25).sort((a, b) => b.score - a.score);
+
+    const bestMatch = scoredMenuItems.length > 0 ? scoredMenuItems[0].item : null;
+
+    // 2. Greeting Intent
+    const greetingWords = ['hi', 'hello', 'hey', 'greetings', 'morning', 'evening', 'who are you', 'howdy', 'hola'];
+    const isGreeting = greetingWords.some(gw => lowerQuery.startsWith(gw) || lowerQuery === gw);
+    if (isGreeting) {
+      simulateBotTyping("Hello! 👋 I am your virtual food assistant. I can recommend options by price (e.g. 'under 100'), ingredients (e.g. 'with avocado'), nutrition (e.g. 'high protein', 'low calorie'), or tell you about specific dishes (e.g. 'tell me about Peppermint Tea'). What can I get for you?");
+      return;
     }
 
-    // --- Smart Bot Logic: Budget/Price Filters ---
+    // 3. Confirm/Cancel Suggestion Intent (Yes/No response)
+    if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it') || lowerQuery.includes('ok') || lowerQuery.includes('sure'))) {
+        onPlaceOrder([{
+            menuItemId: suggestedItem.id,
+            quantity: 1,
+            notes: '',
+            name: suggestedItem.name,
+            price: suggestedItem.price
+        }]);
+        response = `Great choice! I've placed an order for one ${suggestedItem.name}. It will be ready shortly.`;
+        const itemImage = suggestedItem.image;
+        setSuggestedItem(null);
+        simulateBotTyping(response, itemImage);
+        return;
+    } else if (suggestedItem && (lowerQuery.includes('no') || lowerQuery.includes('cancel') || lowerQuery.includes('stop'))) {
+        response = `No problem! I've cancelled the recommendation for ${suggestedItem.name}. Let me know if you would like something else!`;
+        setSuggestedItem(null);
+        simulateBotTyping(response);
+        return;
+    }
+
+    // 4. Order Action Intent (e.g. "order mocha", "add avocado toast to cart")
+    const isOrderIntent = lowerQuery.includes('order') || lowerQuery.includes('add') || lowerQuery.includes('buy') || lowerQuery.includes('want') || lowerQuery.includes('get');
+    if (isOrderIntent && bestMatch) {
+      onPlaceOrder([{
+        menuItemId: bestMatch.id,
+        quantity: 1,
+        notes: '',
+        name: bestMatch.name,
+        price: bestMatch.price
+      }]);
+      simulateBotTyping(`Perfect! I've automatically added one **${bestMatch.name}** (₹${bestMatch.price.toFixed(2)}) to your order.`, bestMatch.image);
+      return;
+    }
+
+    // 5. Specific Detail Intent (e.g. "tell me about Matcha Latte", "explain Peppermint Tea")
+    const isDetailsIntent = lowerQuery.includes('detail') || lowerQuery.includes('explain') || lowerQuery.includes('describe') || lowerQuery.includes('info') || lowerQuery.includes('tell me about') || lowerQuery.includes('what is') || lowerQuery.includes('about') || lowerQuery.includes('ingredient') || lowerQuery.includes('nutri');
+    if (isDetailsIntent && bestMatch) {
+      const advantages = getFoodAdvantagesLocal(bestMatch);
+      const explanation = `**${bestMatch.name}** (${bestMatch.category})\n\n` +
+        `• **Description**: ${bestMatch.description || 'Freshly prepared'}\n` +
+        `• **Price**: ₹${bestMatch.price.toFixed(2)}\n` +
+        `• **Nutrition**: 🔥 ${bestMatch.calories || 0} kcal | 💪 ${bestMatch.protein || 0}g protein\n` +
+        `• **Ingredients**: ${bestMatch.ingredients?.join(', ') || 'Fresh ingredients'}\n` +
+        `• **Health Benefits**: ${advantages}`;
+        
+      setSuggestedItem(bestMatch);
+      simulateBotTyping(explanation, bestMatch.image, [bestMatch]);
+      return;
+    }
+
+    // 6. Budget/Price Filters (e.g. "under 100", "pocket friendly", "cheap")
     const budgetMatch = lowerQuery.match(/\b(\d+)\b/);
     const isCheapQuery = lowerQuery.includes('cheap') || lowerQuery.includes('budget') || lowerQuery.includes('pocket friendly') || lowerQuery.includes('low price') || lowerQuery.includes('cheapest');
-    
     if (budgetMatch || isCheapQuery) {
       let budgetLimit = budgetMatch ? parseInt(budgetMatch[1], 10) : null;
       let matchedItems = [...menuItems];
@@ -161,13 +222,12 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
         matchedItems = matchedItems.filter(item => item.price <= budgetLimit);
       }
       
-      // Sort: cheapest first
       matchedItems.sort((a, b) => a.price - b.price);
       
       if (matchedItems.length > 0) {
         let responseText = '';
         if (budgetLimit) {
-          responseText = `I found these options under ₹${budgetLimit} (cheapest first). Would you like to order the **${matchedItems[0].name}**?`;
+          responseText = `Here are the best options under ₹${budgetLimit} (cheapest first). Would you like to order the **${matchedItems[0].name}**?`;
         } else {
           responseText = `Here are our most budget-friendly options. Would you like to order the **${matchedItems[0].name}**?`;
         }
@@ -181,8 +241,8 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
         return;
       }
     }
-    
-    // --- Smart Bot Logic: Protein & Nutrition Filters ---
+
+    // 7. Protein & Nutrition Filters
     const isProteinQuery = lowerQuery.includes('protein') || lowerQuery.includes('muscle') || lowerQuery.includes('gym') || lowerQuery.includes('protein rich') || lowerQuery.includes('high protein');
     const isHealthyQuery = lowerQuery.includes('healthy') || lowerQuery.includes('diet') || lowerQuery.includes('nutrition') || lowerQuery.includes('nutritious');
     const isLowCalQuery = lowerQuery.includes('low calorie') || lowerQuery.includes('low cal') || lowerQuery.includes('diet friendly') || lowerQuery.includes('weight loss');
@@ -216,11 +276,10 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
         return;
       }
     }
-    
-    // --- Smart Bot Logic: Ingredient Analysis ---
+
+    // 8. Ingredient Analysis / Search
     const commonIngredients = ['avocado', 'chocolate', 'cheese', 'coffee', 'espresso', 'milk', 'egg', 'cream', 'berry', 'berries', 'strawberry', 'tomato', 'basil', 'salad', 'bread', 'syrup', 'cinnamon', 'mint', 'lemon', 'ginger', 'honey', 'matcha', 'tea'];
     let matchedIngredient = commonIngredients.find(ing => lowerQuery.includes(ing));
-    
     if (matchedIngredient) {
       const matchedItems = menuItems.filter(item => {
         const inName = item.name.toLowerCase().includes(matchedIngredient);
@@ -237,157 +296,11 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
       }
     }
 
-    // --- Agent Logic: Handle Order Confirmation First ---
-    console.log('Checking for order confirmation...');
-    if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it'))) {
-        console.log('Order confirmation detected.');
-        onPlaceOrder([{
-            menuItemId: suggestedItem.id,
-            quantity: 1,
-            notes: '',
-            name: suggestedItem.name,
-            price: suggestedItem.price
-        }]);
-        response = `Great! I've placed an order for one ${suggestedItem.name}. It will be prepared shortly.`;
-        const itemImage = suggestedItem.image;
-        setSuggestedItem(null); // Reset suggested item
-        simulateBotTyping(response, itemImage);
-        return;
-    } else if (suggestedItem && (lowerQuery.includes('no') || lowerQuery.includes('cancel'))) {
-        console.log('Order cancellation detected.');
-        response = `Okay, I've cancelled the suggestion for ${suggestedItem.name}. Is there anything else I can help you with?`;
-        setSuggestedItem(null);
-        simulateBotTyping(response);
-        return;
-    }
-
-    // --- Agent Logic: Try to find matching menu items by query keywords ---
-    console.log('Checking for specific menu item matches...');
-    const searchKeywords = lowerQuery.split(/[\s,?.!]+/).filter(w => w.length >= 3 && !['need', 'want', 'have', 'show', 'give', 'please', 'with', 'some', 'like', 'order', 'food'].includes(w));
-    
-    let matchedSpecificItems: MenuItem[] = [];
-    // 1. Check exact full name substring first
-    const sortedMenuItems = [...menuItems].sort((a, b) => b.name.length - a.name.length);
-    const exactMatch = sortedMenuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
-    if (exactMatch) {
-        matchedSpecificItems = [exactMatch];
-    } else if (searchKeywords.length > 0) {
-        // 2. Fuzzy match against name words
-        matchedSpecificItems = menuItems.filter(item => {
-            const itemWords = item.name.toLowerCase().split(/[\s,?.!]+/);
-            return searchKeywords.some(qWord => 
-                itemWords.some(iWord => isFuzzyMatch(qWord, iWord))
-            );
-        });
-    }
-
-    if (matchedSpecificItems.length > 0) {
-        if (matchedSpecificItems.length === 1) {
-            const item = matchedSpecificItems[0];
-            response = `Yes, we have ${item.name} for ₹${item.price.toFixed(2)} in our ${item.category} category. Would you like to order it?`;
-            setSuggestedItem(item);
-            simulateBotTyping(response, item.image, [item]);
-        } else {
-            response = `I found these matching items on our menu:`;
-            // Suggest the first one by default for quick ordering
-            setSuggestedItem(matchedSpecificItems[0]);
-            simulateBotTyping(response, matchedSpecificItems[0].image, matchedSpecificItems.slice(0, 6));
-        }
-    }
-
-    // --- Agent Logic: Check for intent keywords to trigger category buttons ---
-    const intentKeywords = ['want', 'like', 'love', 'eat', 'immediately', 'immidiatly', 'hungry', 'food', 'recommend', 'something'];
-    const hasIntentMatch = queryWords.some(qWord => intentKeywords.some(kw => isFuzzyMatch(qWord, kw))) || 
-                           ['want', 'like', 'love', 'eat', 'hungry', 'food'].some(kw => lowerQuery.includes(kw));
-
-    if (hasIntentMatch) {
-        response = "What are you in the mood for? Select one of our food categories below:";
-        simulateBotTyping(response, undefined, undefined, true);
-        return;
-    }
-
-    // --- Agent Logic: Food Type & Popularity-based Recommendations ---
-    console.log('Checking for food types and popularity...');
-    
-    // 1. Calculate item popularity
-    const itemPopularity: { [id: string]: number } = {};
-    orders.forEach(o => {
-      if (o.status !== 'Cancelled') {
-        o.items.forEach(it => {
-          itemPopularity[it.menuItemId] = (itemPopularity[it.menuItemId] || 0) + it.quantity;
-        });
-      }
-    });
-
-    // 2. Extract all foodType values present in the menu
-    const customTypes = new Set<string>();
-    menuItems.forEach(item => {
-      if (item.foodType) {
-        customTypes.add(item.foodType.toLowerCase());
-      }
-    });
-
-    // 3. Find if any of the food types are mentioned in the query
-    let matchedType: string | null = null;
-    const allTypesToCheck = ['spicy', 'sweet', 'sour', ...Array.from(customTypes)];
-    for (const t of allTypesToCheck) {
-      if (lowerQuery.includes(t)) {
-        matchedType = t;
-        break;
-      }
-    }
-
-    if (matchedType) {
-      const matchingItems = menuItems.filter(item => {
-        if (matchedType === 'spicy' && (item.spicy || item.foodType?.toLowerCase() === 'spicy')) {
-          return true;
-        }
-        return item.foodType?.toLowerCase() === matchedType;
-      });
-
-      if (matchingItems.length > 0) {
-        const stopWords = ['recommend', 'something', 'food', 'have', 'want', 'order', 'show', 'find', 'like', 'with', 'dish', 'dishes', 'option', 'options', 'please', 'you', 'give', 'get', 'any', 'me', 'some', 'the', 'a', 'an', 'is', 'are', 'spicy', 'sweet', 'sour', ...Array.from(customTypes)];
-        const queryWords = lowerQuery.split(/[\s,?.!]+/).filter(w => w.length > 2 && !stopWords.includes(w));
-
-        let finalMatching = matchingItems;
-        let isKeywordSearch = false;
-        if (queryWords.length > 0) {
-          const keywordMatchedItems = matchingItems.filter(item => {
-            return queryWords.some(word => 
-              item.name.toLowerCase().includes(word) || 
-              item.description.toLowerCase().includes(word) ||
-              item.category.toLowerCase().includes(word)
-            );
-          });
-          if (keywordMatchedItems.length > 0) {
-            finalMatching = keywordMatchedItems;
-            isKeywordSearch = true;
-          }
-        }
-
-        const sortedByPopularity = [...finalMatching].sort((a, b) => {
-          const popA = itemPopularity[a.id] || 0;
-          const popB = itemPopularity[b.id] || 0;
-          return popB - popA;
-        });
-
-        const bestItem = sortedByPopularity[0];
-        const bestPopularity = itemPopularity[bestItem.id] || 0;
-
-        let responseText = '';
-        const searchContext = isKeywordSearch ? `${matchedType} matching "${queryWords.join(' ')}"` : `${matchedType} food`;
-        if (bestPopularity > 0) {
-          responseText = `Our most popular option for ${searchContext} is the **${bestItem.name}** (₹${bestItem.price.toFixed(2)}), which has been ordered ${bestPopularity} times!`;
-        } else {
-          responseText = `We have **${bestItem.name}** (₹${bestItem.price.toFixed(2)}) which is a great option if you're looking for something ${searchContext}.`;
-        }
-
-        responseText += `\n\nHere are some options:`;
-        
-        setSuggestedItem(bestItem);
-        simulateBotTyping(responseText, bestItem.image, sortedByPopularity.slice(0, 4));
-        return;
-      }
+    // 9. Standard Food Item recommendations
+    if (bestMatch) {
+      simulateBotTyping(`Yes, we have **${bestMatch.name}** for ₹${bestMatch.price.toFixed(2)}. Would you like to order it?`, bestMatch.image, [bestMatch]);
+      setSuggestedItem(bestMatch);
+      return;
     }
 
     // --- Agent Logic: Process Questions from CHATBOT_QA ---
