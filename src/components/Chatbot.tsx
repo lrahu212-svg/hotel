@@ -4,14 +4,7 @@ import type { Order, OrderItem } from '../types';
 import { Send } from 'lucide-react'; // Assuming lucide-react is available
 import { CHATBOT_QA } from '../data/chatbot_qa';
 
-interface ChatbotProps {
-  menuItems: MenuItem[];
-  orders: Order[];
-  onPlaceOrder: (items: OrderItem[]) => void; // Added onPlaceOrder prop
-  isMobile?: boolean;
-}
-
-interface ChatMessage {
+export interface ChatMessage {
   sender: 'user' | 'bot';
   text: string;
   image?: string;
@@ -19,13 +12,54 @@ interface ChatMessage {
   showCategories?: boolean;
 }
 
-export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder, isMobile = false }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      sender: 'bot',
-      text: "Hello! I'm your food assistant. Ask me anything about our menu, or for a recommendation!"
-    }
-  ]);
+interface ChatbotProps {
+  menuItems: MenuItem[];
+  orders: Order[];
+  onPlaceOrder: (items: OrderItem[]) => void; // Added onPlaceOrder prop
+  isMobile?: boolean;
+  messages: ChatMessage[];
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+}
+
+const getFoodAdvantagesLocal = (item: MenuItem): string => {
+  const name = item.name.toLowerCase();
+  
+  if (name.includes('avocado')) {
+    return '🥑 Rich in heart-healthy monounsaturated fats, dietary fiber, and loaded with potassium and essential vitamins (C, E, K, B6). Boosts skin glow and supports overall heart function.';
+  }
+  if (name.includes('salad') || name.includes('greek') || name.includes('caesar')) {
+    return '🥗 Exceptionally high in dietary fiber, raw vitamins, and antioxidants. Aids digestion, supports weight management, and strengthens natural immunity.';
+  }
+  if (name.includes('protein') || item.isProteinRich) {
+    return '💪 High-quality lean protein source. Crucial for muscle repair, tissue growth, keeping you full longer, and stabilizing blood sugar levels.';
+  }
+  if (name.includes('croissant') || name.includes('muffin') || name.includes('roll')) {
+    return '🥐 High energy density. Quick carbohydrates that supply instantaneous energy for brain function and muscle work, perfect for a morning boost.';
+  }
+  if (name.includes('matcha') || name.includes('green tea')) {
+    return '🍵 Packed with L-theanine and powerful EGCG catechins. Enhances focus and calmness, speeds up metabolism, and guards against cellular damage.';
+  }
+  if (name.includes('espresso') || name.includes('coffee') || name.includes('latte') || name.includes('americano')) {
+    return '⚡ High caffeine content. Boosts cognitive focus, improves reaction times, increases metabolic rate for fat-burning, and provides rich antioxidants.';
+  }
+  
+  switch (item.category) {
+    case 'Coffee & Espresso':
+      return '⚡ Enhances focus, increases alertness, boosts physical activity endurance, and contains essential antioxidants that reduce oxidative stress.';
+    case 'Teas & Infusions':
+      return '🍃 Promotes relaxation, supports gut health, is naturally hydrating, and helps fight inflammation with rich polyphenols.';
+    case 'Cold Beverages':
+      return '💧 Instantly rehydrates, replenishes essential electrolytes, and provides a quick, cooling nutrient boost to keep you refreshed.';
+    case 'Breakfast & Bakery':
+      return '🌾 Provides fast-releasing carbohydrates to fuel early morning physical tasks and brain activity.';
+    case 'Sandwiches & Salads':
+      return '🥦 High nutritional yield. Delivers balanced macronutrients, dietary fiber, essential vitamins, and supports digestive health.';
+    default:
+      return '🥗 Provides balanced energy, clean nutrients, and satisfies appetite while maintaining steady cellular vitality.';
+  }
+};
+
+export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrder, isMobile = false, messages, setMessages }) => {
   const [input, setInput] = useState<string>('');
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [suggestedItem, setSuggestedItem] = useState<MenuItem | null>(null); // To handle ordering flow
@@ -94,6 +128,25 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
     // Reset suggested item if new query, unless it's a 'yes/no' to a previous suggestion
     if (!lowerQuery.includes('yes') && !lowerQuery.includes('confirm') && !lowerQuery.includes('no') && !lowerQuery.includes('cancel')) {
         setSuggestedItem(null);
+    }
+
+    // --- Smart Bot Logic: Specific Details Search ---
+    const isDetailsQuery = lowerQuery.includes('detail') || lowerQuery.includes('explain') || lowerQuery.includes('describe') || lowerQuery.includes('info') || lowerQuery.includes('tell me about') || lowerQuery.includes('what is') || lowerQuery.includes('about') || lowerQuery.includes('ingredient') || lowerQuery.includes('nutri');
+    if (isDetailsQuery) {
+      const matchedItem = menuItems.find(item => lowerQuery.includes(item.name.toLowerCase()));
+      if (matchedItem) {
+        const advantages = getFoodAdvantagesLocal(matchedItem);
+        const explanation = `**${matchedItem.name}** (${matchedItem.category})\n\n` +
+          `• **Description**: ${matchedItem.description || 'Freshly prepared'}\n` +
+          `• **Price**: ₹${matchedItem.price.toFixed(2)}\n` +
+          `• **Nutrition**: 🔥 ${matchedItem.calories || 0} kcal | 💪 ${matchedItem.protein || 0}g protein\n` +
+          `• **Ingredients**: ${matchedItem.ingredients?.join(', ') || 'Fresh ingredients'}\n` +
+          `• **Health Benefits**: ${advantages}`;
+          
+        setSuggestedItem(matchedItem);
+        simulateBotTyping(explanation, matchedItem.image, [matchedItem]);
+        return;
+      }
     }
 
     // --- Smart Bot Logic: Budget/Price Filters ---

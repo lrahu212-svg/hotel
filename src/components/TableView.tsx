@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMenu, type MenuItem } from '../data/menu';
 import type { Order, OrderItem, ServiceRequest, TableOccupancy, Reservation } from '../types';
 import { ShoppingCart, Send, Bell, ClipboardList, Info, Flame, Leaf, User, Users, LogOut, Search, Bot, MessageCircle, ChevronDown } from 'lucide-react';
-import { Chatbot } from './Chatbot';
+import { Chatbot, type ChatMessage } from './Chatbot';
 
 interface TableViewProps {
   tableId: string;
@@ -37,6 +37,12 @@ export const TableView: React.FC<TableViewProps> = ({
   const [activeTab, setActiveTab] = useState<'menu' | 'history' | 'checkout' | 'chatbot'>('menu');
   const [notification, setNotification] = useState<string | null>(null);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      sender: 'bot',
+      text: "Hello! I'm your food assistant. Ask me anything about our menu, or for a recommendation!"
+    }
+  ]);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [billEmail, setBillEmail] = useState('');
@@ -261,10 +267,17 @@ export const TableView: React.FC<TableViewProps> = ({
         setPhone('');
         sessionStorage.removeItem(`table_session_active_${tableId}`);
         setSessionActive(false);
+        setChatMessages([
+          {
+            sender: 'bot',
+            text: "Hello! I'm your food assistant. Ask me anything about our menu, or for a recommendation!"
+          }
+        ]);
       };
 
       const isRoom = tableId.startsWith('Room ');
-      if (paymentMethod || isRoom) {
+      // Only display the "Payment Done" success checkout screen if they were previously logged in (sessionActive is true)
+      if (sessionActive && (paymentMethod || isRoom)) {
         setShowCheckOutSuccess(true);
         const timer = setTimeout(() => {
           resetAll();
@@ -274,7 +287,7 @@ export const TableView: React.FC<TableViewProps> = ({
         resetAll();
       }
     }
-  }, [occupancy.occupied, paymentMethod, tableId]);
+  }, [occupancy.occupied, paymentMethod, tableId, sessionActive]);
 
   const handleCheckOut = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -1596,6 +1609,8 @@ export const TableView: React.FC<TableViewProps> = ({
                 menuItems={MENU_ITEMS}
                 orders={orders}
                 isMobile={isMobile}
+                messages={chatMessages}
+                setMessages={setChatMessages}
                 onPlaceOrder={(items) => {
                   onPlaceOrder(items);
                   showToast('🎉 Order placed successfully!');
