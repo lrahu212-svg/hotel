@@ -96,6 +96,94 @@ export const Chatbot: React.FC<ChatbotProps> = ({ menuItems, orders, onPlaceOrde
         setSuggestedItem(null);
     }
 
+    // --- Smart Bot Logic: Budget/Price Filters ---
+    const budgetMatch = lowerQuery.match(/\b(\d+)\b/);
+    const isCheapQuery = lowerQuery.includes('cheap') || lowerQuery.includes('budget') || lowerQuery.includes('pocket friendly') || lowerQuery.includes('low price') || lowerQuery.includes('cheapest');
+    
+    if (budgetMatch || isCheapQuery) {
+      let budgetLimit = budgetMatch ? parseInt(budgetMatch[1], 10) : null;
+      let matchedItems = [...menuItems];
+      
+      if (budgetLimit) {
+        matchedItems = matchedItems.filter(item => item.price <= budgetLimit);
+      }
+      
+      // Sort: cheapest first
+      matchedItems.sort((a, b) => a.price - b.price);
+      
+      if (matchedItems.length > 0) {
+        let responseText = '';
+        if (budgetLimit) {
+          responseText = `I found these options under ₹${budgetLimit} (cheapest first). Would you like to order the **${matchedItems[0].name}**?`;
+        } else {
+          responseText = `Here are our most budget-friendly options. Would you like to order the **${matchedItems[0].name}**?`;
+        }
+        setSuggestedItem(matchedItems[0]);
+        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
+        return;
+      } else if (budgetLimit) {
+        const cheapest = [...menuItems].sort((a, b) => a.price - b.price)[0];
+        simulateBotTyping(`I couldn't find any items under ₹${budgetLimit}. Our cheapest option is the **${cheapest.name}** for ₹${cheapest.price.toFixed(2)}. Would you like to order it?`, cheapest.image, [cheapest]);
+        setSuggestedItem(cheapest);
+        return;
+      }
+    }
+    
+    // --- Smart Bot Logic: Protein & Nutrition Filters ---
+    const isProteinQuery = lowerQuery.includes('protein') || lowerQuery.includes('muscle') || lowerQuery.includes('gym') || lowerQuery.includes('protein rich') || lowerQuery.includes('high protein');
+    const isHealthyQuery = lowerQuery.includes('healthy') || lowerQuery.includes('diet') || lowerQuery.includes('nutrition') || lowerQuery.includes('nutritious');
+    const isLowCalQuery = lowerQuery.includes('low calorie') || lowerQuery.includes('low cal') || lowerQuery.includes('diet friendly') || lowerQuery.includes('weight loss');
+    const isHighCalQuery = lowerQuery.includes('high calorie') || lowerQuery.includes('heavy') || lowerQuery.includes('fill me up');
+
+    if (isProteinQuery || isHealthyQuery || isLowCalQuery || isHighCalQuery) {
+      let matchedItems = [...menuItems];
+      let responseText = '';
+      
+      if (isProteinQuery) {
+        matchedItems.sort((a, b) => (b.protein || 0) - (a.protein || 0));
+        responseText = `Here are our highest protein options. Would you like to order the **${matchedItems[0].name}** (💪 ${matchedItems[0].protein || 0}g protein)?`;
+      } else if (isLowCalQuery) {
+        matchedItems.sort((a, b) => (a.calories || 9999) - (b.calories || 9999));
+        responseText = `Here are our lowest calorie options. Would you like to order the **${matchedItems[0].name}** (🔥 ${matchedItems[0].calories || 0} kcal)?`;
+      } else if (isHighCalQuery) {
+        matchedItems.sort((a, b) => (b.calories || 0) - (a.calories || 0));
+        responseText = `Here are our most filling, high-calorie options. Would you like to order the **${matchedItems[0].name}** (🔥 ${matchedItems[0].calories || 0} kcal)?`;
+      } else {
+        matchedItems.sort((a, b) => {
+          const scoreA = (a.protein || 0) * 10 - (a.calories || 0) * 0.1;
+          const scoreB = (b.protein || 0) * 10 - (b.calories || 0) * 0.1;
+          return scoreB - scoreA;
+        });
+        responseText = `Here are some of our healthiest options. Would you like to order the **${matchedItems[0].name}**?`;
+      }
+      
+      if (matchedItems.length > 0) {
+        setSuggestedItem(matchedItems[0]);
+        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
+        return;
+      }
+    }
+    
+    // --- Smart Bot Logic: Ingredient Analysis ---
+    const commonIngredients = ['avocado', 'chocolate', 'cheese', 'coffee', 'espresso', 'milk', 'egg', 'cream', 'berry', 'berries', 'strawberry', 'tomato', 'basil', 'salad', 'bread', 'syrup', 'cinnamon', 'mint', 'lemon', 'ginger', 'honey', 'matcha', 'tea'];
+    let matchedIngredient = commonIngredients.find(ing => lowerQuery.includes(ing));
+    
+    if (matchedIngredient) {
+      const matchedItems = menuItems.filter(item => {
+        const inName = item.name.toLowerCase().includes(matchedIngredient);
+        const inDesc = item.description?.toLowerCase().includes(matchedIngredient);
+        const inIng = item.ingredients?.some(i => i.toLowerCase().includes(matchedIngredient));
+        return inName || inDesc || inIng;
+      });
+      
+      if (matchedItems.length > 0) {
+        const responseText = `Here are the options containing **${matchedIngredient}**. Would you like to order the **${matchedItems[0].name}**?`;
+        setSuggestedItem(matchedItems[0]);
+        simulateBotTyping(responseText, matchedItems[0].image, matchedItems.slice(0, 4));
+        return;
+      }
+    }
+
     // --- Agent Logic: Handle Order Confirmation First ---
     console.log('Checking for order confirmation...');
     if (suggestedItem && (lowerQuery.includes('yes') || lowerQuery.includes('confirm') || lowerQuery.includes('order it'))) {
